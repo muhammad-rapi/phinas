@@ -299,3 +299,4 @@ h1, h2, h3, h4 { margin: 0; }
 .lyric-line.active { color: var(--text); opacity: 1; transform: scale(1.04); }
 .lyrics-plain { white-space: pre-wrap; font-size: 15px; font-weight: 500; line-height: 1.7; color: var(--text); }
 .lyrics-note { margin-top: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.recent-main { gap: 12px; text-align: left; min-width: 0; padding: 8px 12px; }

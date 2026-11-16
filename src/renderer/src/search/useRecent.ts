@@ -1,29 +1,31 @@
 import { useCallback, useState } from 'react'
-import { addRecent, loadRecent, removeRecent, saveRecent } from './recent'
+import type { Track } from '../../../shared/types'
+import { addRecent, loadRecent, removeQuery, removeRecent, saveRecent, type RecentEntry } from './recent'
 
-/** Recent searches, persisted in localStorage. */
+/** Recent searches (typed text and picked songs), persisted in localStorage. */
 export function useRecent(): {
-  recent: string[]
-  remember: (q: string) => void
-  forget: (q: string) => void
+  recent: RecentEntry[]
+  rememberQuery: (q: string) => void
+  /** A song the user picked from search results; replaces the text they typed to find it. */
+  rememberTrack: (track: Track, typed: string) => void
+  forget: (entry: RecentEntry) => void
 } {
-  const [recent, setRecent] = useState<string[]>(loadRecent)
+  const [recent, setRecent] = useState<RecentEntry[]>(loadRecent)
 
-  const remember = useCallback((q: string) => {
+  const update = useCallback((fn: (cur: RecentEntry[]) => RecentEntry[]) => {
     setRecent((cur) => {
-      const next = addRecent(cur, q)
+      const next = fn(cur)
       saveRecent(next)
       return next
     })
   }, [])
 
-  const forget = useCallback((q: string) => {
-    setRecent((cur) => {
-      const next = removeRecent(cur, q)
-      saveRecent(next)
-      return next
-    })
-  }, [])
+  const rememberQuery = useCallback((q: string) => update((cur) => addRecent(cur, { kind: 'query', text: q })), [update])
+  const rememberTrack = useCallback(
+    (track: Track, typed: string) => update((cur) => addRecent(removeQuery(cur, typed), { kind: 'track', track })),
+    [update]
+  )
+  const forget = useCallback((entry: RecentEntry) => update((cur) => removeRecent(cur, entry)), [update])
 
-  return { recent, remember, forget }
+  return { recent, rememberQuery, rememberTrack, forget }
 }

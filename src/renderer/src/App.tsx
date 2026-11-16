@@ -49,7 +49,7 @@ function Shell(): React.JSX.Element {
       case 'home':
         return <Home nav={nav} />
       case 'search':
-        return <Search query={query} submitNonce={submitNonce} remember={recents.remember} />
+        return <Search query={query} submitNonce={submitNonce} onPick={recents.rememberTrack} />
       case 'liked':
         return <LikedView />
       case 'playlist':
@@ -69,12 +69,16 @@ function Shell(): React.JSX.Element {
         onQuery={onQuery}
         onSubmit={() => {
           if (!query.trim()) return
-          recents.remember(query)
+          recents.rememberQuery(query)
           setView({ name: 'search' })
           setSubmitNonce((n) => n + 1)
         }}
         recent={recents.recent}
         onForget={recents.forget}
+        onPlayTrack={(t) => {
+          recents.rememberTrack(t, '')
+          player.play([t], 0)
+        }}
         onHome={() => nav({ name: 'home' })}
         onProfile={() => nav({ name: 'profile' })}
         homeActive={view.name === 'home'}

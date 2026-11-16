@@ -9,10 +9,11 @@ interface Props {
   query: string
   /** Bumped when Enter is pressed: search right away instead of waiting for typing to pause. */
   submitNonce: number
-  remember: (q: string) => void
+  /** A song was picked from the results. */
+  onPick: (track: Track, typed: string) => void
 }
 
-export function Search({ query, submitNonce, remember }: Props): React.JSX.Element {
+export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element {
   const player = usePlayer()
   const [results, setResults] = useState<Track[]>([])
   const [loading, setLoading] = useState(false)
@@ -66,7 +67,7 @@ export function Search({ query, submitNonce, remember }: Props): React.JSX.Eleme
               track={t}
               showAdd
               onPlay={() => {
-                remember(q)
+                onPick(t, q)
                 player.play(results, i)
               }}
             />
