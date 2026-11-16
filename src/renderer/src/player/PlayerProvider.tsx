@@ -13,6 +13,7 @@ import {
   type QueueState,
   type RepeatMode
 } from './queue'
+import { useMediaSession } from './useMediaSession'
 
 interface PlayerApi {
   queue: QueueState
@@ -199,6 +200,8 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
     }),
     [queue, track, playing, time, duration, volume, shuffle, repeat, notice, audio, advance, systemMode]
   )
+
+  useMediaSession(audio, track, playing, api)
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

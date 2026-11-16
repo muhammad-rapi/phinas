@@ -5,6 +5,7 @@ import { writeFileSync } from 'node:fs'
 const X0 = 140
 const X1 = 884
 const AMP = 140
+const CY = 588 // vertical centre of the waves; the note above balances the tile
 const CYCLES = 1.5
 
 const wave = (phase) => {
@@ -12,7 +13,7 @@ const wave = (phase) => {
   for (let i = 0; i <= 160; i++) {
     const t = i / 160
     const x = X0 + (X1 - X0) * t
-    const y = 512 + AMP * Math.sin(t * CYCLES * 2 * Math.PI + phase)
+    const y = CY + AMP * Math.sin(t * CYCLES * 2 * Math.PI + phase)
     pts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
   }
   return pts.join(' ')
@@ -53,6 +54,15 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" 
       <path d="${wave(0)}" stroke="#8ec5fb"/>
       <path d="${wave(Math.PI)}" stroke="#ffffff"/>
     </g>
+  </g>
+
+  <!-- music accent: a small beamed note above the waves -->
+  <g filter="url(#soft)" fill="#ffffff" transform="translate(424 190) scale(0.85)">
+    <polygon points="60,48 206,26 206,62 60,84"/>
+    <rect x="60" y="56" width="16" height="104"/>
+    <rect x="190" y="34" width="16" height="104"/>
+    <ellipse cx="40" cy="160" rx="40" ry="31" transform="rotate(-22 40 160)"/>
+    <ellipse cx="170" cy="138" rx="40" ry="31" transform="rotate(-22 170 138)"/>
   </g>
 </svg>
 `
