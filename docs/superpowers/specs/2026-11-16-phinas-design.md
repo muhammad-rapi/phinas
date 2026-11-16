@@ -1,4 +1,4 @@
-# Auralys Desktop: Design
+# Phinas: Design
 
 Date: 2026-11-16
 
