@@ -7,6 +7,7 @@ files:
   - out/**
   - package.json
 asar: true
+afterPack: scripts/after-pack.cjs
 mac:
   category: public.app-category.music
   icon: build/icon.png
@@ -16,8 +17,8 @@ mac:
 dmg:
   title: Phinas
 win:
-  icon: build/icon.png
-  # No code-signing or exe editing: skips the Wine requirement when building on a Mac.
+  icon: build/icon.ico
+  # Skips code signing and Wine-based exe editing; the exe icon is set in scripts/after-pack.cjs.
   signAndEditExecutable: false
   target:
     - target: nsis
@@ -25,4 +26,6 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
   artifactName: Phinas-Setup-${version}.${ext}

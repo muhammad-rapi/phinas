@@ -45,6 +45,8 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" 
 
   <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#bg)"/>
   <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#glow)"/>
+  <!-- thin light border around the tile -->
+  <rect x="76" y="76" width="872" height="872" rx="196" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="8"/>
 
   <g mask="url(#ends)">
     <g filter="url(#soft)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="76">
