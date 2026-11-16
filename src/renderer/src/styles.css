@@ -302,3 +302,16 @@ h1, h2, h3, h4 { margin: 0; }
 .lyrics-plain { white-space: pre-wrap; font-size: 15px; font-weight: 500; line-height: 1.7; color: var(--text); }
 .lyrics-note { margin-top: 24px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .recent-main { gap: 12px; text-align: left; min-width: 0; padding: 8px 12px; }
+
+/* ---------- import ---------- */
+.library-actions { display: flex; gap: 6px; }
+.import-form { display: flex; gap: 10px; max-width: 720px; margin-top: 8px; }
+.import-form input { flex: 1; min-width: 0; background: var(--hover); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; color: var(--text); font: inherit; }
+.import-form input:focus { outline: 2px solid var(--accent); }
+.import-hint { max-width: 720px; line-height: 1.6; }
+.import-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; max-width: 720px; margin: 20px 0 8px; }
+.import-name { flex: 1; min-width: 200px; background: var(--hover); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; color: var(--text); font: inherit; font-weight: 600; }
+.import-name:focus { outline: 2px solid var(--accent); }
+.import-missing { max-width: 720px; margin: 8px 0 20px; }
+.import-missing summary { cursor: pointer; color: var(--muted); padding: 8px 0; }
+.import-missing li { color: var(--muted); padding: 2px 0; }

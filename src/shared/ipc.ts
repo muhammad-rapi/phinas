@@ -1,4 +1,4 @@
-import type { HomeFeed, Lyrics, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { HomeFeed, ImportResult, Lyrics, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
@@ -6,6 +6,8 @@ export interface PhinasApi {
   streamUrl(videoId: string): Promise<string>
   /** Lyrics from LRCLIB, or null when the song has none. Rejects on network errors. */
   getLyrics(track: Track): Promise<Lyrics | null>
+  /** Reads a public Spotify playlist or album link and finds its songs on YouTube Music. */
+  importSpotify(link: string): Promise<ImportResult>
   /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
   coverData(url: string): Promise<string>
   /** Minimise or toggle fullscreen, or just read the state. Returns whether the window is fullscreen. */
@@ -34,6 +36,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   getHomeFeed: true,
   streamUrl: true,
   getLyrics: true,
+  importSpotify: true,
   coverData: true,
   windowControl: true,
   getSystemVolume: true,

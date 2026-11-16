@@ -1,6 +1,8 @@
 import type { PhinasApi } from '../shared/ipc'
 import type { Library } from './library/library'
 import type { Lyrics } from '../shared/types'
+import { matchSongs } from './import/match'
+import { fetchSpotifyList } from './import/spotify'
 import { fetchLyrics } from './music/lyrics'
 import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
@@ -34,6 +36,11 @@ export function createHandlers(d: Deps): PhinasApi {
       const found = await fetchLyrics(track)
       lyricsCache.set(track.videoId, found)
       return found
+    },
+    importSpotify: async (link) => {
+      const list = await fetchSpotifyList(link)
+      const { matched, missing } = await matchSongs(list.songs, (q) => d.source.search(q))
+      return { name: list.name, total: list.songs.length, matched, missing }
     },
     search: (q) => d.source.search(q),
     getHomeFeed: () => d.source.getHomeFeed(),

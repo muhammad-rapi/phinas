@@ -3,6 +3,7 @@ export type View =
   | { name: 'home' }
   | { name: 'search' }
   | { name: 'profile' }
+  | { name: 'import' }
   | { name: 'liked' }
   | { name: 'playlist'; id: string }
   | { name: 'partner'; id: string }

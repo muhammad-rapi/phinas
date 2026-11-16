@@ -1,4 +1,4 @@
-import { Heart, Library, Plus } from 'lucide-react'
+import { Download, Heart, Library, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useLibrary } from '../library/LibraryProvider'
 import { sameView, type Nav, type View } from '../views'
@@ -52,10 +52,15 @@ export function LibraryPanel({ view, nav }: { view: View; nav: Nav }): React.JSX
           <Library size={22} />
           <span>Library</span>
         </div>
-        <button className="pill-btn" onClick={create} aria-label="Buat playlist">
-          <Plus size={18} />
-          <span>Buat</span>
-        </button>
+        <div className="library-actions">
+          <button className="pill-btn" onClick={() => nav({ name: 'import' })} aria-label="Impor dari Spotify" title="Impor dari Spotify">
+            <Download size={18} />
+          </button>
+          <button className="pill-btn" onClick={create} aria-label="Buat playlist">
+            <Plus size={18} />
+            <span>Buat</span>
+          </button>
+        </div>
       </div>
       <div className="chips">
         {FILTERS.map((f) => (

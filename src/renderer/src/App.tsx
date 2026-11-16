@@ -10,6 +10,7 @@ import { LikedView } from './screens/LikedView'
 import { PartnerView } from './screens/PartnerView'
 import { PlaylistView } from './screens/PlaylistView'
 import { Search } from './screens/Search'
+import { ImportView } from './screens/ImportView'
 import { Profile } from './screens/Profile'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
@@ -93,6 +94,8 @@ function Shell(): React.JSX.Element {
         return <PlaylistView key={view.id} id={view.id} nav={nav} />
       case 'partner':
         return <PartnerView id={view.id} nav={nav} />
+      case 'import':
+        return <ImportView nav={nav} />
       case 'profile':
         return <Profile name={profile.name} onName={profile.setName} initial={profile.initial} theme={theme} onTheme={setTheme} />
     }

@@ -17,6 +17,16 @@ export interface Lyrics {
   plain: string | null
 }
 
+/** A Spotify playlist or album matched against YouTube Music. */
+export interface ImportResult {
+  name: string
+  /** How many songs Spotify listed. */
+  total: number
+  matched: Track[]
+  /** "Title - Artist" of songs that were not found on YouTube Music. */
+  missing: string[]
+}
+
 export interface HomeFeed {
   /** What is trending now in the user's region. */
   trending: Track[]
