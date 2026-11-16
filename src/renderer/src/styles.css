@@ -63,6 +63,19 @@ input:focus, select:focus { outline: 2px solid var(--accent); }
 .icon-btn:hover { color: var(--text); }
 .icon-btn.on { color: var(--accent); }
 
+.pcover { aspect-ratio: 1; border-radius: 8px; background: var(--panel-2) center / cover; flex: none; overflow: hidden; }
+.pcover-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); background: linear-gradient(135deg, var(--panel-2), var(--panel)); }
+.pcover-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.pcover-grid div { background: center / cover; }
+.card .pcover { width: 100%; margin-bottom: 8px; }
+.list-item { display: flex; align-items: center; gap: 10px; }
+.list-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-head { display: flex; gap: 20px; align-items: flex-end; margin-bottom: 16px; }
+.recent-list { display: flex; flex-direction: column; gap: 2px; max-width: 520px; }
+.recent-item { display: flex; align-items: center; border-radius: 8px; }
+.recent-item:hover { background: var(--panel-2); }
+.recent-main { flex: 1; justify-content: flex-start; padding: 10px 12px; color: var(--muted); }
+.recent-main:hover { color: var(--text); }
 .searchbar { display: flex; gap: 8px; margin-bottom: 16px; }
 .searchbar input { flex: 1; }
 .btn { background: var(--accent); color: #fff; padding: 8px 16px; border-radius: 20px; font-weight: 700; transition: background .5s; }

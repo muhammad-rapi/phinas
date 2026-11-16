@@ -1,11 +1,14 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron'
+import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHANNELS } from '../shared/ipc'
 import { createHandlers } from './ipc'
 import { openDb } from './library/db'
 import { Library } from './library/library'
+import { createCoverFetcher } from './music/cover'
 import { createStreamProxy } from './music/proxy'
+import { createSystemVolume } from './system-volume'
 import { YoutubeMusicSource } from './music/source'
 import { SyncEngine } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
@@ -21,6 +24,7 @@ function createWindow(): void {
     minHeight: 600,
     backgroundColor: '#000000',
     title: 'Phinas',
+    icon,
     webPreferences: { preload: join(here, '../preload/index.mjs'), sandbox: false }
   })
   if (process.env['ELECTRON_RENDERER_URL']) win.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -42,6 +46,8 @@ function applyCsp(): void {
 }
 
 app.whenReady().then(async () => {
+  app.setName('Phinas')
+  app.dock?.setIcon(icon)
   applyCsp()
   const userData = app.getPath('userData')
   const library = new Library(openDb(join(userData, 'phinas.db')))
@@ -64,7 +70,16 @@ app.whenReady().then(async () => {
     }, SYNC_INTERVAL_MS)
   }
 
-  const handlers = createHandlers({ library, source, proxyPort: () => proxyPort, remote, engine, lastError })
+  const handlers = createHandlers({
+    library,
+    source,
+    coverData: createCoverFetcher(),
+    systemVolume: createSystemVolume(),
+    proxyPort: () => proxyPort,
+    remote,
+    engine,
+    lastError
+  })
   for (const name of CHANNELS) {
     ipcMain.handle(name, (_e, ...args) =>
       (handlers[name] as (...a: unknown[]) => unknown)(...args)

@@ -37,6 +37,9 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(0.8)
+  // true when the slider drives the OS volume (macOS); otherwise it scales this app only.
+  const [systemMode, setSystemMode] = useState(false)
+  const [lastUserVolumeAt, setLastUserVolumeAt] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
 
   const track = current(queue)
@@ -53,8 +56,30 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   }, [audio])
 
   useEffect(() => {
-    audio.volume = volume
-  }, [audio, volume])
+    audio.volume = systemMode ? 1 : volume
+  }, [audio, volume, systemMode])
+
+  // Follow the OS volume (keyboard keys, menu bar) while the app is open.
+  useEffect(() => {
+    let alive = true
+    const poll = async (): Promise<void> => {
+      const v = await window.phinas.getSystemVolume().catch(() => null)
+      if (!alive) return
+      if (v === null) {
+        setSystemMode(false)
+        return
+      }
+      setSystemMode(true)
+      // Do not fight the user's slider drag for a moment after they move it.
+      if (Date.now() - lastUserVolumeAt > 1500) setVolumeState(v)
+    }
+    void poll()
+    const t = setInterval(poll, 1000)
+    return () => {
+      alive = false
+      clearInterval(t)
+    }
+  }, [lastUserVolumeAt])
 
   useEffect(() => {
     const on = <K extends keyof HTMLMediaElementEventMap>(e: K, fn: () => void): (() => void) => {
@@ -124,10 +149,14 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       seek: (s) => {
         audio.currentTime = s
       },
-      setVolume: setVolumeState,
+      setVolume: (v) => {
+        setVolumeState(v)
+        setLastUserVolumeAt(Date.now())
+        if (systemMode) void window.phinas.setSystemVolume(v)
+      },
       dismissNotice: () => setNotice(null)
     }),
-    [queue, track, playing, time, duration, volume, notice, audio, advance]
+    [queue, track, playing, time, duration, volume, notice, audio, advance, systemMode]
   )
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>

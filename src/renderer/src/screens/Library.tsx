@@ -1,6 +1,7 @@
 import { ArrowLeft, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { PartnerPlaylist, Playlist, PlaylistWithTracks, Track } from '../../../shared/types'
+import { PlaylistCover } from '../components/PlaylistCover'
 import { TrackRow } from '../components/TrackRow'
 import { usePlayer } from '../player/PlayerProvider'
 
@@ -91,7 +92,8 @@ export function Library({ initialPlaylistId }: { initialPlaylistId?: string }): 
                 className={`list-item${selected?.id === p.id ? ' active' : ''}`}
                 onClick={async () => setSelected(await window.phinas.getPlaylist(p.id))}
               >
-                {p.name}
+                <PlaylistCover covers={p.coverUrls} size={40} />
+                <span className="list-name">{p.name}</span>
               </button>
             ))}
             {playlists.length === 0 && <p className="muted">Belum ada playlist.</p>}
@@ -99,7 +101,14 @@ export function Library({ initialPlaylistId }: { initialPlaylistId?: string }): 
           <div>
             {selected ? (
               <>
-                <h3 style={{ marginTop: 0 }}>{selected.name}</h3>
+                <div className="playlist-head">
+                  <PlaylistCover covers={selected.coverUrls} size={120} />
+                  <div>
+                    <div className="muted">Playlist</div>
+                    <h3 style={{ margin: '4px 0' }}>{selected.name}</h3>
+                    <div className="muted">{selected.tracks.length} lagu</div>
+                  </div>
+                </div>
                 <div className="tabs">
                   <button
                     className="btn"
@@ -151,7 +160,7 @@ export function Library({ initialPlaylistId }: { initialPlaylistId?: string }): 
             <div className="grid">
               {partner.map((p) => (
                 <button key={p.id} className="card" onClick={() => setOpenPartner(p)}>
-                  <div className="art" style={p.tracks[0] ? { backgroundImage: `url("${p.tracks[0].coverUrl}")` } : undefined} />
+                  <PlaylistCover covers={p.coverUrls} />
                   <strong>{p.name}</strong>
                   <span className="muted">{p.ownerName} · {p.tracks.length} lagu</span>
                 </button>

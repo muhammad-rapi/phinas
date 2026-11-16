@@ -3,6 +3,11 @@ import type { PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track }
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
   streamUrl(videoId: string): Promise<string>
+  /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
+  coverData(url: string): Promise<string>
+  /** OS output volume 0-1, or null when this platform is not supported. */
+  getSystemVolume(): Promise<number | null>
+  setSystemVolume(level: number): Promise<void>
   listPlaylists(): Promise<Playlist[]>
   getPlaylist(id: string): Promise<PlaylistWithTracks | null>
   createPlaylist(name: string): Promise<Playlist>
@@ -22,6 +27,9 @@ export interface PhinasApi {
 const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   search: true,
   streamUrl: true,
+  coverData: true,
+  getSystemVolume: true,
+  setSystemVolume: true,
   listPlaylists: true,
   getPlaylist: true,
   createPlaylist: true,

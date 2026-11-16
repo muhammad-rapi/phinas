@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PartnerPlaylist, Playlist } from '../../../shared/types'
+import { PlaylistCover } from '../components/PlaylistCover'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -31,7 +32,7 @@ export function Home({ onOpenPlaylist, onOpenPartner }: Props): React.JSX.Elemen
       <div className="grid">
         {playlists.map((p) => (
           <button key={p.id} className="card" onClick={() => onOpenPlaylist(p.id)}>
-            <div className="art" />
+            <PlaylistCover covers={p.coverUrls} />
             <strong>{p.name}</strong>
           </button>
         ))}
@@ -42,7 +43,7 @@ export function Home({ onOpenPlaylist, onOpenPartner }: Props): React.JSX.Elemen
           <div className="grid">
             {partner.map((p) => (
               <button key={p.id} className="card" onClick={onOpenPartner}>
-                <div className="art" style={p.tracks[0] ? { backgroundImage: `url("${p.tracks[0].coverUrl}")` } : undefined} />
+                <PlaylistCover covers={p.coverUrls} />
                 <strong>{p.name}</strong>
                 <span className="muted">{p.ownerName}</span>
               </button>

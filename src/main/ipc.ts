@@ -3,10 +3,13 @@ import type { Library } from './library/library'
 import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
 import type { SupabaseRemote } from './sync/supabase-remote'
+import type { SystemVolume } from './system-volume'
 
 export interface Deps {
   library: Library
   source: MusicSource
+  coverData: (url: string) => Promise<string>
+  systemVolume: SystemVolume
   proxyPort: () => number
   remote: SupabaseRemote | null
   engine: SyncEngine | null
@@ -22,6 +25,9 @@ export function createHandlers(d: Deps): PhinasApi {
   return {
     search: (q) => d.source.search(q),
     streamUrl: async (id) => `http://127.0.0.1:${d.proxyPort()}/stream/${id}`,
+    coverData: (url) => d.coverData(url),
+    getSystemVolume: () => d.systemVolume.get(),
+    setSystemVolume: (level) => d.systemVolume.set(level),
     listPlaylists: async () => d.library.listPlaylists(),
     getPlaylist: async (id) => d.library.getPlaylist(id),
     createPlaylist: async (name) => d.library.createPlaylist(name),

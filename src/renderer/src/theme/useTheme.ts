@@ -16,9 +16,9 @@ function readStored(): ThemeName {
 }
 
 async function coverPixels(url: string): Promise<Uint8ClampedArray> {
+  // Fetched by the main process and returned as a data URL, so the canvas is never tainted.
   const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = url
+  img.src = await window.phinas.coverData(url)
   await img.decode()
   const canvas = document.createElement('canvas')
   canvas.width = 32
@@ -63,8 +63,8 @@ export function useTheme(track: Track | null): { theme: ThemeName; setTheme: (t:
     }
     coverPixels(track.coverUrl)
       .then((px) => apply(accentVars(dominantColor(px))))
-      .catch(() => {
-        // CORS or decode failure: fall back to the default accent.
+      .catch((e) => {
+        console.warn('[theme] could not read cover colors, using default accent:', e)
         if (cancelled) return
         root.style.removeProperty('--accent')
         root.style.removeProperty('--grad-top')
