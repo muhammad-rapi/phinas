@@ -1,51 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1f4fd6"/>
-      <stop offset="1" stop-color="#3d97f2"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.28" cy="0.12" r="0.85">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="white" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e4f0ff"/>
-    </linearGradient>
-    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#bfe0ff"/>
-      <stop offset="1" stop-color="#86bffa"/>
-    </linearGradient>
-    <linearGradient id="black" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#23232c"/>
-      <stop offset="1" stop-color="#07070a"/>
-    </linearGradient>
-    <linearGradient id="orange" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffb42e"/>
-      <stop offset="1" stop-color="#ff6d12"/>
-    </linearGradient>
-    <filter id="soft" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0b1c5c" flood-opacity="0.26"/>
-    </filter>
-    <filter id="lit" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <feGaussianBlur stdDeviation="14" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <clipPath id="orb"><circle cx="512" cy="512" r="300"/></clipPath>
+    <clipPath id="label"><circle cx="512" cy="468" r="131.78625954198472"/></clipPath>
   </defs>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="#f1f6ff"/>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="none" stroke="#d3e1fa" stroke-width="4"/>
 
-  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#bg)"/>
-  <rect x="64" y="64" width="896" height="896" rx="208" fill="url(#glow)"/>
-  <rect x="76" y="76" width="872" height="872" rx="196" fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="7"/>
+  <circle cx="512" cy="468" r="332" fill="#12286f"/>
+  <circle cx="512" cy="468" r="281.3" fill="none" stroke="#27438f" stroke-width="6"/>
+  <circle cx="512" cy="468" r="240.8" fill="none" stroke="#27438f" stroke-width="6"/>
+  <circle cx="512" cy="468" r="200.2" fill="none" stroke="#27438f" stroke-width="6"/>
+  <path d="M281.3 408.8 A238.22900763358777 238.22900763358777 0 0 1 397.2 259.2" fill="none" stroke="#ffffff" stroke-opacity="0.34" stroke-width="11" stroke-linecap="round"/>
 
-  <g filter="url(#soft)"><circle cx="512" cy="512" r="300" fill="url(#white)"/></g>
+  <circle cx="512" cy="468" r="131.78625954198472" fill="#3a86f0"/>
+  <g clip-path="url(#label)"><rect x="380" y="500.9465648854962" width="620" height="7.603053435114504" fill="#ffffff"/><rect x="380" y="526.2900763358779" width="620" height="11.404580152671755" fill="#ffffff"/><rect x="380" y="554.1679389312977" width="620" height="15.206106870229007" fill="#ffffff"/><rect x="380" y="584.5801526717557" width="620" height="20.27480916030534" fill="#ffffff"/></g>
+  <circle cx="512" cy="468" r="19.00763358778626" fill="#ffffff"/>
 
-  <g clip-path="url(#orb)">
-    <path d="M362 212 V812" stroke="#c9defa" stroke-width="6"/><path d="M512 212 V812" stroke="#c9defa" stroke-width="6"/><path d="M662 212 V812" stroke="#c9defa" stroke-width="6"/>
-    <rect  x="618" y="212" width="88" height="268" rx="22" fill="url(#black)"/>
-    <rect filter="url(#lit)" x="468" y="212" width="88" height="268" rx="22" fill="url(#orange)"/>
-  </g>
-
-  <!-- the wave: the keys sink into it -->
-  <g clip-path="url(#orb)"><path d="M200.0 512.0 L205.2 515.7 L210.4 519.3 L215.6 523.0 L220.8 526.6 L226.0 530.1 L231.2 533.6 L236.4 537.1 L241.6 540.5 L246.8 543.8 L252.0 547.0 L257.2 550.1 L262.4 553.1 L267.6 556.1 L272.8 558.8 L278.0 561.5 L283.2 564.0 L288.4 566.4 L293.6 568.6 L298.8 570.7 L304.0 572.6 L309.2 574.4 L314.4 575.9 L319.6 577.4 L324.8 578.6 L330.0 579.6 L335.2 580.5 L340.4 581.1 L345.6 581.6 L350.8 581.9 L356.0 582.0 L361.2 581.9 L366.4 581.6 L371.6 581.1 L376.8 580.5 L382.0 579.6 L387.2 578.6 L392.4 577.4 L397.6 575.9 L402.8 574.4 L408.0 572.6 L413.2 570.7 L418.4 568.6 L423.6 566.4 L428.8 564.0 L434.0 561.5 L439.2 558.8 L444.4 556.1 L449.6 553.1 L454.8 550.1 L460.0 547.0 L465.2 543.8 L470.4 540.5 L475.6 537.1 L480.8 533.6 L486.0 530.1 L491.2 526.6 L496.4 523.0 L501.6 519.3 L506.8 515.7 L512.0 512.0 L517.2 508.3 L522.4 504.7 L527.6 501.0 L532.8 497.4 L538.0 493.9 L543.2 490.4 L548.4 486.9 L553.6 483.5 L558.8 480.2 L564.0 477.0 L569.2 473.9 L574.4 470.9 L579.6 467.9 L584.8 465.2 L590.0 462.5 L595.2 460.0 L600.4 457.6 L605.6 455.4 L610.8 453.3 L616.0 451.4 L621.2 449.6 L626.4 448.1 L631.6 446.6 L636.8 445.4 L642.0 444.4 L647.2 443.5 L652.4 442.9 L657.6 442.4 L662.8 442.1 L668.0 442.0 L673.2 442.1 L678.4 442.4 L683.6 442.9 L688.8 443.5 L694.0 444.4 L699.2 445.4 L704.4 446.6 L709.6 448.1 L714.8 449.6 L720.0 451.4 L725.2 453.3 L730.4 455.4 L735.6 457.6 L740.8 460.0 L746.0 462.5 L751.2 465.2 L756.4 467.9 L761.6 470.9 L766.8 473.9 L772.0 477.0 L777.2 480.2 L782.4 483.5 L787.6 486.9 L792.8 490.4 L798.0 493.9 L803.2 497.4 L808.4 501.0 L813.6 504.7 L818.8 508.3 L824.0 512.0 L824 832 L200 832 Z" fill="url(#sky)" fill-opacity="0.92"/></g>
+  <path d="M318 872 C333.3 872.0 389.7 876.7 410 872 C430.3 867.3 430.0 838.7 440 844 C450.0 849.3 460.0 907.0 470 904 C480.0 901.0 490.0 827.3 500 826 C510.0 824.7 520.7 890.7 530 896 C539.3 901.3 546.7 862.0 556 858 C565.3 854.0 561.0 869.7 586 872 C611.0 874.3 686.0 872.0 706 872" fill="none" stroke="#12286f" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
