@@ -3,7 +3,23 @@
 const fs = require('node:fs')
 const path = require('node:path')
 
+const { execFileSync } = require('node:child_process')
+
+/**
+ * macOS: packaging renames and re-icons Electron.app, which breaks its code signature, and
+ * Apple Silicon Macs refuse a downloaded app with a broken signature ("is damaged"). Without a
+ * paid Developer ID we sign ad-hoc ("-"): the signature is valid, so macOS shows the normal
+ * "cannot verify the developer" prompt instead, which can be dismissed in System Settings.
+ */
+function signMacAdHoc(context) {
+  const app = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`)
+  execFileSync('codesign', ['--force', '--deep', '--sign', '-', app], { stdio: 'inherit' })
+  execFileSync('codesign', ['--verify', '--deep', '--strict', app], { stdio: 'inherit' })
+  console.log(`  • afterPack: ${path.basename(app)} signed ad-hoc and verified`)
+}
+
 exports.default = async function afterPack(context) {
+  if (context.electronPlatformName === 'darwin') return signMacAdHoc(context)
   if (context.electronPlatformName !== 'win32') return
   const ResEdit = await import('resedit')
   const exePath = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.exe`)
