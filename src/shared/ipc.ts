@@ -8,6 +8,8 @@ export interface PhinasApi {
   getLyrics(track: Track): Promise<Lyrics | null>
   /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
   coverData(url: string): Promise<string>
+  /** Minimise or toggle fullscreen, or just read the state. Returns whether the window is fullscreen. */
+  windowControl(action: 'minimize' | 'toggleFullscreen' | 'state'): Promise<boolean>
   /** OS output volume 0-1, or null when this platform is not supported. */
   getSystemVolume(): Promise<number | null>
   setSystemVolume(level: number): Promise<void>
@@ -33,6 +35,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   streamUrl: true,
   getLyrics: true,
   coverData: true,
+  windowControl: true,
   getSystemVolume: true,
   setSystemVolume: true,
   listPlaylists: true,

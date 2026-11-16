@@ -26,6 +26,7 @@ function Shell(): React.JSX.Element {
   const [view, setView] = useState<View>({ name: 'home' })
   const [query, setQuery] = useState('')
   const [submitNonce, setSubmitNonce] = useState(0)
+  const [fullscreen, setFullscreen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   const nav: Nav = (v) => {
@@ -38,6 +39,42 @@ function Shell(): React.JSX.Element {
     // Emptying the box leaves the results page instead of showing a blank one.
     setView(q.trim() ? { name: 'search' } : (v) => (v.name === 'search' ? { name: 'home' } : v))
   }
+
+  // Keep the fullscreen button in step with the window, whoever changed it (button, F11, the OS).
+  useEffect(() => {
+    const sync = (): void => void window.phinas.windowControl('state').then(setFullscreen)
+    sync()
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [])
+
+  // Keyboard shortcuts. Cmd on a Mac, Ctrl on Windows. The ref keeps the listener registered once
+  // even though `player` changes on every time update.
+  const playerRef = useRef(player)
+  playerRef.current = player
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const typing = (e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable]') !== null
+      const mod = e.metaKey || e.ctrlKey
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>('.searchpill input')?.focus()
+      } else if (typing) {
+        return
+      } else if (e.code === 'Space' && !mod) {
+        e.preventDefault()
+        playerRef.current.toggle()
+      } else if (mod && e.key === 'ArrowRight') {
+        e.preventDefault()
+        playerRef.current.next()
+      } else if (mod && e.key === 'ArrowLeft') {
+        e.preventDefault()
+        playerRef.current.prev()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Every new screen starts at the top.
   useEffect(() => {
@@ -84,6 +121,9 @@ function Shell(): React.JSX.Element {
         homeActive={view.name === 'home'}
         profileActive={view.name === 'profile'}
         initial={profile.initial}
+        fullscreen={fullscreen}
+        onMinimize={() => void window.phinas.windowControl('minimize')}
+        onFullscreen={() => void window.phinas.windowControl('toggleFullscreen').then(setFullscreen)}
       />
       <LibraryPanel view={view} nav={nav} />
       <main ref={mainRef} className="panel main">

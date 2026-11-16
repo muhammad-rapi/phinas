@@ -98,7 +98,8 @@ h1, h2, h3, h4 { margin: 0; }
 .topbar-brand { -webkit-app-region: drag; padding-left: 8px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; color: var(--text); }
 :root[data-platform='mac'] .topbar-brand { padding-left: 84px; }
 .topbar-center { display: flex; align-items: center; justify-content: center; gap: 10px; }
-.topbar-right { display: flex; justify-content: flex-end; padding-right: 8px; }
+.topbar-right { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-right: 8px; }
+.round-btn.small { width: 36px; height: 36px; }
 .round-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(20px); color: var(--muted); transition: transform 0.15s, color 0.15s, background 0.15s; }
 .round-btn:hover { color: var(--text); transform: scale(1.06); background: var(--hover); }
 .round-btn.active { color: var(--text); }

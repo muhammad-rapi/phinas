@@ -1,4 +1,4 @@
-import { Clock, Home, Search, X } from 'lucide-react'
+import { Clock, Home, Maximize2, Minimize2, Minus, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Track } from '../../../shared/types'
 import { entryKey, type RecentEntry } from '../search/recent'
@@ -16,6 +16,9 @@ interface Props {
   homeActive: boolean
   profileActive: boolean
   initial: string
+  fullscreen: boolean
+  onMinimize: () => void
+  onFullscreen: () => void
 }
 
 export function TopBar({
@@ -29,7 +32,10 @@ export function TopBar({
   onProfile,
   homeActive,
   profileActive,
-  initial
+  initial,
+  fullscreen,
+  onMinimize,
+  onFullscreen
 }: Props): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -53,7 +59,7 @@ export function TopBar({
 
   return (
     <header className="topbar">
-      <div className="topbar-brand">Phinas</div>
+      <div className="topbar-brand" />
       <form className="topbar-center" onSubmit={submit}>
         <button type="button" className={`round-btn${homeActive ? ' active' : ''}`} onClick={onHome} aria-label="Home">
           <Home size={22} />
@@ -123,6 +129,17 @@ export function TopBar({
         </div>
       </form>
       <div className="topbar-right">
+        <button className="round-btn small" onClick={onMinimize} aria-label="Perkecil jendela" title="Perkecil">
+          <Minus size={18} />
+        </button>
+        <button
+          className="round-btn small"
+          onClick={onFullscreen}
+          aria-label={fullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
+          title={fullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
+        >
+          {fullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+        </button>
         <button className={`profile-btn${profileActive ? ' active' : ''}`} onClick={onProfile} aria-label="Profil">
           {initial}
         </button>

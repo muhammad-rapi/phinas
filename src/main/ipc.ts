@@ -12,6 +12,7 @@ export interface Deps {
   source: MusicSource
   coverData: (url: string) => Promise<string>
   systemVolume: SystemVolume
+  windowControl: (action: 'minimize' | 'toggleFullscreen' | 'state') => boolean
   proxyPort: () => number
   remote: SupabaseRemote | null
   engine: SyncEngine | null
@@ -38,6 +39,7 @@ export function createHandlers(d: Deps): PhinasApi {
     getHomeFeed: () => d.source.getHomeFeed(),
     streamUrl: async (id) => `http://127.0.0.1:${d.proxyPort()}/stream/${id}`,
     coverData: (url) => d.coverData(url),
+    windowControl: async (action) => d.windowControl(action),
     getSystemVolume: () => d.systemVolume.get(),
     setSystemVolume: (level) => d.systemVolume.set(level),
     listPlaylists: async () => d.library.listPlaylists(),

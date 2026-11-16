@@ -25,6 +25,8 @@ function createWindow(): void {
     minHeight: 600,
     backgroundColor: '#000000',
     title: 'Phinas',
+    // Windows and Linux: no File/Edit/View bar (Alt shows it); F11 still toggles fullscreen.
+    autoHideMenuBar: true,
     icon,
     // On Mac the traffic-light buttons sit inside our top bar instead of a separate title bar.
     ...(process.platform === 'darwin'
@@ -81,6 +83,13 @@ app.whenReady().then(async () => {
     source,
     coverData: createCoverFetcher(),
     systemVolume: createSystemVolume(),
+    windowControl: (action) => {
+      const w = BrowserWindow.getAllWindows()[0]
+      if (!w) return false
+      if (action === 'minimize') w.minimize()
+      else if (action === 'toggleFullscreen') w.setFullScreen(!w.isFullScreen())
+      return w.isFullScreen()
+    },
     proxyPort: () => proxyPort,
     remote,
     engine,
