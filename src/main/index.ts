@@ -59,7 +59,7 @@ app.whenReady().then(async () => {
   const library = new Library(openDb(join(userData, 'phinas.db')))
   const source = new YoutubeMusicSource(app.getLocaleCountryCode() || undefined)
 
-  const proxy = createStreamProxy((id) => source.getStreamUrl(id))
+  const proxy = createStreamProxy((id, fresh) => source.getStreamUrl(id, fresh))
   const proxyPort = await proxy.start()
 
   const url = import.meta.env.MAIN_VITE_SUPABASE_URL as string | undefined

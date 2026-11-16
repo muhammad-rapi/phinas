@@ -15,6 +15,10 @@ let resolveCalls = 0
 beforeAll(async () => {
   // Mimics googlevideo: open-ended or over-large ranges are rejected with 403.
   upstream = http.createServer((req, res) => {
+    if (req.url === '/stale') {
+      res.writeHead(403).end()
+      return
+    }
     const data = req.url === '/big' ? BIG : BODY
     const range = /bytes=(\d+)-(\d*)/.exec(req.headers.range ?? '')
     if (!range) {
@@ -39,9 +43,11 @@ beforeAll(async () => {
   await new Promise<void>((r) => upstream.listen(0, '127.0.0.1', r))
   upstreamUrl = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}/a`
 
-  proxy = createStreamProxy(async (id) => {
+  proxy = createStreamProxy(async (id, fresh) => {
     resolveCalls++
     if (id === 'badvideo000') throw new Error('nope')
+    // A stale signed url is rejected; a freshly resolved one works.
+    if (id === 'stalevideo0') return fresh ? upstreamUrl : upstreamUrl.replace('/a', '/stale')
     if (id === 'bigvideo000') return upstreamUrl.replace('/a', '/big')
     return upstreamUrl
   })
@@ -90,6 +96,16 @@ test('caches the resolved url', async () => {
   const before = resolveCalls
   await (await get('/stream/video000001')).arrayBuffer()
   await (await get('/stream/video000001')).arrayBuffer()
+  expect(resolveCalls).toBe(before)
+})
+
+test('a 403 from a stale url is retried once with a fresh url', async () => {
+  const res = await get('/stream/stalevideo0', { range: 'bytes=2-5' })
+  expect(res.status).toBe(206)
+  expect(Buffer.from(await res.arrayBuffer()).toString()).toBe('2345')
+  // The fresh url is remembered, so the next request needs no new resolve.
+  const before = resolveCalls
+  await (await get('/stream/stalevideo0', { range: 'bytes=6-7' })).arrayBuffer()
   expect(resolveCalls).toBe(before)
 })
 

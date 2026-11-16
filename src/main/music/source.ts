@@ -4,7 +4,8 @@ import { mapSongItem, sectionTracks, type RawSection, type RawSong } from './map
 
 export interface MusicSource {
   search(query: string): Promise<Track[]>
-  getStreamUrl(videoId: string): Promise<string>
+  /** `fresh` starts a new YouTube session first (used after a URL was rejected). */
+  getStreamUrl(videoId: string, fresh?: boolean): Promise<string>
   getHomeFeed(): Promise<HomeFeed>
 }
 
@@ -61,7 +62,8 @@ export class YoutubeMusicSource implements MusicSource {
     return feed
   }
 
-  async getStreamUrl(videoId: string): Promise<string> {
+  async getStreamUrl(videoId: string, fresh = false): Promise<string> {
+    if (fresh) this.yt = undefined
     const yt = await this.client()
     let lastError: unknown = new Error('No stream available')
     for (const client of CLIENTS) {

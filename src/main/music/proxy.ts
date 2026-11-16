@@ -16,18 +16,33 @@ export function clampRange(header: string | undefined): string {
   return `bytes=${start}-${end}`
 }
 
-export function createStreamProxy(resolveUrl: (videoId: string) => Promise<string>): {
+/**
+ * `resolveUrl(id, fresh)`: with `fresh` true the caller must not reuse anything cached, because
+ * the previous URL was just rejected.
+ */
+export function createStreamProxy(resolveUrl: (videoId: string, fresh?: boolean) => Promise<string>): {
   start(): Promise<number>
   stop(): Promise<void>
 } {
   const cache = new Map<string, { url: string; at: number }>()
 
-  async function urlFor(id: string): Promise<string> {
+  async function urlFor(id: string, fresh = false): Promise<string> {
     const hit = cache.get(id)
-    if (hit && Date.now() - hit.at < TTL_MS) return hit.url
-    const url = await resolveUrl(id)
+    if (!fresh && hit && Date.now() - hit.at < TTL_MS) return hit.url
+    const url = await resolveUrl(id, fresh)
     cache.set(id, { url, at: Date.now() })
     return url
+  }
+
+  /** A 403 usually means the signed URL went stale, so retry once with a freshly resolved one. */
+  async function fetchUpstream(id: string, range: string, signal: AbortSignal): Promise<Response> {
+    let upstream = await fetch(await urlFor(id), { headers: { range }, signal })
+    if (upstream.status === 403) {
+      await upstream.body?.cancel()
+      console.error(`[stream-proxy] ${id}: 403 for ${range}, retrying with a fresh url`)
+      upstream = await fetch(await urlFor(id, true), { headers: { range }, signal })
+    }
+    return upstream
   }
 
   const server = http.createServer(async (req, res) => {
@@ -40,11 +55,7 @@ export function createStreamProxy(resolveUrl: (videoId: string) => Promise<strin
     const ac = new AbortController()
     res.on('close', () => ac.abort())
     try {
-      const url = await urlFor(id)
-      const upstream = await fetch(url, {
-        headers: { range: clampRange(req.headers.range) },
-        signal: ac.signal
-      })
+      const upstream = await fetchUpstream(id, clampRange(req.headers.range), ac.signal)
       if (upstream.status >= 400 || !upstream.body) {
         console.error(`[stream-proxy] ${id}: upstream returned ${upstream.status} for ${clampRange(req.headers.range)}`)
         cache.delete(id)
