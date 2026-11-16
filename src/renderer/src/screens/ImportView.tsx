@@ -68,9 +68,6 @@ export function ImportView({ nav }: { nav: Nav }): React.JSX.Element {
         </button>
       </form>
 
-      {state.step === 'working' && (
-        <p className="muted">Mencocokkan lagu di YouTube Music. Ini bisa memakan waktu sampai satu menit.</p>
-      )}
       {state.step === 'error' && <div className="notice">{state.message}</div>}
 
       {state.step === 'done' && (
