@@ -1,7 +1,8 @@
-import type { PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { HomeFeed, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
+  getHomeFeed(): Promise<HomeFeed>
   streamUrl(videoId: string): Promise<string>
   /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
   coverData(url: string): Promise<string>
@@ -26,6 +27,7 @@ export interface PhinasApi {
 
 const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   search: true,
+  getHomeFeed: true,
   streamUrl: true,
   coverData: true,
   getSystemVolume: true,

@@ -6,6 +6,13 @@ export interface Track {
   durationSec: number
 }
 
+export interface HomeFeed {
+  /** What is trending now in the user's region. */
+  trending: Track[]
+  /** Personalised-looking quick picks from the anonymous home feed. */
+  picks: Track[]
+}
+
 export interface Playlist {
   id: string
   name: string

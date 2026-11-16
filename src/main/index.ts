@@ -6,6 +6,7 @@ import { CHANNELS } from '../shared/ipc'
 import { createHandlers } from './ipc'
 import { openDb } from './library/db'
 import { Library } from './library/library'
+import { maybeCaptureAndQuit } from './dev-shot'
 import { createCoverFetcher } from './music/cover'
 import { createStreamProxy } from './music/proxy'
 import { createSystemVolume } from './system-volume'
@@ -27,6 +28,7 @@ function createWindow(): void {
     icon,
     webPreferences: { preload: join(here, '../preload/index.mjs'), sandbox: false }
   })
+  maybeCaptureAndQuit(win)
   if (process.env['ELECTRON_RENDERER_URL']) win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   else win.loadFile(join(here, '../renderer/index.html'))
 }
@@ -51,7 +53,7 @@ app.whenReady().then(async () => {
   applyCsp()
   const userData = app.getPath('userData')
   const library = new Library(openDb(join(userData, 'phinas.db')))
-  const source = new YoutubeMusicSource()
+  const source = new YoutubeMusicSource(app.getLocaleCountryCode() || undefined)
 
   const proxy = createStreamProxy((id) => source.getStreamUrl(id))
   const proxyPort = await proxy.start()

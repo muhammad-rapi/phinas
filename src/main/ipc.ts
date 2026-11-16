@@ -24,6 +24,7 @@ export function createHandlers(d: Deps): PhinasApi {
 
   return {
     search: (q) => d.source.search(q),
+    getHomeFeed: () => d.source.getHomeFeed(),
     streamUrl: async (id) => `http://127.0.0.1:${d.proxyPort()}/stream/${id}`,
     coverData: (url) => d.coverData(url),
     getSystemVolume: () => d.systemVolume.get(),

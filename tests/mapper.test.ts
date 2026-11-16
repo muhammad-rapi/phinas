@@ -1,5 +1,39 @@
 import { describe, expect, test } from 'vitest'
-import { mapSongItem, upsizeCover } from '../src/main/music/mapper'
+import { mapSongItem, sectionTracks, upsizeCover } from '../src/main/music/mapper'
+
+describe('author fallback', () => {
+  test('uses authors when artists is missing (video items)', () => {
+    expect(
+      mapSongItem({ id: 'y1sg-gnbJNs', title: 'Laut Kidul', authors: [{ name: 'Jeyma Monica' }] })?.artist
+    ).toBe('Jeyma Monica')
+  })
+})
+
+describe('sectionTracks', () => {
+  const item = (id: string, title: string) => ({ id, title, artists: [{ name: 'A' }] })
+  const sections = [
+    { header: { title: { text: 'Quick picks' } }, contents: [item('aaaaaaaaaaa', 'One'), { title: 'no id' }] },
+    { header: { title: { text: 'Trending' } }, contents: [item('bbbbbbbbbbb', 'Two'), item('ccccccccccc', 'Three')] },
+    { contents: [item('ddddddddddd', 'Headerless')] }
+  ]
+
+  test('finds a section by title (case-insensitive) and maps its items', () => {
+    expect(sectionTracks(sections, 'trending').map((t) => t.title)).toEqual(['Two', 'Three'])
+  })
+
+  test('drops items that cannot be mapped', () => {
+    expect(sectionTracks(sections, 'Quick picks').map((t) => t.title)).toEqual(['One'])
+  })
+
+  test('applies the limit', () => {
+    expect(sectionTracks(sections, 'Trending', 1)).toHaveLength(1)
+  })
+
+  test('returns an empty list for a missing section or undefined input', () => {
+    expect(sectionTracks(sections, 'Nope')).toEqual([])
+    expect(sectionTracks(undefined, 'Trending')).toEqual([])
+  })
+})
 
 describe('upsizeCover', () => {
   test('replaces the size suffix', () => {
