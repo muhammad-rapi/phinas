@@ -59,6 +59,11 @@ function applyCsp(): void {
   })
 }
 
+// Screenshot runs use a throwaway profile, so nothing of the real library or login is captured.
+if (process.env['PHINAS_SHOT'] && process.env['PHINAS_SHOT_PROFILE']) {
+  app.setPath('userData', process.env['PHINAS_SHOT_PROFILE'])
+}
+
 app.whenReady().then(async () => {
   app.setName('Phinas')
   app.dock?.setIcon(icon)

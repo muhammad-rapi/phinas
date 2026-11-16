@@ -38,7 +38,14 @@ export function LyricsPanel({ track, large = false }: { track: Track; large?: bo
 
   // Keep the sung line in view as the song plays.
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    // Scroll only the lyrics list. scrollIntoView would also move every scrollable ancestor,
+    // which pushed the title bar of the full-size view out of sight.
+    const el = activeRef.current
+    const box = el?.closest<HTMLElement>('.lyrics-full-body, .right')
+    if (!el || !box) return
+    const e = el.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    box.scrollBy({ top: e.top - b.top - box.clientHeight / 2 + e.height / 2, behavior: 'smooth' })
   }, [active])
 
   if (state.status === 'loading') return <p className="muted lyrics-note">Mencari lirik...</p>
