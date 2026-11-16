@@ -1,11 +1,11 @@
-import { Disc3 } from 'lucide-react'
+import { Disc3, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { usePlayer } from '../player/PlayerProvider'
 import { LyricsPanel } from './LyricsPanel'
 
 type Tab = 'queue' | 'lyrics'
 
-export function NowPlaying(): React.JSX.Element {
+export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): React.JSX.Element {
   const p = usePlayer()
   const [tab, setTab] = useState<Tab>('queue')
   if (!p.track) {
@@ -26,6 +26,11 @@ export function NowPlaying(): React.JSX.Element {
         <button role="tab" aria-selected={tab === 'lyrics'} className={tab === 'lyrics' ? 'active' : ''} onClick={() => setTab('lyrics')}>
           Lirik
         </button>
+        {tab === 'lyrics' && (
+          <button className="icon-btn np-expand" onClick={onExpandLyrics} aria-label="Perbesar lirik" title="Perbesar lirik">
+            <Maximize2 size={18} />
+          </button>
+        )}
       </div>
 
       {tab === 'queue' ? (

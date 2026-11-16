@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { mapSongItem, sectionTracks, upsizeCover } from '../src/main/music/mapper'
+import { mapPlaylistItem, mapSongItem, sectionTracks, upsizeCover } from '../src/main/music/mapper'
 
 describe('author fallback', () => {
   test('uses authors when artists is missing (video items)', () => {
@@ -84,5 +84,24 @@ describe('mapSongItem', () => {
       coverUrl: '',
       durationSec: 0
     })
+  })
+})
+
+describe('mapPlaylistItem', () => {
+  test('maps a search result, taking the biggest thumbnail', () => {
+    const p = mapPlaylistItem({
+      id: 'VLPL123',
+      title: 'Lofi mix',
+      author: { name: ' Someone ' },
+      thumbnails: [
+        { url: 'https://x/=w60-h60', width: 60 },
+        { url: 'https://x/=w226-h226', width: 226 }
+      ]
+    })
+    expect(p).toEqual({ id: 'VLPL123', title: 'Lofi mix', author: 'Someone', coverUrl: 'https://x/=w544-h544' })
+  })
+  test('falls back when author or thumbnails are missing, and skips items without an id', () => {
+    expect(mapPlaylistItem({ id: 'VLPL1', title: 'T' })).toEqual({ id: 'VLPL1', title: 'T', author: 'YouTube Music', coverUrl: '' })
+    expect(mapPlaylistItem({ title: 'No id' })).toBeNull()
   })
 })

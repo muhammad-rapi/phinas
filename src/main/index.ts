@@ -23,6 +23,8 @@ function createWindow(): void {
     height: 800,
     minWidth: 960,
     minHeight: 600,
+    // Screenshot runs (dev helper) stay hidden so they never steal keystrokes from the real app.
+    show: !process.env['PHINAS_SHOT'],
     backgroundColor: '#000000',
     title: 'Phinas',
     // Windows and Linux: no File/Edit/View bar (Alt shows it); F11 still toggles fullscreen.
@@ -32,7 +34,11 @@ function createWindow(): void {
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 20, y: 24 } }
       : {}),
-    webPreferences: { preload: join(here, '../preload/index.mjs'), sandbox: false }
+    webPreferences: {
+      preload: join(here, '../preload/index.mjs'),
+      sandbox: false,
+      backgroundThrottling: !process.env['PHINAS_SHOT']
+    }
   })
   maybeCaptureAndQuit(win)
   if (process.env['ELECTRON_RENDERER_URL']) win.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -83,13 +89,6 @@ app.whenReady().then(async () => {
     source,
     coverData: createCoverFetcher(),
     systemVolume: createSystemVolume(),
-    windowControl: (action) => {
-      const w = BrowserWindow.getAllWindows()[0]
-      if (!w) return false
-      if (action === 'minimize') w.minimize()
-      else if (action === 'toggleFullscreen') w.setFullScreen(!w.isFullScreen())
-      return w.isFullScreen()
-    },
     proxyPort: () => proxyPort,
     remote,
     engine,

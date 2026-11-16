@@ -1,12 +1,14 @@
 import { Innertube } from 'youtubei.js'
-import type { HomeFeed, Track } from '../../shared/types'
-import { mapSongItem, sectionTracks, type RawSection, type RawSong } from './mapper'
+import type { HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
+import { mapPlaylistItem, mapSongItem, sectionTracks, type RawPlaylistItem, type RawSection, type RawSong } from './mapper'
 
 export interface MusicSource {
   search(query: string): Promise<Track[]>
   /** `fresh` starts a new YouTube session first (used after a URL was rejected). */
   getStreamUrl(videoId: string, fresh?: boolean): Promise<string>
   getHomeFeed(): Promise<HomeFeed>
+  searchPlaylists(query: string): Promise<PublicPlaylist[]>
+  getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
 }
 
 const HOME_TTL_MS = 10 * 60 * 1000
@@ -41,6 +43,37 @@ export class YoutubeMusicSource implements MusicSource {
     const res = await yt.music.search(query, { type: 'song' })
     const items = (res.songs?.contents ?? []) as unknown as RawSong[]
     return items.map(mapSongItem).filter((t): t is Track => t !== null)
+  }
+
+  async searchPlaylists(query: string): Promise<PublicPlaylist[]> {
+    const yt = await this.client()
+    const res = await yt.music.search(query, { type: 'playlist' })
+    const items = (res.playlists?.contents ?? []) as unknown as RawPlaylistItem[]
+    return items.map(mapPlaylistItem).filter((p): p is PublicPlaylist => p !== null)
+  }
+
+  async getPublicPlaylist(id: string): Promise<PublicPlaylistDetail> {
+    const yt = await this.client()
+    const pl = await yt.music.getPlaylist(id)
+    const tracks = ((pl.items ?? []) as unknown as RawSong[]).map(mapSongItem).filter((t): t is Track => t !== null)
+    const header = pl.header as unknown as {
+      title?: { text?: string }
+      strapline_text_one?: { text?: string }
+      thumbnail?: { contents?: { url: string; width: number }[] }
+    } | undefined
+    const asItem = mapPlaylistItem({
+      id,
+      title: header?.title?.text,
+      author: { name: header?.strapline_text_one?.text },
+      thumbnails: header?.thumbnail?.contents
+    })
+    return {
+      id,
+      title: asItem?.title ?? 'Playlist',
+      author: asItem?.author ?? 'YouTube Music',
+      coverUrl: asItem?.coverUrl || tracks[0]?.coverUrl || '',
+      tracks
+    }
   }
 
   async getHomeFeed(): Promise<HomeFeed> {

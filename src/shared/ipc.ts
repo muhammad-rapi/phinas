@@ -1,8 +1,12 @@
-import type { HomeFeed, ImportResult, Lyrics, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
   getHomeFeed(): Promise<HomeFeed>
+  /** Public playlists matching the search text. */
+  searchPlaylists(query: string): Promise<PublicPlaylist[]>
+  /** One public playlist with its songs (the first page, about 100). */
+  getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
   streamUrl(videoId: string): Promise<string>
   /** Lyrics from LRCLIB, or null when the song has none. Rejects on network errors. */
   getLyrics(track: Track): Promise<Lyrics | null>
@@ -10,8 +14,6 @@ export interface PhinasApi {
   importSpotify(link: string): Promise<ImportResult>
   /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
   coverData(url: string): Promise<string>
-  /** Minimise or toggle fullscreen, or just read the state. Returns whether the window is fullscreen. */
-  windowControl(action: 'minimize' | 'toggleFullscreen' | 'state'): Promise<boolean>
   /** OS output volume 0-1, or null when this platform is not supported. */
   getSystemVolume(): Promise<number | null>
   setSystemVolume(level: number): Promise<void>
@@ -34,11 +36,12 @@ export interface PhinasApi {
 const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   search: true,
   getHomeFeed: true,
+  searchPlaylists: true,
+  getPublicPlaylist: true,
   streamUrl: true,
   getLyrics: true,
   importSpotify: true,
   coverData: true,
-  windowControl: true,
   getSystemVolume: true,
   setSystemVolume: true,
   listPlaylists: true,

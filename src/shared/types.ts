@@ -17,6 +17,18 @@ export interface Lyrics {
   plain: string | null
 }
 
+/** A playlist from YouTube Music's public catalogue (not one of ours). */
+export interface PublicPlaylist {
+  id: string
+  title: string
+  author: string
+  coverUrl: string
+}
+
+export interface PublicPlaylistDetail extends PublicPlaylist {
+  tracks: Track[]
+}
+
 /** A Spotify playlist or album matched against YouTube Music. */
 export interface ImportResult {
   name: string

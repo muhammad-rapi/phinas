@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Track } from '../../../shared/types'
+import type { PublicPlaylist, Track } from '../../../shared/types'
+import { CoverArt, MediaCard } from '../components/MediaCard'
+import { Shelf } from '../components/Shelf'
 import { TrackRow } from '../components/TrackRow'
 import { usePlayer } from '../player/PlayerProvider'
+import type { Nav } from '../views'
 
 const DEBOUNCE_MS = 350
 
@@ -11,11 +14,13 @@ interface Props {
   submitNonce: number
   /** A song was picked from the results. */
   onPick: (track: Track, typed: string) => void
+  nav: Nav
 }
 
-export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element {
+export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.Element {
   const player = usePlayer()
   const [results, setResults] = useState<Track[]>([])
+  const [playlists, setPlaylists] = useState<PublicPlaylist[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Ignore answers from older requests when the user keeps typing.
@@ -27,6 +32,7 @@ export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element
     const id = ++requestId.current
     if (!q) {
       setResults([])
+      setPlaylists([])
       setLoading(false)
       setError(null)
       return
@@ -35,6 +41,11 @@ export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element
     const immediate = seenNonce.current !== submitNonce
     seenNonce.current = submitNonce
     const timer = setTimeout(async () => {
+      // Playlists are a bonus: if they fail to load, the songs still show.
+      window.phinas
+        .searchPlaylists(q)
+        .then((found) => id === requestId.current && setPlaylists(found))
+        .catch(() => id === requestId.current && setPlaylists([]))
       try {
         const found = await window.phinas.search(q)
         if (id !== requestId.current) return
@@ -61,6 +72,20 @@ export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element
           <h2 className="page-title">Hasil untuk &ldquo;{q}&rdquo;</h2>
           {loading && results.length === 0 && <p className="muted">Mencari...</p>}
           {!loading && !error && results.length === 0 && <p className="muted">Tidak ada hasil.</p>}
+          {playlists.length > 0 && (
+            <Shelf title="Playlist">
+              {playlists.map((p) => (
+                <MediaCard
+                  key={p.id}
+                  art={<CoverArt url={p.coverUrl} />}
+                  title={p.title}
+                  subtitle={p.author}
+                  onOpen={() => nav({ name: 'public', id: p.id, author: p.author })}
+                />
+              ))}
+            </Shelf>
+          )}
+          {results.length > 0 && playlists.length > 0 && <h3 className="shelf-title" style={{ margin: '8px 0 8px' }}>Lagu</h3>}
           {results.map((t, i) => (
             <TrackRow
               key={t.videoId}

@@ -7,6 +7,7 @@ export type View =
   | { name: 'liked' }
   | { name: 'playlist'; id: string }
   | { name: 'partner'; id: string }
+  | { name: 'public'; id: string; author?: string }
 
 export type Nav = (view: View) => void
 

@@ -28,7 +28,7 @@ function useLyrics(track: Track): { state: State; retry: () => void } {
   return { state, retry: useCallback(() => setAttempt((n) => n + 1), []) }
 }
 
-export function LyricsPanel({ track }: { track: Track }): React.JSX.Element {
+export function LyricsPanel({ track, large = false }: { track: Track; large?: boolean }): React.JSX.Element {
   const { time, seek } = usePlayer()
   const { state, retry } = useLyrics(track)
   const activeRef = useRef<HTMLButtonElement>(null)
@@ -55,7 +55,7 @@ export function LyricsPanel({ track }: { track: Track }): React.JSX.Element {
   }
   if (lines) {
     return (
-      <div className="lyrics">
+      <div className={`lyrics${large ? ' lyrics-large' : ''}`}>
         {lines.map((l, i) => (
           <button
             key={i}
@@ -69,5 +69,5 @@ export function LyricsPanel({ track }: { track: Track }): React.JSX.Element {
       </div>
     )
   }
-  return <div className="lyrics lyrics-plain">{state.lyrics.plain}</div>
+  return <div className={`lyrics lyrics-plain${large ? ' lyrics-large' : ''}`}>{state.lyrics.plain}</div>
 }
