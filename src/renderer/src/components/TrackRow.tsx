@@ -1,76 +1,85 @@
-import { Heart, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import type { Playlist, Track } from '../../../shared/types'
+import { Heart, ListPlus, Play, X } from 'lucide-react'
+import { useState } from 'react'
+import type { Track } from '../../../shared/types'
+import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 
-const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+export const formatTime = (s: number): string =>
+  `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
 interface Props {
   track: Track
+  /** Shown instead of the cover's play icon until hovered (e.g. the position in a playlist). */
+  index?: number
   onPlay: () => void
   /** Show a remove button (used inside a playlist). */
   onRemove?: () => void
-  /** Show the add-to-playlist picker. */
-  playlists?: Playlist[]
+  /** Show the add-to-playlist menu. */
+  showAdd?: boolean
 }
 
-export function TrackRow({ track, onPlay, onRemove, playlists }: Props): React.JSX.Element {
-  const { track: playing } = usePlayer()
-  const [liked, setLiked] = useState(false)
-
-  useEffect(() => {
-    let alive = true
-    window.phinas.listLikes().then((l) => alive && setLiked(l.some((x) => x.videoId === track.videoId)))
-    return () => {
-      alive = false
-    }
-  }, [track.videoId])
+export function TrackRow({ track, index, onPlay, onRemove, showAdd }: Props): React.JSX.Element {
+  const player = usePlayer()
+  const lib = useLibrary()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const isCurrent = player.track?.videoId === track.videoId
+  const liked = lib.likes.some((x) => x.videoId === track.videoId)
 
   const toggleLike = async (): Promise<void> => {
     await window.phinas.setLiked(track, !liked)
-    setLiked(!liked)
+    await lib.refresh()
   }
 
   const addTo = async (playlistId: string): Promise<void> => {
-    if (playlistId) await window.phinas.addTrack(playlistId, track)
+    setMenuOpen(false)
+    await window.phinas.addTrack(playlistId, track)
+    await lib.refresh()
   }
 
   return (
-    <div className={`row${playing?.videoId === track.videoId ? ' playing' : ''}`}>
-      <button className="cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} onClick={onPlay} aria-label="Putar" />
+    <div className={`row${isCurrent ? ' playing' : ''}`}>
+      <button className="row-cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} onClick={onPlay} aria-label={`Putar ${track.title}`}>
+        <span className="row-cover-overlay">
+          {index !== undefined && <span className="row-index">{index + 1}</span>}
+          <Play size={18} fill="currentColor" className="row-play" />
+        </span>
+      </button>
       <div className="meta">
         <div className="title">{track.title}</div>
-        <div className="muted">
-          {track.artist} · {fmt(track.durationSec)}
-        </div>
+        <div className="muted">{track.artist}</div>
       </div>
-      <div>
-        <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label="Suka">
+      <div className="row-actions">
+        <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
           <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
         </button>
+        {showAdd && (
+          <div className="menu-wrap">
+            <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Tambah ke playlist" aria-expanded={menuOpen}>
+              <ListPlus size={18} />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />
+                <div className="menu" role="menu">
+                  <div className="menu-title">Tambah ke playlist</div>
+                  {lib.playlists.length === 0 && <div className="menu-empty">Belum ada playlist</div>}
+                  {lib.playlists.map((p) => (
+                    <button key={p.id} role="menuitem" className="menu-item" onClick={() => addTo(p.id)}>
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
         {onRemove && (
           <button className="icon-btn" onClick={onRemove} aria-label="Hapus dari playlist">
             <X size={18} />
           </button>
         )}
       </div>
-      {playlists ? (
-        <select
-          value=""
-          onChange={(e) => addTo(e.target.value)}
-          aria-label="Tambah ke playlist"
-          disabled={playlists.length === 0}
-        >
-          <option value="">{playlists.length ? '+ Playlist' : 'Belum ada playlist'}</option>
-          {playlists.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <span />
-      )}
+      <div className="row-time muted">{track.durationSec > 0 ? formatTime(track.durationSec) : ''}</div>
     </div>
   )
 }

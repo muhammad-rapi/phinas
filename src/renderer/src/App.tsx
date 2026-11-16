@@ -1,43 +1,84 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { LibraryPanel } from './components/LibraryPanel'
 import { NowPlaying } from './components/NowPlaying'
 import { PlayerBar } from './components/PlayerBar'
-import { Sidebar, type Route } from './components/Sidebar'
+import { TopBar } from './components/TopBar'
+import { LibraryProvider } from './library/LibraryProvider'
 import { PlayerProvider, usePlayer } from './player/PlayerProvider'
 import { Home } from './screens/Home'
-import { Library } from './screens/Library'
+import { LikedView } from './screens/LikedView'
+import { PartnerView } from './screens/PartnerView'
+import { PlaylistView } from './screens/PlaylistView'
 import { Search } from './screens/Search'
 import { Settings } from './screens/Settings'
+import { useRecent } from './search/useRecent'
+import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
+import type { Nav, View } from './views'
 
 function Shell(): React.JSX.Element {
   const player = usePlayer()
-  const { theme, setTheme } = useTheme(player.track)
-  const [route, setRoute] = useState<Route>('home')
-  const [playlistId, setPlaylistId] = useState<string | undefined>()
-  // Remount Library when jumping to a specific playlist.
-  const [libraryKey, setLibraryKey] = useState(0)
+  const cover = useCover(player.track)
+  const { theme, setTheme } = useTheme(cover)
+  const recents = useRecent()
+  const [view, setView] = useState<View>({ name: 'home' })
+  const [query, setQuery] = useState('')
+  const mainRef = useRef<HTMLElement>(null)
 
-  const openPlaylist = (id: string): void => {
-    setPlaylistId(id)
-    setLibraryKey((k) => k + 1)
-    setRoute('library')
+  const nav: Nav = (v) => {
+    setView(v)
+    if (v.name !== 'search') setQuery('')
   }
+
+  const onQuery = (q: string): void => {
+    setQuery(q)
+    setView({ name: 'search' })
+  }
+
+  // Every new screen starts at the top.
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 })
+  }, [view])
+
+  const body = ((): React.JSX.Element => {
+    switch (view.name) {
+      case 'home':
+        return <Home nav={nav} />
+      case 'search':
+        return <Search query={query} onQuery={onQuery} {...recents} />
+      case 'liked':
+        return <LikedView />
+      case 'playlist':
+        return <PlaylistView key={view.id} id={view.id} nav={nav} />
+      case 'partner':
+        return <PartnerView id={view.id} nav={nav} />
+      case 'settings':
+        return <Settings theme={theme} onTheme={setTheme} />
+    }
+  })()
 
   return (
     <div className="app">
-      <Sidebar route={route} onNavigate={setRoute} />
-      <main className="panel main">
+      {cover && theme !== 'light' && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
+      <TopBar
+        query={query}
+        onQuery={onQuery}
+        onSubmit={() => recents.remember(query)}
+        onFocusSearch={() => setView({ name: 'search' })}
+        onHome={() => nav({ name: 'home' })}
+        onSettings={() => nav({ name: 'settings' })}
+        homeActive={view.name === 'home'}
+      />
+      <LibraryPanel view={view} nav={nav} />
+      <main ref={mainRef} className="panel main">
         {player.notice && (
           <div className="notice" onClick={player.dismissNotice} role="status">
             {player.notice}
           </div>
         )}
-        {route === 'home' && <Home onOpenPlaylist={openPlaylist} onOpenPartner={() => setRoute('library')} />}
-        {route === 'search' && <Search />}
-        {route === 'library' && <Library key={libraryKey} initialPlaylistId={playlistId} />}
-        {route === 'settings' && <Settings theme={theme} onTheme={setTheme} />}
+        {body}
       </main>
-      <aside className="panel">
+      <aside className="panel right">
         <NowPlaying />
       </aside>
       <PlayerBar />
@@ -47,8 +88,10 @@ function Shell(): React.JSX.Element {
 
 export function App(): React.JSX.Element {
   return (
-    <PlayerProvider>
-      <Shell />
-    </PlayerProvider>
+    <LibraryProvider>
+      <PlayerProvider>
+        <Shell />
+      </PlayerProvider>
+    </LibraryProvider>
   )
 }

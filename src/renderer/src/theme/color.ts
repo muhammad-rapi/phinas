@@ -46,24 +46,42 @@ export function hslToRgb(h: number, s: number, l: number): Rgb {
   }
 }
 
-/** RGBA flat array (like ImageData.data). Prefers vivid colors over gray areas. */
+/** Pixels with less chroma than this look grey/white/black and carry no theme colour. */
+const MIN_CHROMA = 0.15
+/** If fewer than this share of pixels are coloured, the cover is effectively greyscale. */
+const MIN_COLOURED_SHARE = 0.02
+
+/**
+ * RGBA flat array (like ImageData.data). Picks the most prominent *coloured* area.
+ * Grey, white and black pixels are ignored: a flat background would otherwise outweigh a
+ * subject whose shading is spread over many colour buckets. Greyscale covers fall back to
+ * the default accent.
+ */
 export function dominantColor(data: ArrayLike<number>): Rgb {
   const buckets = new Map<number, { n: number; r: number; g: number; b: number; score: number }>()
+  let opaque = 0
+  let coloured = 0
   for (let i = 0; i + 3 < data.length; i += 4) {
     if (data[i + 3] < 128) continue
+    opaque++
     const r = data[i]
     const g = data[i + 1]
     const b = data[i + 2]
+    // Chroma (max - min), not HSL saturation: near-white and near-black pixels have a high
+    // HSL saturation even though they look colorless.
+    const chroma = (Math.max(r, g, b) - Math.min(r, g, b)) / 255
+    if (chroma < MIN_CHROMA) continue
+    coloured++
     const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4)
-    const { s } = rgbToHsl({ r, g, b })
     const e = buckets.get(key) ?? { n: 0, r: 0, g: 0, b: 0, score: 0 }
     e.n++
     e.r += r
     e.g += g
     e.b += b
-    e.score += 1 + s * 4
+    e.score += chroma
     buckets.set(key, e)
   }
+  if (opaque === 0 || coloured / opaque < MIN_COLOURED_SHARE) return DEFAULT_ACCENT
   let best: { n: number; r: number; g: number; b: number; score: number } | null = null
   for (const e of buckets.values()) if (!best || e.score > best.score) best = e
   if (!best) return DEFAULT_ACCENT
@@ -75,13 +93,24 @@ const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.m
 /** Keep the accent readable on dark panels: lightness 0.35-0.6, saturation at least 0.35. */
 export function toAccent(c: Rgb): Rgb {
   const { h, s, l } = rgbToHsl(c)
-  return hslToRgb(h, Math.max(s, 0.35), clamp(l, 0.35, 0.6))
+  // A colourless input has no real hue (it reads as 0, i.e. red), so borrow the default's.
+  const hue = s < 0.05 ? rgbToHsl(DEFAULT_ACCENT).h : h
+  return hslToRgb(hue, Math.max(s, 0.35), clamp(l, 0.35, 0.6))
 }
 
 const css = ({ r, g, b }: Rgb): string => `rgb(${r} ${g} ${b})`
 
-export function accentVars(c: Rgb): { accent: string; gradTop: string } {
+/**
+ * The accent lightened for use as TEXT or thin icons on a dark panel. The plain accent can be
+ * a deep colour that works for buttons but disappears as text on a dark background.
+ */
+export function accentText(c: Rgb): Rgb {
+  const { h, s } = rgbToHsl(toAccent(c))
+  return hslToRgb(h, clamp(s, 0.5, 0.95), 0.7)
+}
+
+export function accentVars(c: Rgb): { accent: string; accentText: string; gradTop: string } {
   const a = toAccent(c)
   const { h, s } = rgbToHsl(a)
-  return { accent: css(a), gradTop: css(hslToRgb(h, s, 0.28)) }
+  return { accent: css(a), accentText: css(accentText(c)), gradTop: css(hslToRgb(h, s, 0.28)) }
 }

@@ -17,8 +17,13 @@ export function maybeCaptureAndQuit(win: BrowserWindow): void {
     try {
       await sleep(settle)
       if (script) {
-        await win.webContents.executeJavaScript(readFileSync(script, 'utf8'))
+        const result = await win.webContents.executeJavaScript(readFileSync(script, 'utf8'))
+        if (result !== undefined) console.log('[dev-shot] script result:', JSON.stringify(result))
         await sleep(settle)
+        const probe = await win.webContents.executeJavaScript(
+          `JSON.stringify({accent: document.documentElement.style.getPropertyValue('--accent'), gradTop: document.documentElement.style.getPropertyValue('--grad-top'), mode: document.documentElement.dataset.mode, titleColor: (document.querySelector('.row.playing .title')||{}).style ? getComputedStyle(document.querySelector('.row.playing .title')).color : null})`
+        )
+        console.log('[dev-shot] page state:', probe)
       }
       const image = await win.webContents.capturePage()
       writeFileSync(out, image.toPNG())

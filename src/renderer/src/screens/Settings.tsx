@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { SyncStatus } from '../../../shared/types'
+import { useLibrary } from '../library/LibraryProvider'
 import type { ThemeName } from '../theme/useTheme'
 
 const THEMES: { id: ThemeName; label: string; hint: string }[] = [
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function Settings({ theme, onTheme }: Props): React.JSX.Element {
+  const lib = useLibrary()
   const [status, setStatus] = useState<SyncStatus | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,6 +36,7 @@ export function Settings({ theme, onTheme }: Props): React.JSX.Element {
       await window.phinas.syncSignIn(email, password)
       setPassword('')
       await load()
+      await lib.refreshPartner()
     } catch (err) {
       setError(err instanceof Error ? err.message.replace(/^Error invoking remote method '\w+': Error: /, '') : 'Login gagal')
     }
@@ -41,7 +44,7 @@ export function Settings({ theme, onTheme }: Props): React.JSX.Element {
 
   return (
     <>
-      <h2>Settings</h2>
+      <h2 className="page-title">Pengaturan</h2>
       <h3>Tema</h3>
       <div className="grid" style={{ maxWidth: 640 }}>
         {THEMES.map((t) => (
@@ -73,6 +76,7 @@ export function Settings({ theme, onTheme }: Props): React.JSX.Element {
             onClick={async () => {
               await window.phinas.syncSignOut()
               await load()
+              await lib.refreshPartner()
             }}
           >
             Keluar

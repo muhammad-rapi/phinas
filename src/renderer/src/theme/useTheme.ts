@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { Track } from '../../../shared/types'
 import { accentVars, dominantColor } from './color'
 
 export type ThemeName = 'dynamic' | 'dark' | 'light'
@@ -15,10 +14,10 @@ function readStored(): ThemeName {
   return 'dynamic'
 }
 
-async function coverPixels(url: string): Promise<Uint8ClampedArray> {
-  // Fetched by the main process and returned as a data URL, so the canvas is never tainted.
+async function pixelsOf(dataUrl: string): Promise<Uint8ClampedArray> {
+  // A data URL is same-origin, so the canvas is never tainted.
   const img = new Image()
-  img.src = await window.phinas.coverData(url)
+  img.src = dataUrl
   await img.decode()
   const canvas = document.createElement('canvas')
   canvas.width = 32
@@ -28,8 +27,15 @@ async function coverPixels(url: string): Promise<Uint8ClampedArray> {
   return ctx.getImageData(0, 0, 32, 32).data
 }
 
-/** Applies the theme to <html>. In Dynamic mode, accent colors follow the current cover. */
-export function useTheme(track: Track | null): { theme: ThemeName; setTheme: (t: ThemeName) => void } {
+/**
+ * Applies the theme to <html>. In Dynamic mode the accent colors follow the cover art
+ * (given as a data URL). Returns the active theme and whether the ambient cover
+ * background should show.
+ */
+export function useTheme(coverData: string | null): {
+  theme: ThemeName
+  setTheme: (t: ThemeName) => void
+} {
   const [theme, setThemeState] = useState<ThemeName>(readStored)
 
   const setTheme = (t: ThemeName): void => {
@@ -45,34 +51,33 @@ export function useTheme(track: Track | null): { theme: ThemeName; setTheme: (t:
     const root = document.documentElement
     // Dynamic uses the dark base; light/dark are fixed.
     root.dataset.theme = theme === 'light' ? 'light' : 'dark'
-    if (theme !== 'dynamic') {
+    root.dataset.mode = theme
+    const reset = (): void => {
       root.style.removeProperty('--accent')
+      root.style.removeProperty('--accent-text')
       root.style.removeProperty('--grad-top')
+    }
+    if (theme !== 'dynamic' || !coverData) {
+      reset()
       return
     }
     let cancelled = false
-    const apply = (vars: { accent: string; gradTop: string }): void => {
-      if (cancelled) return
-      root.style.setProperty('--accent', vars.accent)
-      root.style.setProperty('--grad-top', vars.gradTop)
-    }
-    if (!track?.coverUrl) {
-      root.style.removeProperty('--accent')
-      root.style.removeProperty('--grad-top')
-      return
-    }
-    coverPixels(track.coverUrl)
-      .then((px) => apply(accentVars(dominantColor(px))))
+    pixelsOf(coverData)
+      .then((px) => {
+        if (cancelled) return
+        const vars = accentVars(dominantColor(px))
+        root.style.setProperty('--accent', vars.accent)
+        root.style.setProperty('--accent-text', vars.accentText)
+        root.style.setProperty('--grad-top', vars.gradTop)
+      })
       .catch((e) => {
         console.warn('[theme] could not read cover colors, using default accent:', e)
-        if (cancelled) return
-        root.style.removeProperty('--accent')
-        root.style.removeProperty('--grad-top')
+        if (!cancelled) reset()
       })
     return () => {
       cancelled = true
     }
-  }, [theme, track?.coverUrl])
+  }, [theme, coverData])
 
   return { theme, setTheme }
 }

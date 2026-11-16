@@ -1,6 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Track } from '../../../shared/types'
-import { current, empty, enqueue, jumpTo, next, prev, startQueue, type QueueState } from './queue'
+import {
+  current,
+  empty,
+  enqueue,
+  jumpTo,
+  next,
+  prev,
+  shuffleOff,
+  shuffleOn,
+  startQueue,
+  type QueueState,
+  type RepeatMode
+} from './queue'
 
 interface PlayerApi {
   queue: QueueState
@@ -9,6 +21,8 @@ interface PlayerApi {
   time: number
   duration: number
   volume: number
+  shuffle: boolean
+  repeat: RepeatMode
   notice: string | null
   play(tracks: Track[], index: number): void
   addToQueue(track: Track): void
@@ -18,6 +32,8 @@ interface PlayerApi {
   jump(index: number): void
   seek(sec: number): void
   setVolume(v: number): void
+  toggleShuffle(): void
+  cycleRepeat(): void
   dismissNotice(): void
 }
 
@@ -28,6 +44,8 @@ export function usePlayer(): PlayerApi {
   if (!v) throw new Error('usePlayer must be used inside PlayerProvider')
   return v
 }
+
+const REPEAT_ORDER: RepeatMode[] = ['off', 'all', 'one']
 
 export function PlayerProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [audio] = useState(() => new Audio())
@@ -40,20 +58,35 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   // true when the slider drives the OS volume (macOS); otherwise it scales this app only.
   const [systemMode, setSystemMode] = useState(false)
   const [lastUserVolumeAt, setLastUserVolumeAt] = useState(0)
+  // Shuffle is a standing preference: it stays on when a new list starts playing.
+  const [shuffle, setShuffle] = useState(false)
+  const [repeat, setRepeat] = useState<RepeatMode>('off')
   const [notice, setNotice] = useState<string | null>(null)
 
   const track = current(queue)
 
   const advance = useCallback(() => {
     setQueue((q) => {
-      const n = next(q)
+      const n = next(q, repeat)
       if (!n) {
         audio.pause()
         return q
       }
       return n
     })
-  }, [audio])
+    // Wrapping onto the same single track (repeat all, one-song list) would not change the
+    // effect's dependencies, so ask for a restart explicitly.
+    setToken((t) => t + 1)
+  }, [audio, repeat])
+
+  const onEnded = useCallback(() => {
+    if (repeat === 'one') {
+      audio.currentTime = 0
+      void audio.play()
+    } else {
+      advance()
+    }
+  }, [audio, repeat, advance])
 
   useEffect(() => {
     audio.volume = systemMode ? 1 : volume
@@ -91,10 +124,10 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       on('durationchange', () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0)),
       on('play', () => setPlaying(true)),
       on('pause', () => setPlaying(false)),
-      on('ended', advance)
+      on('ended', onEnded)
     ]
     return () => offs.forEach((off) => off())
-  }, [audio, advance])
+  }, [audio, onEnded])
 
   // Load and start whenever the current track (or a replay request) changes.
   useEffect(() => {
@@ -129,9 +162,12 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       time,
       duration,
       volume,
+      shuffle,
+      repeat,
       notice,
       play: (tracks, index) => {
-        setQueue(startQueue(tracks, index))
+        const q = startQueue(tracks, index)
+        setQueue(shuffle ? shuffleOn(q) : q)
         setToken((t) => t + 1)
       },
       addToQueue: (t) => setQueue((q) => (q.tracks.length ? enqueue(q, t) : startQueue([t], 0))),
@@ -154,9 +190,14 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         setLastUserVolumeAt(Date.now())
         if (systemMode) void window.phinas.setSystemVolume(v)
       },
+      toggleShuffle: () => {
+        setShuffle(!shuffle)
+        setQueue((q) => (shuffle ? shuffleOff(q) : shuffleOn(q)))
+      },
+      cycleRepeat: () => setRepeat((r) => REPEAT_ORDER[(REPEAT_ORDER.indexOf(r) + 1) % REPEAT_ORDER.length]),
       dismissNotice: () => setNotice(null)
     }),
-    [queue, track, playing, time, duration, volume, notice, audio, advance, systemMode]
+    [queue, track, playing, time, duration, volume, shuffle, repeat, notice, audio, advance, systemMode]
   )
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>

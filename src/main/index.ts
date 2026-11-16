@@ -26,6 +26,10 @@ function createWindow(): void {
     backgroundColor: '#000000',
     title: 'Phinas',
     icon,
+    // On Mac the traffic-light buttons sit inside our top bar instead of a separate title bar.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 20, y: 24 } }
+      : {}),
     webPreferences: { preload: join(here, '../preload/index.mjs'), sandbox: false }
   })
   maybeCaptureAndQuit(win)
