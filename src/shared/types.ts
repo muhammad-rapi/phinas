@@ -6,6 +6,17 @@ export interface Track {
   durationSec: number
 }
 
+export interface LyricLine {
+  timeSec: number
+  text: string
+}
+
+/** Either timed lines (karaoke-style) or plain text; null when neither exists. */
+export interface Lyrics {
+  synced: LyricLine[] | null
+  plain: string | null
+}
+
 export interface HomeFeed {
   /** What is trending now in the user's region. */
   trending: Track[]

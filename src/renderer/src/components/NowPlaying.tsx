@@ -1,8 +1,13 @@
 import { Disc3 } from 'lucide-react'
+import { useState } from 'react'
 import { usePlayer } from '../player/PlayerProvider'
+import { LyricsPanel } from './LyricsPanel'
+
+type Tab = 'queue' | 'lyrics'
 
 export function NowPlaying(): React.JSX.Element {
   const p = usePlayer()
+  const [tab, setTab] = useState<Tab>('queue')
   if (!p.track) {
     return (
       <div className="nowplaying nowplaying-empty">
@@ -14,23 +19,46 @@ export function NowPlaying(): React.JSX.Element {
   const upcoming = p.queue.tracks.slice(p.queue.index + 1)
   return (
     <div className="nowplaying">
-      <div className="np-heading">Sedang diputar</div>
-      <div className="np-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
-      <div>
-        <h4 className="np-title">{p.track.title}</h4>
-        <div className="muted">{p.track.artist}</div>
-      </div>
-      <div className="queue-title">Berikutnya</div>
-      {upcoming.length === 0 && <div className="muted">Antrean kosong</div>}
-      {upcoming.map((t, i) => (
-        <button key={`${t.videoId}-${i}`} className="queue-item" onClick={() => p.jump(p.queue.index + 1 + i)}>
-          <span className="queue-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
-          <span className="queue-text">
-            <span className="queue-name">{t.title}</span>
-            <span className="muted queue-artist">{t.artist}</span>
-          </span>
+      <div className="np-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'queue'} className={tab === 'queue' ? 'active' : ''} onClick={() => setTab('queue')}>
+          Sedang diputar
         </button>
-      ))}
+        <button role="tab" aria-selected={tab === 'lyrics'} className={tab === 'lyrics' ? 'active' : ''} onClick={() => setTab('lyrics')}>
+          Lirik
+        </button>
+      </div>
+
+      {tab === 'queue' ? (
+        <>
+          <div className="np-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+          <div>
+            <h4 className="np-title">{p.track.title}</h4>
+            <div className="muted">{p.track.artist}</div>
+          </div>
+          <div className="queue-title">Berikutnya</div>
+          {upcoming.length === 0 && <div className="muted">Antrean kosong</div>}
+          {upcoming.map((t, i) => (
+            <button key={`${t.videoId}-${i}`} className="queue-item" onClick={() => p.jump(p.queue.index + 1 + i)}>
+              <span className="queue-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
+              <span className="queue-text">
+                <span className="queue-name">{t.title}</span>
+                <span className="muted queue-artist">{t.artist}</span>
+              </span>
+            </button>
+          ))}
+        </>
+      ) : (
+        <>
+          <div className="np-mini">
+            <span className="queue-thumb" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+            <span className="queue-text">
+              <span className="queue-name">{p.track.title}</span>
+              <span className="muted queue-artist">{p.track.artist}</span>
+            </span>
+          </div>
+          <LyricsPanel track={p.track} />
+        </>
+      )}
     </div>
   )
 }

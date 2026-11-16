@@ -1,9 +1,11 @@
-import type { HomeFeed, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { HomeFeed, Lyrics, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
   getHomeFeed(): Promise<HomeFeed>
   streamUrl(videoId: string): Promise<string>
+  /** Lyrics from LRCLIB, or null when the song has none. Rejects on network errors. */
+  getLyrics(track: Track): Promise<Lyrics | null>
   /** Cover art as a same-origin data URL (readable by canvas for the Dynamic theme). */
   coverData(url: string): Promise<string>
   /** OS output volume 0-1, or null when this platform is not supported. */
@@ -29,6 +31,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   search: true,
   getHomeFeed: true,
   streamUrl: true,
+  getLyrics: true,
   coverData: true,
   getSystemVolume: true,
   setSystemVolume: true,

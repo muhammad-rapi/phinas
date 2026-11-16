@@ -7,16 +7,19 @@ const DEBOUNCE_MS = 350
 
 interface Props {
   query: string
+  /** Bumped when Enter is pressed: search right away instead of waiting for typing to pause. */
+  submitNonce: number
   remember: (q: string) => void
 }
 
-export function Search({ query, remember }: Props): React.JSX.Element {
+export function Search({ query, submitNonce, remember }: Props): React.JSX.Element {
   const player = usePlayer()
   const [results, setResults] = useState<Track[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Ignore answers from older requests when the user keeps typing.
   const requestId = useRef(0)
+  const seenNonce = useRef(submitNonce)
 
   useEffect(() => {
     const q = query.trim()
@@ -28,6 +31,8 @@ export function Search({ query, remember }: Props): React.JSX.Element {
       return
     }
     setLoading(true)
+    const immediate = seenNonce.current !== submitNonce
+    seenNonce.current = submitNonce
     const timer = setTimeout(async () => {
       try {
         const found = await window.phinas.search(q)
@@ -40,9 +45,9 @@ export function Search({ query, remember }: Props): React.JSX.Element {
       } finally {
         if (id === requestId.current) setLoading(false)
       }
-    }, DEBOUNCE_MS)
+    }, immediate ? 0 : DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, submitNonce])
 
   const q = query.trim()
 

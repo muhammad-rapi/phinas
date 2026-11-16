@@ -25,6 +25,7 @@ function Shell(): React.JSX.Element {
   const profile = useProfile()
   const [view, setView] = useState<View>({ name: 'home' })
   const [query, setQuery] = useState('')
+  const [submitNonce, setSubmitNonce] = useState(0)
   const mainRef = useRef<HTMLElement>(null)
 
   const nav: Nav = (v) => {
@@ -48,7 +49,7 @@ function Shell(): React.JSX.Element {
       case 'home':
         return <Home nav={nav} />
       case 'search':
-        return <Search query={query} remember={recents.remember} />
+        return <Search query={query} submitNonce={submitNonce} remember={recents.remember} />
       case 'liked':
         return <LikedView />
       case 'playlist':
@@ -66,7 +67,12 @@ function Shell(): React.JSX.Element {
       <TopBar
         query={query}
         onQuery={onQuery}
-        onSubmit={() => recents.remember(query)}
+        onSubmit={() => {
+          if (!query.trim()) return
+          recents.remember(query)
+          setView({ name: 'search' })
+          setSubmitNonce((n) => n + 1)
+        }}
         recent={recents.recent}
         onForget={recents.forget}
         onHome={() => nav({ name: 'home' })}
