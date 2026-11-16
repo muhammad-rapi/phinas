@@ -1,4 +1,3 @@
-import { Clock, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Track } from '../../../shared/types'
 import { TrackRow } from '../components/TrackRow'
@@ -8,13 +7,10 @@ const DEBOUNCE_MS = 350
 
 interface Props {
   query: string
-  onQuery: (q: string) => void
-  recent: string[]
   remember: (q: string) => void
-  forget: (q: string) => void
 }
 
-export function Search({ query, onQuery, recent, remember, forget }: Props): React.JSX.Element {
+export function Search({ query, remember }: Props): React.JSX.Element {
   const player = usePlayer()
   const [results, setResults] = useState<Track[]>([])
   const [loading, setLoading] = useState(false)
@@ -53,26 +49,6 @@ export function Search({ query, onQuery, recent, remember, forget }: Props): Rea
   return (
     <>
       {error && <div className="notice">{error}</div>}
-
-      {!q && (
-        <>
-          <h2 className="page-title">Pencarian terakhir</h2>
-          {recent.length === 0 && <p className="muted">Belum ada pencarian. Ketik di kolom atas untuk mulai.</p>}
-          <div className="recent-list">
-            {recent.map((r) => (
-              <div key={r} className="recent-item">
-                <button className="recent-main" onClick={() => onQuery(r)}>
-                  <Clock size={18} />
-                  <span>{r}</span>
-                </button>
-                <button className="icon-btn" onClick={() => forget(r)} aria-label={`Hapus ${r}`}>
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
 
       {q && (
         <>

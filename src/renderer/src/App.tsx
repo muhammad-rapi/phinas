@@ -10,7 +10,8 @@ import { LikedView } from './screens/LikedView'
 import { PartnerView } from './screens/PartnerView'
 import { PlaylistView } from './screens/PlaylistView'
 import { Search } from './screens/Search'
-import { Settings } from './screens/Settings'
+import { Profile } from './screens/Profile'
+import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
@@ -21,6 +22,7 @@ function Shell(): React.JSX.Element {
   const cover = useCover(player.track)
   const { theme, setTheme } = useTheme(cover)
   const recents = useRecent()
+  const profile = useProfile()
   const [view, setView] = useState<View>({ name: 'home' })
   const [query, setQuery] = useState('')
   const mainRef = useRef<HTMLElement>(null)
@@ -32,7 +34,8 @@ function Shell(): React.JSX.Element {
 
   const onQuery = (q: string): void => {
     setQuery(q)
-    setView({ name: 'search' })
+    // Emptying the box leaves the results page instead of showing a blank one.
+    setView(q.trim() ? { name: 'search' } : (v) => (v.name === 'search' ? { name: 'home' } : v))
   }
 
   // Every new screen starts at the top.
@@ -45,15 +48,15 @@ function Shell(): React.JSX.Element {
       case 'home':
         return <Home nav={nav} />
       case 'search':
-        return <Search query={query} onQuery={onQuery} {...recents} />
+        return <Search query={query} remember={recents.remember} />
       case 'liked':
         return <LikedView />
       case 'playlist':
         return <PlaylistView key={view.id} id={view.id} nav={nav} />
       case 'partner':
         return <PartnerView id={view.id} nav={nav} />
-      case 'settings':
-        return <Settings theme={theme} onTheme={setTheme} />
+      case 'profile':
+        return <Profile name={profile.name} onName={profile.setName} initial={profile.initial} theme={theme} onTheme={setTheme} />
     }
   })()
 
@@ -64,10 +67,13 @@ function Shell(): React.JSX.Element {
         query={query}
         onQuery={onQuery}
         onSubmit={() => recents.remember(query)}
-        onFocusSearch={() => setView({ name: 'search' })}
+        recent={recents.recent}
+        onForget={recents.forget}
         onHome={() => nav({ name: 'home' })}
-        onSettings={() => nav({ name: 'settings' })}
+        onProfile={() => nav({ name: 'profile' })}
         homeActive={view.name === 'home'}
+        profileActive={view.name === 'profile'}
+        initial={profile.initial}
       />
       <LibraryPanel view={view} nav={nav} />
       <main ref={mainRef} className="panel main">

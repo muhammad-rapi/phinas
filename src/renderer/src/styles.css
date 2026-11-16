@@ -37,7 +37,7 @@ html, body, #root { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Poppins', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Montserrat', -apple-system, 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
@@ -102,7 +102,20 @@ h1, h2, h3, h4 { margin: 0; }
 .round-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(20px); color: var(--muted); transition: transform 0.15s, color 0.15s, background 0.15s; }
 .round-btn:hover { color: var(--text); transform: scale(1.06); background: var(--hover); }
 .round-btn.active { color: var(--text); }
-.searchpill { display: flex; align-items: center; gap: 10px; width: min(480px, 100%); height: 48px; padding: 0 16px; border-radius: 24px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(20px); color: var(--muted); transition: border-color 0.2s, background 0.2s; }
+.searchwrap { position: relative; width: min(480px, 100%); }
+.searchdrop { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 30; padding: 8px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); max-height: 60vh; overflow-y: auto; }
+.searchdrop h4 { margin: 6px 10px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.searchdrop .muted { padding: 8px 10px; margin: 0; }
+.profile-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; transition: background 0.5s, transform 0.15s; }
+.profile-btn:hover, .profile-btn.active { transform: scale(1.07); }
+.profile-head { display: flex; align-items: center; gap: 22px; padding: 28px 0 8px; }
+.avatar-lg { width: 112px; height: 112px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 48px; font-weight: 800; display: grid; place-items: center; flex: none; transition: background 0.5s; }
+.profile-name { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; background: none; border: 0; outline: 0; color: var(--text); font-family: inherit; padding: 0; width: 100%; }
+.profile-name:focus { border-bottom: 2px solid var(--accent); }
+.profile-stats { display: flex; gap: 28px; margin-top: 8px; color: var(--muted); }
+.profile-stats strong { color: var(--text); }
+.profile-section { max-width: 640px; margin-top: 28px; }
+.searchpill { display: flex; align-items: center; gap: 10px; width: 100%; height: 48px; padding: 0 16px; border-radius: 24px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(20px); color: var(--muted); transition: border-color 0.2s, background 0.2s; }
 .searchpill:hover { background: var(--hover); }
 .searchpill:focus-within { border-color: var(--accent); color: var(--text); }
 .searchpill input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: inherit; }
