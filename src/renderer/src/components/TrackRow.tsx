@@ -37,8 +37,9 @@ export function TrackRow({ track, index, onPlay, onRemove, showAdd }: Props): Re
   }
 
   return (
-    <div className={`row${isCurrent ? ' playing' : ''}`}>
-      <button className="row-cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} onClick={onPlay} aria-label={`Putar ${track.title}`}>
+    // Clicking anywhere on the row plays it; the action buttons stop the click from reaching here.
+    <div className={`row${isCurrent ? ' playing' : ''}`} onClick={onPlay}>
+      <button className="row-cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} aria-label={`Putar ${track.title}`}>
         <span className="row-cover-overlay">
           {index !== undefined && <span className="row-index">{index + 1}</span>}
           <Play size={18} fill="currentColor" className="row-play" />
@@ -48,7 +49,7 @@ export function TrackRow({ track, index, onPlay, onRemove, showAdd }: Props): Re
         <div className="title">{track.title}</div>
         <div className="muted">{track.artist}</div>
       </div>
-      <div className="row-actions">
+      <div className="row-actions" onClick={(e) => e.stopPropagation()}>
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
           <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
         </button>
