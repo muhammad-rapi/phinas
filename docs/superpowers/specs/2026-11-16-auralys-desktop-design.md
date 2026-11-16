@@ -11,6 +11,12 @@ A desktop music player for macOS and Windows, for personal use by two people (th
 - Android/mobile
 - Public release
 
+## Backlog (after v1)
+- Mini player in the menu bar (macOS) / system tray (Windows): shows current track, with play/pause, next/previous, so songs can be changed without opening the main window.
+- Global keyboard shortcuts and media keys for play/pause, next, previous, working while the app is in the background.
+- Offline audio downloads.
+- Optional YouTube account login.
+
 ## Constraints and decisions
 - Music data comes from YouTube Music via the unofficial `youtubei.js` library. This can break when YouTube changes; fix is usually updating the library. Personal use only.
 - Reference app Metrolist is GPL-3.0. If any Metrolist code is reused, this project must also be GPL-3.0 with source available. v1 is written from scratch and does not copy Metrolist code.
