@@ -49,7 +49,7 @@ export class Library {
   }
 
   createPlaylist(name: string): Playlist {
-    const p = { id: this.newId(), name, updatedAt: this.now() }
+    const p: Playlist = { id: this.newId(), name, updatedAt: this.now(), coverUrls: [] }
     this.tx(() => {
       this.db
         .prepare('INSERT INTO playlists(id, name, updated_at) VALUES (?, ?, ?)')
@@ -77,7 +77,24 @@ export class Library {
     const rows = this.db
       .prepare('SELECT id, name, updated_at FROM playlists ORDER BY updated_at DESC, rowid DESC')
       .all() as { id: string; name: string; updated_at: number }[]
-    return rows.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updated_at }))
+    const covers = this.db
+      .prepare(
+        `SELECT playlist_id, cover_url FROM playlist_tracks
+         WHERE position < 4 AND cover_url != '' ORDER BY playlist_id, position`
+      )
+      .all() as { playlist_id: string; cover_url: string }[]
+    const byPlaylist = new Map<string, string[]>()
+    for (const c of covers) {
+      const list = byPlaylist.get(c.playlist_id) ?? []
+      list.push(c.cover_url)
+      byPlaylist.set(c.playlist_id, list)
+    }
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      updatedAt: r.updated_at,
+      coverUrls: byPlaylist.get(r.id) ?? []
+    }))
   }
 
   getPlaylist(id: string): PlaylistWithTracks | null {
@@ -91,7 +108,12 @@ export class Library {
          FROM playlist_tracks WHERE playlist_id = ? ORDER BY position`
       )
       .all(id) as unknown as TrackRow[]
-    return { id: p.id, name: p.name, updatedAt: p.updated_at, tracks: rows.map(toTrack) }
+    const tracks = rows.map(toTrack)
+    const coverUrls = tracks
+      .slice(0, 4)
+      .map((t) => t.coverUrl)
+      .filter(Boolean)
+    return { id: p.id, name: p.name, updatedAt: p.updated_at, coverUrls, tracks }
   }
 
   addTrack(playlistId: string, track: Track): boolean {

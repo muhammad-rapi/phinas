@@ -47,6 +47,21 @@ describe('playlists', () => {
     expect(lib.getPlaylist(p.id)!.tracks.map((x) => x.title)).toEqual(['Song 1', 'Song 3', 'Song 4'])
   })
 
+  test('listPlaylists includes up to 4 cover urls in track order', () => {
+    const p = lib.createPlaylist('P')
+    const empty = lib.createPlaylist('Empty')
+    ;[1, 2, 3, 4, 5].forEach((n) => lib.addTrack(p.id, t(n)))
+    const listed = lib.listPlaylists()
+    expect(listed.find((x) => x.id === p.id)!.coverUrls).toEqual([
+      'https://img/1.jpg',
+      'https://img/2.jpg',
+      'https://img/3.jpg',
+      'https://img/4.jpg'
+    ])
+    expect(listed.find((x) => x.id === empty.id)!.coverUrls).toEqual([])
+    expect(lib.getPlaylist(p.id)!.coverUrls).toHaveLength(4)
+  })
+
   test('deletePlaylist removes it and its tracks', () => {
     const p = lib.createPlaylist('P')
     lib.addTrack(p.id, t(1))

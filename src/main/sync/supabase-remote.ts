@@ -107,12 +107,21 @@ export class SupabaseRemote implements Remote {
       profiles: { display_name: string } | null
       playlist_tracks: TrackRow[]
     }[]
-    return rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      updatedAt: new Date(r.updated_at).getTime(),
-      ownerName: r.profiles?.display_name ?? 'Pasangan',
-      tracks: [...r.playlist_tracks].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map(fromRow)
-    }))
+    return rows.map((r) => {
+      const tracks = [...r.playlist_tracks]
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map(fromRow)
+      return {
+        id: r.id,
+        name: r.name,
+        updatedAt: new Date(r.updated_at).getTime(),
+        ownerName: r.profiles?.display_name ?? 'Pasangan',
+        coverUrls: tracks
+          .slice(0, 4)
+          .map((t) => t.coverUrl)
+          .filter(Boolean),
+        tracks
+      }
+    })
   }
 }

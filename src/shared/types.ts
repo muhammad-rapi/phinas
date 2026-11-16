@@ -10,6 +10,8 @@ export interface Playlist {
   id: string
   name: string
   updatedAt: number
+  /** Cover art of the first (up to) 4 tracks, used for the playlist thumbnail. */
+  coverUrls: string[]
 }
 
 export interface PlaylistWithTracks extends Playlist {
