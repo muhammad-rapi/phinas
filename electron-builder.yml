@@ -1,0 +1,28 @@
+appId: id.phinas.app
+productName: Phinas
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asar: true
+mac:
+  category: public.app-category.music
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [arm64]
+dmg:
+  title: Phinas
+win:
+  icon: build/icon.png
+  # No code-signing or exe editing: skips the Wine requirement when building on a Mac.
+  signAndEditExecutable: false
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Phinas-Setup-${version}.${ext}
