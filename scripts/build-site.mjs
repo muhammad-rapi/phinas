@@ -64,8 +64,6 @@ const dict = {
     faq_title: 'Perlu diketahui',
     q1: 'Apakah aman dibuka?',
     a1: 'Peringatan muncul karena installer tidak memakai sertifikat pengembang berbayar. Kamu bisa mencocokkan checksum di atas dengan file yang diunduh.',
-    q2: 'Dari mana lagunya?',
-    a2: 'Dari YouTube Music lewat cara tidak resmi, untuk pemakaian pribadi. Phinas tidak berafiliasi dengan YouTube atau Spotify, dan cara ini bisa berhenti bekerja kapan saja.',
     q3: 'Bisa di iPhone atau Android?',
     a3: 'Belum. Phinas hanya untuk komputer Mac dan Windows.',
     q4: 'Perlu akun?',
@@ -111,8 +109,6 @@ const dict = {
     faq_title: 'Good to know',
     q1: 'Is it safe to open?',
     a1: 'The warning appears because the installers do not use a paid developer certificate. You can compare the checksum above with your download.',
-    q2: 'Where do the songs come from?',
-    a2: 'From YouTube Music through an unofficial route, for personal use. Phinas is not affiliated with YouTube or Spotify, and this route can stop working at any time.',
     q3: 'Does it run on iPhone or Android?',
     a3: 'Not yet. Phinas is for Mac and Windows computers only.',
     q4: 'Do I need an account?',
@@ -314,7 +310,7 @@ const body = `
 
     <section>
       <h2 data-i18n="faq_title">${t.faq_title}</h2>
-      ${[1, 2, 3, 4].map((n) => `<details><summary data-i18n="q${n}">${t[`q${n}`]}</summary><p data-i18n="a${n}">${t[`a${n}`]}</p></details>`).join('\n      ')}
+      ${[1, 3, 4].map((n) => `<details><summary data-i18n="q${n}">${t[`q${n}`]}</summary><p data-i18n="a${n}">${t[`a${n}`]}</p></details>`).join('\n      ')}
     </section>
   </main>
 
