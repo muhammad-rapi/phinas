@@ -1,3 +1,4 @@
+import { ArrowLeft, Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { PartnerPlaylist, Playlist, PlaylistWithTracks, Track } from '../../../shared/types'
 import { TrackRow } from '../components/TrackRow'
@@ -80,7 +81,9 @@ export function Library({ initialPlaylistId }: { initialPlaylistId?: string }): 
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && create()}
               />
-              <button className="btn" onClick={create}>+</button>
+              <button className="btn" onClick={create} aria-label="Buat playlist">
+                <Plus size={18} />
+              </button>
             </div>
             {playlists.map((p) => (
               <button
@@ -158,7 +161,9 @@ export function Library({ initialPlaylistId }: { initialPlaylistId?: string }): 
           {openPartner && (
             <>
               <div className="tabs">
-                <button className="btn secondary" onClick={() => setOpenPartner(null)}>← Kembali</button>
+                <button className="btn secondary" onClick={() => setOpenPartner(null)}>
+                  <ArrowLeft size={16} /> Kembali
+                </button>
                 <button className="btn" onClick={() => copy(openPartner)}>Salin ke library saya</button>
                 <button className="btn secondary" disabled={!openPartner.tracks.length} onClick={() => player.play(openPartner.tracks, 0)}>
                   Putar semua

@@ -1,3 +1,4 @@
+import { Heart, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Playlist, Track } from '../../../shared/types'
 import { usePlayer } from '../player/PlayerProvider'
@@ -45,11 +46,11 @@ export function TrackRow({ track, onPlay, onRemove, playlists }: Props): React.J
       </div>
       <div>
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label="Suka">
-          {liked ? '♥' : '♡'}
+          <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
         </button>
         {onRemove && (
           <button className="icon-btn" onClick={onRemove} aria-label="Hapus dari playlist">
-            ✕
+            <X size={18} />
           </button>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from 'lucide-react'
 import { usePlayer } from '../player/PlayerProvider'
 
 const fmt = (s: number): string => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -21,11 +22,15 @@ export function PlayerBar(): React.JSX.Element {
       </div>
       <div className="pb-controls">
         <div className="pb-buttons">
-          <button className="icon-btn" onClick={p.prev} aria-label="Sebelumnya">⏮</button>
-          <button className="play-btn" onClick={p.toggle} aria-label="Putar atau jeda">
-            {p.playing ? '⏸' : '▶'}
+          <button className="icon-btn" onClick={p.prev} aria-label="Sebelumnya">
+            <SkipBack size={20} fill="currentColor" />
           </button>
-          <button className="icon-btn" onClick={p.next} aria-label="Berikutnya">⏭</button>
+          <button className="play-btn" onClick={p.toggle} aria-label="Putar atau jeda">
+            {p.playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+          </button>
+          <button className="icon-btn" onClick={p.next} aria-label="Berikutnya">
+            <SkipForward size={20} fill="currentColor" />
+          </button>
         </div>
         <div className="pb-seek">
           <span>{fmt(p.time)}</span>
@@ -42,7 +47,7 @@ export function PlayerBar(): React.JSX.Element {
         </div>
       </div>
       <div className="pb-volume">
-        <span>🔊</span>
+        {p.volume === 0 ? <VolumeX size={18} /> : p.volume < 0.5 ? <Volume1 size={18} /> : <Volume2 size={18} />}
         <input
           type="range"
           min={0}
