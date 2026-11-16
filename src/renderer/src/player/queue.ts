@@ -36,6 +36,13 @@ export const enqueue = (q: QueueState, track: Track): QueueState => ({
   original: q.original ? [...q.original, track] : undefined
 })
 
+/** Plays `track` right after the current one. */
+export const insertNext = (q: QueueState, track: Track): QueueState => ({
+  ...q,
+  tracks: [...q.tracks.slice(0, q.index + 1), track, ...q.tracks.slice(q.index + 1)],
+  original: q.original ? [...q.original, track] : undefined
+})
+
 export const jumpTo = (q: QueueState, index: number): QueueState =>
   index >= 0 && index < q.tracks.length ? { ...q, index } : q
 

@@ -4,6 +4,7 @@ import {
   current,
   empty,
   enqueue,
+  insertNext,
   jumpTo,
   next,
   prev,
@@ -27,6 +28,7 @@ interface PlayerApi {
   notice: string | null
   play(tracks: Track[], index: number): void
   addToQueue(track: Track): void
+  playNext(track: Track): void
   toggle(): void
   next(): void
   prev(): void
@@ -171,7 +173,14 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         setQueue(shuffle ? shuffleOn(q) : q)
         setToken((t) => t + 1)
       },
-      addToQueue: (t) => setQueue((q) => (q.tracks.length ? enqueue(q, t) : startQueue([t], 0))),
+      addToQueue: (t) => {
+        setQueue((q) => (q.tracks.length ? enqueue(q, t) : startQueue([t], 0)))
+        setNotice(`"${t.title}" ditambahkan ke antrean.`)
+      },
+      playNext: (t) => {
+        setQueue((q) => (q.tracks.length ? insertNext(q, t) : startQueue([t], 0)))
+        setNotice(`"${t.title}" akan diputar berikutnya.`)
+      },
       toggle: () => {
         if (!audio.src) return
         if (audio.paused) void audio.play()
@@ -200,6 +209,13 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
     }),
     [queue, track, playing, time, duration, volume, shuffle, repeat, notice, audio, advance, systemMode]
   )
+
+  // Messages fade away on their own; a click still dismisses them sooner.
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(null), 3500)
+    return () => clearTimeout(t)
+  }, [notice])
 
   useMediaSession(audio, track, playing, api)
 

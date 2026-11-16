@@ -3,6 +3,7 @@ import {
   current,
   empty,
   enqueue,
+  insertNext,
   isShuffled,
   jumpTo,
   next,
@@ -105,5 +106,25 @@ describe('queue', () => {
     const q = startQueue([t(1), t(2)], 0)
     expect(current(jumpTo(q, 1))?.title).toBe('T2')
     expect(jumpTo(q, 5)).toBe(q)
+  })
+})
+
+describe('insertNext', () => {
+  test('puts the track right after the current one', () => {
+    const q = insertNext(startQueue([t(1), t(2), t(3)], 0), t(9))
+    expect(q.tracks.map((x) => x.videoId)).toEqual([t(1), t(9), t(2), t(3)].map((x) => x.videoId))
+    expect(q.index).toBe(0)
+  })
+
+  test('queued songs after the current one keep their order when inserting again', () => {
+    let q = startQueue([t(1), t(2)], 0)
+    q = insertNext(q, t(8))
+    q = insertNext(q, t(9))
+    expect(q.tracks.map((x) => x.videoId)).toEqual([t(1), t(9), t(8), t(2)].map((x) => x.videoId))
+  })
+
+  test('shuffle can still be turned off afterwards and still contains the added song', () => {
+    const q = shuffleOff(insertNext(shuffleOn(startQueue([t(1), t(2), t(3)], 0)), t(9)))
+    expect(q.tracks.map((x) => x.videoId)).toContain(t(9).videoId)
   })
 })

@@ -65,7 +65,6 @@ export function Search({ query, submitNonce, onPick }: Props): React.JSX.Element
             <TrackRow
               key={t.videoId}
               track={t}
-              showAdd
               onPlay={() => {
                 onPick(t, q)
                 player.play(results, i)

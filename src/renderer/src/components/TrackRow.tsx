@@ -14,11 +14,9 @@ interface Props {
   onPlay: () => void
   /** Show a remove button (used inside a playlist). */
   onRemove?: () => void
-  /** Show the add-to-playlist menu. */
-  showAdd?: boolean
 }
 
-export function TrackRow({ track, index, onPlay, onRemove, showAdd }: Props): React.JSX.Element {
+export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.Element {
   const player = usePlayer()
   const lib = useLibrary()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -53,27 +51,45 @@ export function TrackRow({ track, index, onPlay, onRemove, showAdd }: Props): Re
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
           <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
         </button>
-        {showAdd && (
-          <div className="menu-wrap">
-            <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Tambah ke playlist" aria-expanded={menuOpen}>
-              <ListPlus size={18} />
-            </button>
-            {menuOpen && (
-              <>
-                <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />
-                <div className="menu" role="menu">
-                  <div className="menu-title">Tambah ke playlist</div>
-                  {lib.playlists.length === 0 && <div className="menu-empty">Belum ada playlist</div>}
-                  {lib.playlists.map((p) => (
-                    <button key={p.id} role="menuitem" className="menu-item" onClick={() => addTo(p.id)}>
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        <div className="menu-wrap">
+          <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu lagu" aria-expanded={menuOpen}>
+            <ListPlus size={18} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />
+              <div className="menu" role="menu">
+                <button
+                  role="menuitem"
+                  className="menu-item"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    player.playNext(track)
+                  }}
+                >
+                  Putar berikutnya
+                </button>
+                <button
+                  role="menuitem"
+                  className="menu-item"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    player.addToQueue(track)
+                  }}
+                >
+                  Tambah ke antrean
+                </button>
+                <div className="menu-title">Tambah ke playlist</div>
+                {lib.playlists.length === 0 && <div className="menu-empty">Belum ada playlist</div>}
+                {lib.playlists.map((p) => (
+                  <button key={p.id} role="menuitem" className="menu-item" onClick={() => addTo(p.id)}>
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
         {onRemove && (
           <button className="icon-btn" onClick={onRemove} aria-label="Hapus dari playlist">
             <X size={18} />
