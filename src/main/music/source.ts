@@ -7,7 +7,13 @@ export interface MusicSource {
   getStreamUrl(videoId: string): Promise<string>
 }
 
-const CLIENTS = ['YTMUSIC', 'ANDROID', 'IOS'] as const
+/**
+ * Verified 2026-11-16 against live YouTube: only VISIONOS serves the whole file.
+ * IOS and ANDROID_VR return 403 for any range after the first 1 MiB (they need a PO token),
+ * and YTMUSIC/ANDROID/WEB return no usable URL. Do not add those back as fallbacks: a stream
+ * that dies after the first minute is worse than a clear "cannot play" message.
+ */
+const CLIENTS = ['VISIONOS'] as const
 
 export class YoutubeMusicSource implements MusicSource {
   private yt?: Promise<Innertube>

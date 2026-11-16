@@ -4,6 +4,8 @@ import { afterAll, beforeAll, expect, test } from 'vitest'
 import { createStreamProxy } from '../src/main/music/proxy'
 
 const BODY = Buffer.from('0123456789abcdefghij')
+const MAX_RANGE = 1024 * 1024
+const BIG = Buffer.alloc(3 * MAX_RANGE, 7)
 let upstream: http.Server
 let upstreamUrl = ''
 let proxy: ReturnType<typeof createStreamProxy>
@@ -11,20 +13,26 @@ let port = 0
 let resolveCalls = 0
 
 beforeAll(async () => {
+  // Mimics googlevideo: open-ended or over-large ranges are rejected with 403.
   upstream = http.createServer((req, res) => {
+    const data = req.url === '/big' ? BIG : BODY
     const range = /bytes=(\d+)-(\d*)/.exec(req.headers.range ?? '')
     if (!range) {
-      res.writeHead(200, { 'content-type': 'audio/mp4', 'content-length': BODY.length })
-      res.end(BODY)
+      res.writeHead(200, { 'content-type': 'audio/mp4', 'content-length': data.length })
+      res.end(data)
       return
     }
     const start = Number(range[1])
-    const end = range[2] ? Number(range[2]) : BODY.length - 1
-    const part = BODY.subarray(start, end + 1)
+    if (!range[2] || Number(range[2]) - start + 1 > MAX_RANGE) {
+      res.writeHead(403).end()
+      return
+    }
+    const end = Math.min(Number(range[2]), data.length - 1)
+    const part = data.subarray(start, end + 1)
     res.writeHead(206, {
       'content-type': 'audio/mp4',
       'content-length': part.length,
-      'content-range': `bytes ${start}-${end}/${BODY.length}`
+      'content-range': `bytes ${start}-${end}/${data.length}`
     })
     res.end(part)
   })
@@ -34,6 +42,7 @@ beforeAll(async () => {
   proxy = createStreamProxy(async (id) => {
     resolveCalls++
     if (id === 'badvideo000') throw new Error('nope')
+    if (id === 'bigvideo000') return upstreamUrl.replace('/a', '/big')
     return upstreamUrl
   })
   port = await proxy.start()
@@ -58,6 +67,23 @@ test('passes a Range header through', async () => {
   expect(res.status).toBe(206)
   expect(res.headers.get('content-range')).toBe('bytes 2-5/20')
   expect(Buffer.from(await res.arrayBuffer()).toString()).toBe('2345')
+})
+
+test('open-ended Range on a big file is clamped to one chunk', async () => {
+  const res = await get('/stream/bigvideo000', { range: 'bytes=0-' })
+  expect(res.status).toBe(206)
+  expect(res.headers.get('content-range')).toBe(`bytes 0-${MAX_RANGE - 1}/${BIG.length}`)
+  expect((await res.arrayBuffer()).byteLength).toBe(MAX_RANGE)
+})
+
+test('an over-large explicit Range is clamped too, and later chunks work', async () => {
+  const big = await get('/stream/bigvideo000', { range: `bytes=0-${3 * MAX_RANGE - 1}` })
+  expect(big.status).toBe(206)
+  expect((await big.arrayBuffer()).byteLength).toBe(MAX_RANGE)
+  const next = await get('/stream/bigvideo000', { range: `bytes=${MAX_RANGE}-` })
+  expect(next.status).toBe(206)
+  expect(next.headers.get('content-range')).toBe(`bytes ${MAX_RANGE}-${2 * MAX_RANGE - 1}/${BIG.length}`)
+  await next.arrayBuffer()
 })
 
 test('caches the resolved url', async () => {

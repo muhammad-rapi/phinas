@@ -4,6 +4,17 @@ import { Readable } from 'node:stream'
 
 const TTL_MS = 10 * 60 * 1000
 const PASS_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges']
+/** googlevideo rejects (403) ranges larger than 1 MiB, so every request is cut to this size. */
+export const MAX_CHUNK = 1024 * 1024
+
+/** Turns the client's Range header into a bounded range of at most MAX_CHUNK bytes. */
+export function clampRange(header: string | undefined): string {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(header ?? '')
+  const start = m && m[1] ? Number(m[1]) : 0
+  const requestedEnd = m && m[2] ? Number(m[2]) : Infinity
+  const end = Math.min(requestedEnd, start + MAX_CHUNK - 1)
+  return `bytes=${start}-${end}`
+}
 
 export function createStreamProxy(resolveUrl: (videoId: string) => Promise<string>): {
   start(): Promise<number>
@@ -31,10 +42,11 @@ export function createStreamProxy(resolveUrl: (videoId: string) => Promise<strin
     try {
       const url = await urlFor(id)
       const upstream = await fetch(url, {
-        headers: { range: req.headers.range ?? 'bytes=0-' },
+        headers: { range: clampRange(req.headers.range) },
         signal: ac.signal
       })
       if (upstream.status >= 400 || !upstream.body) {
+        console.error(`[stream-proxy] ${id}: upstream returned ${upstream.status} for ${clampRange(req.headers.range)}`)
         cache.delete(id)
         res.writeHead(502).end()
         return
@@ -48,7 +60,8 @@ export function createStreamProxy(resolveUrl: (videoId: string) => Promise<strin
       const body = Readable.fromWeb(upstream.body as never)
       body.on('error', () => res.destroy())
       body.pipe(res)
-    } catch {
+    } catch (e) {
+      if (!ac.signal.aborted) console.error(`[stream-proxy] ${id}:`, e instanceof Error ? e.message : e)
       cache.delete(id)
       if (!res.headersSent) res.writeHead(502)
       res.end()
