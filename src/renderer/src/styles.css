@@ -345,3 +345,58 @@ h1, h2, h3, h4 { margin: 0; }
 .listen-card-btn.ghost { background: rgba(255, 255, 255, 0.22); color: #fff; }
 
 .np-session { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 600; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 45%, transparent), rgba(192, 75, 216, 0.35)); }
+
+/* ---------- bento (Beranda, Berdua) ---------- */
+.main { container-type: inline-size; }
+.bento-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.bento-row > .span-4 { grid-column: span 4; }
+.bento-row > .span-6 { grid-column: span 6; }
+.bento-row > .span-8 { grid-column: span 8; }
+.bento-row.single > * { grid-column: 1 / -1; }
+.tile { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--line); }
+.tile-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+button.tile-title { align-self: flex-start; padding: 0; text-align: left; }
+button.tile-title:hover { text-decoration: underline; }
+.tile > .pill-btn { align-self: flex-start; display: flex; align-items: center; gap: 6px; }
+.track-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.track-row { width: 100%; justify-content: flex-start; gap: 12px; padding: 6px; border-radius: 10px; text-align: left; }
+.track-row:hover { background: var(--hover); }
+.track-row-n { width: 18px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
+.track-row.skeleton { height: 52px; background: var(--hover); animation: skeleton 1.2s ease-in-out infinite alternate; }
+@keyframes skeleton { from { opacity: 0.45; } to { opacity: 1; } }
+
+.continue { flex-direction: row; align-items: center; gap: 22px; min-height: 220px; }
+.continue.empty { flex-direction: column; align-items: flex-start; justify-content: center; }
+.continue-cover { width: 168px; height: 168px; flex: none; border-radius: 16px; background: var(--hover) center / cover; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4); }
+.continue-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.continue-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.continue-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.continue-play { align-self: flex-start; margin-top: 14px; width: 54px; height: 54px; border-radius: 50%; justify-content: center; background: var(--accent); color: #fff; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); transition: transform 0.15s, background 0.5s; }
+.continue-play:hover { transform: scale(1.06); }
+
+.liked-tile { align-items: flex-start; justify-content: space-between; text-align: left; color: #fff; border: 0; background: linear-gradient(135deg, #4c1d95, var(--accent)); }
+.liked-tile-text { display: flex; flex-direction: column; gap: 2px; }
+
+.cover-stack { position: relative; height: 92px; }
+.cover-stack span { position: absolute; top: 0; width: 84px; height: 84px; border-radius: 12px; background: var(--hover) center / cover; border: 2px solid var(--bg); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35); }
+.cover-stack span:nth-child(1) { left: 0; z-index: 3; transform: rotate(-6deg); }
+.cover-stack span:nth-child(2) { left: 44px; z-index: 2; transform: rotate(2deg); }
+.cover-stack span:nth-child(3) { left: 88px; z-index: 1; transform: rotate(8deg); }
+
+.pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pick { justify-content: flex-start; gap: 10px; min-width: 0; padding: 6px; border-radius: 10px; text-align: left; }
+.pick:hover { background: var(--hover); }
+.pick .queue-thumb { width: 48px; height: 48px; }
+.pl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+.bento-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.bento-cards .mcard { width: auto; }
+.bento-cards .mcard-play { top: auto; bottom: 76px; }
+
+@container (max-width: 1000px) {
+  .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 760px) {
+  .bento-row > * { grid-column: 1 / -1; }
+  .bento-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
