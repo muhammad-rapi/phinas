@@ -14,6 +14,8 @@ export interface NotchController {
 /**
  * One small frameless, transparent, always-on-top window at the top centre of the primary display.
  * It appears only while a track is loaded. If it cannot be created the app runs without it.
+ * The window (and its renderer process, about 85 MB) exists only while it is wanted: it is created
+ * when the notch is on and a track is loaded, and destroyed when the notch is switched off.
  */
 export function createNotch(opts: {
   here: string
@@ -31,20 +33,21 @@ export function createNotch(opts: {
   let win: BrowserWindow | null = null
 
   const place = (): void => {
-    if (!win) return
+    if (!win || win.isDestroyed()) return
     const d = screen.getPrimaryDisplay()
     layout = detectNotch(platform, d.bounds, d.workArea)
     win.setBounds(computeBounds(platform, d.bounds, d.workArea, layout, expanded))
     win.webContents.send('notch:layout', layout)
   }
 
+  /** Creates or destroys the window so it exists exactly while the notch is wanted. */
   const sync = (): void => {
-    if (!win || win.isDestroyed()) return
-    if (enabled && hasTrack) {
-      place()
-      if (!win.isVisible()) win.showInactive()
-    } else if (win.isVisible()) {
-      win.hide()
+    const wanted = enabled && hasTrack
+    if (wanted && !win) create()
+    else if (!wanted && win) {
+      win.destroy()
+      win = null
+      expanded = false
     }
   }
 
@@ -78,11 +81,16 @@ export function createNotch(opts: {
       if (platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
       opts.loadPage(win)
       win.webContents.on('did-finish-load', () => {
-        win?.webContents.send('notch:layout', layout)
-        if (lastState) win?.webContents.send('notch:state', lastState)
+        if (!win || win.isDestroyed()) return
+        // Position first, then show: the window never appears blank or in the wrong place.
+        place()
+        if (lastState) win.webContents.send('notch:state', lastState)
+        win.showInactive()
       })
-      win.on('closed', () => {
-        win = null
+      const created = win
+      created.on('closed', () => {
+        // A newer window may already have replaced this one.
+        if (win === created) win = null
       })
     } catch (e) {
       console.error('notch window could not be created, running without it:', e)
@@ -92,15 +100,13 @@ export function createNotch(opts: {
 
   ipcMain.on('notch:state', (_e, state: NotchState) => {
     lastState = state
-    const had = hasTrack
     hasTrack = state.track !== null
-    if (!win || win.isDestroyed()) return
-    win.webContents.send('notch:state', state)
-    if (had !== hasTrack) sync()
+    sync()
+    if (win && !win.isDestroyed()) win.webContents.send('notch:state', state)
   })
   ipcMain.on('notch:expanded', (_e, value: boolean) => {
     expanded = value
-    place()
+    if (win && !win.isDestroyed()) place()
   })
   ipcMain.on('library:changed', () => {
     opts.mainWindow()?.webContents.send('library:changed')
@@ -112,9 +118,9 @@ export function createNotch(opts: {
   ipcMain.on('player:command', (_e, cmd: PlayerCommand) => {
     opts.mainWindow()?.webContents.send('player:command', cmd)
   })
-  screen.on('display-metrics-changed', place)
-
-  create()
+  screen.on('display-metrics-changed', () => {
+    if (win && !win.isDestroyed()) place()
+  })
 
   return {
     setEnabled(value) {
@@ -123,6 +129,7 @@ export function createNotch(opts: {
     },
     destroy() {
       win?.destroy()
+      win = null
     }
   }
 }
