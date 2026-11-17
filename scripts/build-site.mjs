@@ -47,7 +47,11 @@ const dict = {
     f5_t: 'Warna mengikuti sampul',
     f5_d: 'Latar dan aksen berubah mengikuti sampul lagu yang diputar. Ada juga tema gelap dan terang.',
     f6_t: 'Antrean dan pintasan',
-    f6_d: 'Putar berikutnya, tambah ke antrean, tombol media di keyboard, dan spasi untuk jeda.',
+    f6_d: 'Putar berikutnya, tambah ke antrean, tombol media di keyboard, dan pintasan seperti spasi untuk jeda atau Cmd/Ctrl+Alt+Panah dari aplikasi mana pun.',
+    f7_t: 'Saran lagu yang belajar dari seleramu',
+    f7_d: 'Phinas mengingat yang kamu dengarkan, sukai, dan lewati, lalu menyusun Pilihan untukmu. Saat antrean habis, lagu serupa lanjut diputar otomatis.',
+    f8_t: 'Notch di layar',
+    f8_d: 'Pill kecil di tengah atas layar di Mac dan Windows, lengkap dengan lirik yang berjalan, tombol kontrol, geser posisi lagu, dan tambah ke playlist.',
     s_title: 'Seperti ini tampilannya',
     s1: 'Beranda dengan lagu yang sedang tren dan playlist-mu',
     s2: 'Pencarian dengan playlist publik dan lagu',
@@ -92,7 +96,11 @@ const dict = {
     f5_t: 'Colors follow the cover',
     f5_d: 'The background and accents follow the cover of the playing song. Dark and light themes too.',
     f6_t: 'Queue and shortcuts',
-    f6_d: 'Play next, add to queue, keyboard media keys, and space to pause.',
+    f6_d: 'Play next, add to queue, keyboard media keys, and shortcuts like space to pause or Cmd/Ctrl+Alt+Arrow from any app.',
+    f7_t: 'Suggestions that learn your taste',
+    f7_d: 'Phinas remembers what you play, like and skip, and builds Picks for you from it. When the queue ends, similar songs keep playing on their own.',
+    f8_t: 'A notch on your screen',
+    f8_d: 'A small pill at the top centre of the screen on Mac and Windows, with live lyrics, controls, seeking, and add to playlist.',
     s_title: 'What it looks like',
     s1: 'Home, with what is trending and your playlists',
     s2: 'Search, with public playlists and songs',
@@ -126,7 +134,9 @@ const icons = {
   import: '<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   color: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17" opacity=".45"/>',
-  queue: '<path d="M4 7h12M4 12h12M4 17h8M18 14v6m-3-3h6"/>'
+  queue: '<path d="M4 7h12M4 12h12M4 17h8M18 14v6m-3-3h6"/>',
+  taste: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+  notch: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 4v1.5a1.5 1.5 0 0 0 1.5 1.5h5A1.5 1.5 0 0 0 16 5.5V4"/>'
 }
 const ic = (k) =>
   `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[k]}</svg>`
@@ -283,7 +293,7 @@ const body = `
     <section>
       <h2 data-i18n="f_title">${t.f_title}</h2>
       <div class="features">
-        ${feature(1, 'lyrics')}${feature(2, 'two')}${feature(3, 'import')}${feature(4, 'search')}${feature(5, 'color')}${feature(6, 'queue')}
+        ${feature(1, 'lyrics')}${feature(2, 'two')}${feature(3, 'import')}${feature(4, 'search')}${feature(5, 'color')}${feature(6, 'queue')}${feature(7, 'taste')}${feature(8, 'notch')}
       </div>
     </section>
 
