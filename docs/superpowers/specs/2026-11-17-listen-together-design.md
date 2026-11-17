@@ -31,16 +31,20 @@ src/renderer (PlayerProvider)
 ```
 
 `shared/sync` talks to the outside only through two interfaces:
-- `Transport { send, onMessage }`
-- `PlayerPort { getPosition, setRate, run }`
+- `Transport { send, onMessage, onPartnerPresence, onConnection }`
+- `PlayerPort { snapshot, apply, setRate }`
 
 Desktop and mobile each write their own adapters.
+
+The session runs in the renderer, next to the audio element. The Realtime channel lives in the main process and is bridged over IPC.
 
 ### Channel
 One channel per pair. The name is derived from the two sorted user ids. Only two accounts exist, so no session table is needed.
 
 ### Messages
-`hello` (carries protocol version), `invite`, `accept`, `decline`, `end`, `action` (play, pause, seek, setTrack, queue), `heartbeat`, `ping`, `pong`. Every message carries `ts` corrected by the clock offset.
+`invite`, `accept` and `hello` carry the protocol version. `accept` also carries the acceptor's queue, used when the inviter has nothing playing. Other messages: `decline` (optional reason `version`), `end`, `action`, `heartbeat`, `resync`, `status` (`ok` or `error`), `ping`, `pong`. Every message carries `ts` from the sender's clock; the receiver converts it with the estimated offset.
+
+Actions are `play`, `pause`, `seek` and `queue`. A `queue` action is a full snapshot (tracks, index, position, playing), so it also covers changing track. Queues over 100 tracks are windowed around the current track.
 
 ### Conflict rule
 Each `action` carries `ts` and `from`. The newer `ts` wins. On equal `ts`, the smaller user id wins, so both sides reach the same result.
@@ -55,16 +59,16 @@ Each `action` carries `ts` and `from`. The newer `ts` wins. On equal `ts`, the s
 ### While active
 - Local actions apply immediately without waiting for a reply, then are sent as `action`.
 - Actions arriving from the session run through `player.run()` marked `remote: true` and are not re-emitted, which prevents loops.
-- `heartbeat` every 3 s: `{ trackId, position, playing, ts }`. The receiver computes the expected position and reconciles:
+- Only the lead sends `heartbeat` every 3 s: `{ videoId, position, playing }`. The lead is whoever made the last action (the inviter at the start). The other side computes the expected position and reconciles:
   - drift < 200 ms: nothing
   - 200 ms to 1 s: `playbackRate` 0.97 or 1.03 until drift is gone, then 1.0
   - > 1 s: seek
-- A heartbeat with a different track makes the receiver follow with `setTrack`.
+- If a heartbeat shows a different track, the follower sends `resync` and the lead replies with a `queue` snapshot. This also heals a broadcast message that was lost.
 
 ### Drop and return
 - Presence detects the missing side. The remaining side keeps playing and shows "Partner disconnected".
 - The dropped side keeps playing locally until it reconnects or 2 minutes pass.
-- On return it sends `hello`, takes the latest heartbeat, jumps to the current position and recomputes the clock offset.
+- A side that regains its own connection sends `hello`. The other side replies with a `queue` snapshot and the returning side jumps to it, and both recompute the clock offset. If both were away, the smaller user id sends the snapshot.
 - After 2 minutes without return the remaining side sends `end` (best effort). The dropped side also closes its own session after 2 minutes, so neither side hangs.
 
 ### Stream failure on one side
