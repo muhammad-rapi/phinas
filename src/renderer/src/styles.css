@@ -406,6 +406,12 @@ button.tile-title:hover { text-decoration: underline; }
 .listen-card-title.link { padding: 0; color: inherit; text-align: left; }
 .listen-card-title.link:hover { text-decoration: underline; }
 
+.artist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.artist { flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 8px; border-radius: 14px; text-align: center; transition: background 0.15s; }
+.artist:hover { background: var(--hover); }
+.artist > .cover-card-title, .artist > .cover-card-sub { max-width: 100%; }
+.artist-photo { width: 100%; max-width: 132px; aspect-ratio: 1; margin-bottom: 6px; border-radius: 50%; background: var(--hover) center / cover; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); }
+
 @container (max-width: 760px) {
   /* Same specificity as the span rules above, so these win by coming later. */
   .bento-row > .span-4, .bento-row > .span-6, .bento-row > .span-8 { grid-column: 1 / -1; }

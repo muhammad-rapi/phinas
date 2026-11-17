@@ -1,6 +1,6 @@
 import { Heart, Pause, Play, Plus, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { HomeFeed, Track } from '../../../shared/types'
+import type { FavoriteArtist, HomeFeed, Track } from '../../../shared/types'
 import { BentoRow, Tile, TrackRows } from '../components/Bento'
 import { ListenCard } from '../components/ListenCard'
 import { PlaylistCover } from '../components/PlaylistCover'
@@ -137,9 +137,11 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
   const [feedFailed, setFeedFailed] = useState(false)
   const [recent, setRecent] = useState<Track[]>([])
   const [forYou, setForYou] = useState<Track[]>([])
+  const [artists, setArtists] = useState<FavoriteArtist[]>([])
 
   useEffect(() => {
     window.phinas.listRecentPlays(20).then(setRecent).catch(() => setRecent([]))
+    window.phinas.listFavoriteArtists(8).then(setArtists).catch(() => setArtists([]))
     // With no history yet, or when the request fails, the feed's picks are the fallback.
     window.phinas
       .getRecommendations()
@@ -199,6 +201,22 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
           </Tile>
         )}
         <PlaylistTile nav={nav} />
+      </BentoRow>
+
+      <BentoRow>
+        {artists.length > 0 && (
+          <Tile span={8} title="Artis favoritmu">
+            <div className="artist-grid">
+              {artists.map((a) => (
+                <button key={a.artist} className="artist" onClick={() => player.play(a.tracks, 0)} aria-label={`Putar ${a.artist}`}>
+                  <span className="artist-photo" style={{ backgroundImage: `url("${a.coverUrl}")` }} />
+                  <span className="cover-card-title">{a.artist}</span>
+                  <span className="muted cover-card-sub">{a.plays} kali diputar</span>
+                </button>
+              ))}
+            </div>
+          </Tile>
+        )}
       </BentoRow>
     </>
   )

@@ -96,6 +96,7 @@ export function createHandlers(d: Deps): PhinasApi {
       }
     },
     listRecentPlays: async (limit = 50) => d.library.recentPlays(Math.min(limit, 50)),
+    listFavoriteArtists: async (limit = 8) => d.library.favoriteArtists(Math.min(limit, 12)),
     getRecommendations: () => d.recommender.forHome(),
     getAutoplay: (current, queueIds) => d.recommender.autoplay(current, queueIds),
     getNotchEnabled: async () => d.settings.get('notch'),

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import type { LikeEntry, PlayEntry, PlayRecord, Playlist, PlaylistWithTracks, Track } from '../../shared/types'
+import type { FavoriteArtist, LikeEntry, PlayEntry, Playlist, PlaylistWithTracks, PlayRecord, Track } from '../../shared/types'
 
 interface TrackRow {
   video_id: string
@@ -249,6 +249,18 @@ export class Library {
   }
 
   /** Play and skip counts per track. */
+  /** The most played artists, each with up to 20 of their tracks (most played first). */
+  favoriteArtists(limit = 8): FavoriteArtist[] {
+    const tracksOf = this.db.prepare(
+      `SELECT video_id, title, artist, cover_url, duration_sec FROM plays WHERE skipped = 0 AND artist = ?
+       GROUP BY video_id ORDER BY COUNT(*) DESC, MAX(played_at) DESC LIMIT 20`
+    )
+    return this.topArtists(limit).map(({ artist, plays }) => {
+      const tracks = (tracksOf.all(artist) as unknown as TrackRow[]).map(toTrack)
+      return { artist, plays, coverUrl: tracks[0]?.coverUrl ?? '', tracks }
+    })
+  }
+
   trackStats(): Map<string, { plays: number; skips: number }> {
     const rows = this.db
       .prepare(

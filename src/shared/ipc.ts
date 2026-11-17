@@ -1,4 +1,4 @@
-import type { ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { FavoriteArtist, ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 import type { SyncMessage } from './sync/protocol'
 
 export interface PhinasApi {
@@ -36,6 +36,8 @@ export interface PhinasApi {
   recordPlay(rec: PlayRecord): Promise<void>
   /** Unique tracks played recently, newest first. */
   listRecentPlays(limit?: number): Promise<Track[]>
+  /** The most played artists, for Home's "Artis favoritmu". */
+  listFavoriteArtists(limit?: number): Promise<FavoriteArtist[]>
   /** Ranked picks from the taste profile, or `personalized: false` when there is no history yet. */
   getRecommendations(): Promise<Recommendations>
   /** Up to 10 tracks to append when the queue runs out. Empty on any failure. */
@@ -122,6 +124,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   copyPartnerPlaylist: true,
   recordPlay: true,
   listRecentPlays: true,
+  listFavoriteArtists: true,
   getRecommendations: true,
   getAutoplay: true,
   getNotchEnabled: true,

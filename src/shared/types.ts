@@ -71,6 +71,17 @@ export interface SyncStatus {
 }
 
 /** One finished listen of a track, as stored in the local history. */
+/** An artist from the play history, for "Artis favoritmu". */
+export interface FavoriteArtist {
+  artist: string
+  /** Plays of all their tracks, skips not counted. */
+  plays: number
+  /** Cover of their most played track (there is no artist photo). */
+  coverUrl: string
+  /** Their tracks, most played first. */
+  tracks: Track[]
+}
+
 export interface PlayRecord {
   track: Track
   listenedSec: number
