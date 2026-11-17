@@ -21,7 +21,11 @@ const events: PhinasEvents = {
   notifyLibraryChanged: () => ipcRenderer.send('library:changed'),
   onLibraryChanged: (cb) => subscribe('library:changed', () => cb()),
   setNotchExpanded: (expanded) => ipcRenderer.send('notch:expanded', expanded),
-  onNotchLayout: (cb) => subscribe('notch:layout', cb)
+  onNotchLayout: (cb) => subscribe('notch:layout', cb),
+  listenSend: (msg) => ipcRenderer.send('listen:send', msg),
+  onListenMessage: (cb) => subscribe('listen:message', cb),
+  onListenPresence: (cb) => subscribe('listen:presence', cb),
+  onListenConnection: (cb) => subscribe('listen:connection', cb)
 }
 
 contextBridge.exposeInMainWorld('phinas', { ...invoke, ...events })

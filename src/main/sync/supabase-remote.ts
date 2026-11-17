@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { PartnerPlaylist, PlaylistWithTracks, Track } from '../../shared/types'
+import type { ListenInfo, PartnerPlaylist, PlaylistWithTracks, Track } from '../../shared/types'
 import type { Remote } from './engine'
 import { FileStorage } from './file-storage'
 
@@ -60,6 +60,21 @@ export class SupabaseRemote implements Remote {
     const { data } = await this.sb.auth.getUser()
     if (!data.user) throw new Error('Not signed in')
     return data.user.id
+  }
+
+  /** The raw client, for the realtime channel. */
+  get client(): SupabaseClient {
+    return this.sb
+  }
+
+  /** The other account (there are only two), or null when it does not exist yet. */
+  async pairInfo(): Promise<ListenInfo | null> {
+    const me = await this.me()
+    const rows = check(
+      await this.sb.from('profiles').select('id, display_name').neq('id', me).limit(1)
+    ) as unknown as { id: string; display_name: string }[]
+    if (rows.length === 0) return null
+    return { me, partnerId: rows[0].id, partnerName: rows[0].display_name }
   }
 
   async upsertPlaylist(p: PlaylistWithTracks): Promise<void> {

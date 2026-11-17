@@ -1,4 +1,5 @@
-import type { NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { SyncMessage } from './sync/protocol'
 
 export interface PhinasApi {
   search(query: string): Promise<Track[]>
@@ -41,6 +42,11 @@ export interface PhinasApi {
   getAutoplay(current: Track, queueIds: string[]): Promise<Track[]>
   getNotchEnabled(): Promise<boolean>
   setNotchEnabled(enabled: boolean): Promise<void>
+  /** Joins the pair channel. Null when not signed in, Supabase is not configured, or there is no partner yet. */
+  listenOpen(): Promise<ListenInfo | null>
+  listenClose(): Promise<void>
+  /** Current connection and partner presence, for catching up on events fired before we subscribed. */
+  listenStatus(): Promise<ListenStatus>
 }
 
 /** Event channels (not request/response). Implemented in the preload script. */
@@ -65,6 +71,12 @@ export interface PhinasEvents {
   setNotchExpanded(expanded: boolean): void
   /** Notch window: where the pill sits (set once by the main process). */
   onNotchLayout(cb: (layout: NotchLayout) => void): () => void
+  /** Sends a listen-together message to the partner. */
+  listenSend(msg: SyncMessage): void
+  /** A raw message from the partner (validate it with `parseMessage`). Returns an unsubscribe. */
+  onListenMessage(cb: (raw: unknown) => void): () => void
+  onListenPresence(cb: (here: boolean) => void): () => void
+  onListenConnection(cb: (up: boolean) => void): () => void
 }
 
 export interface NotchLayout {
@@ -111,7 +123,10 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   getRecommendations: true,
   getAutoplay: true,
   getNotchEnabled: true,
-  setNotchEnabled: true
+  setNotchEnabled: true,
+  listenOpen: true,
+  listenClose: true,
+  listenStatus: true
 }
 
 export const CHANNELS = Object.keys(CHANNEL_MAP) as (keyof PhinasApi)[]

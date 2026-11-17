@@ -13,6 +13,7 @@ import { createSystemVolume } from './system-volume'
 import { YoutubeMusicSource } from './music/source'
 import { SyncEngine } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
+import { PairChannel } from './sync/realtime'
 import { createNotch } from './notch/window'
 import { Recommender } from './recommend/service'
 import { SettingsStore } from './settings'
@@ -97,6 +98,9 @@ app.whenReady().then(async () => {
   const settings = new SettingsStore(join(userData, 'settings.json'))
   const recommender = new Recommender(library, source)
   let mainWindow: BrowserWindow | null = null
+  const pair = remote
+    ? new PairChannel(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
+    : null
   const shot = Boolean(process.env['PHINAS_SHOT'])
   const notch = shot
     ? null
@@ -117,6 +121,7 @@ app.whenReady().then(async () => {
     systemVolume: createSystemVolume(),
     proxyPort: () => proxyPort,
     remote,
+    pair,
     engine,
     lastError,
     recommender,
@@ -128,6 +133,7 @@ app.whenReady().then(async () => {
       (handlers[name] as (...a: unknown[]) => unknown)(...args)
     )
   }
+  ipcMain.on('listen:send', (_e, msg) => pair?.send(msg))
 
   mainWindow = createWindow()
   mainWindow.on('closed', () => {

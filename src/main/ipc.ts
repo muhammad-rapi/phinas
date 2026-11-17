@@ -7,6 +7,7 @@ import { fetchLyrics } from './music/lyrics'
 import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
 import type { SupabaseRemote } from './sync/supabase-remote'
+import type { PairChannel } from './sync/realtime'
 import type { SystemVolume } from './system-volume'
 import type { Recommender } from './recommend/service'
 import type { SettingsStore } from './settings'
@@ -18,6 +19,8 @@ export interface Deps {
   systemVolume: SystemVolume
   proxyPort: () => number
   remote: SupabaseRemote | null
+  /** Realtime channel for listen together; null when Supabase is not configured. */
+  pair: PairChannel | null
   engine: SyncEngine | null
   lastError: { value?: string }
   recommender: Recommender
@@ -69,7 +72,10 @@ export function createHandlers(d: Deps): PhinasApi {
       d.lastError.value = undefined
       void d.engine?.flush()
     },
-    syncSignOut: async () => requireRemote().signOut(),
+    syncSignOut: async () => {
+      await d.pair?.close()
+      await requireRemote().signOut()
+    },
     syncStatus: async () => {
       const session = d.remote ? await d.remote.session() : null
       return {
@@ -97,6 +103,20 @@ export function createHandlers(d: Deps): PhinasApi {
       d.settings.set('notch', enabled)
       d.setNotchEnabled(enabled)
     },
+    listenOpen: async () => {
+      if (!d.remote || !d.pair) return null
+      try {
+        const info = await d.remote.pairInfo()
+        if (!info) return null
+        await d.pair.open(info.me, info.partnerId)
+        return info
+      } catch (e) {
+        console.warn('[listen] could not open the channel:', e)
+        return null
+      }
+    },
+    listenClose: async () => d.pair?.close(),
+    listenStatus: async () => d.pair?.status() ?? { connected: false, partnerHere: false },
     copyPartnerPlaylist: async (p) => {
       const copy = d.library.createPlaylist(`${p.name} (dari ${p.ownerName})`)
       for (const t of p.tracks) d.library.addTrack(copy.id, t)

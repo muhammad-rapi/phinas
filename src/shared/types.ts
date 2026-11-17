@@ -112,3 +112,16 @@ export interface NotchState {
   accentText: string
   gradTop: string
 }
+
+/** Who we can listen together with. There are only two accounts, so the partner is the other profile. */
+export interface ListenInfo {
+  me: string
+  partnerId: string
+  partnerName: string
+}
+
+/** Live state of the realtime channel, so the renderer can catch up on events it missed. */
+export interface ListenStatus {
+  connected: boolean
+  partnerHere: boolean
+}
