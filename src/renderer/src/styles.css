@@ -244,7 +244,7 @@ h1, h2, h3, h4 { margin: 0; }
 .queue-artist { font-size: 12px; }
 
 /* ---------- player bar ---------- */
-.playerbar { position: absolute; z-index: 10; bottom: 14px; left: 248px; right: 0; width: min(920px, calc(100% - 248px - 48px)); margin: 0 auto; height: 76px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr); align-items: center; gap: 14px; padding: 0 18px; background: var(--glass-strong); backdrop-filter: blur(28px) saturate(1.5); border: 1px solid var(--line); border-radius: 38px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); }
+.playerbar { position: absolute; z-index: 10; bottom: 14px; left: 248px; right: 0; width: min(920px, calc(100% - 248px - 48px)); margin: 0 auto; height: 76px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; align-items: center; gap: 14px; padding: 0 18px; background: var(--glass-strong); backdrop-filter: blur(28px) saturate(1.5); border: 1px solid var(--line); border-radius: 38px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); }
 .app.with-panel .playerbar { right: 340px; width: min(920px, calc(100% - 248px - 340px - 48px)); }
 .playerbar .listen-label { display: none; }
 .pb-open { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 4px; border-radius: 14px; text-align: left; }
@@ -354,7 +354,7 @@ h1, h2, h3, h4 { margin: 0; }
 .bento-row > .span-8 { grid-column: span 8; }
 .bento-row.single > * { grid-column: 1 / -1; }
 .tile { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--line); }
-.tile-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.tile .tile-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 button.tile-title { align-self: flex-start; padding: 0; text-align: left; }
 button.tile-title:hover { text-decoration: underline; }
 .tile > .pill-btn { align-self: flex-start; display: flex; align-items: center; gap: 6px; }
@@ -402,6 +402,7 @@ button.tile-title:hover { text-decoration: underline; }
   .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @container (max-width: 760px) {
-  .bento-row > * { grid-column: 1 / -1; }
+  /* Same specificity as the span rules above, so these win by coming later. */
+  .bento-row > .span-4, .bento-row > .span-6, .bento-row > .span-8 { grid-column: 1 / -1; }
   .bento-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
