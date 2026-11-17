@@ -42,18 +42,20 @@ When hidden, the main area takes the width. The open/closed state is kept in `Sh
 Drop the floating cards: `gap` and outer padding go to 0, the sidebar and main lose their border radius, border and background blur. A 1 px line separates the sidebar from the main area. The blurred cover (`.ambient`) behind everything stays, as does the accent gradient at the top of the main area.
 
 ### 6. Floating pill player
-`PlayerBar` becomes a pill pinned to the bottom center of the window (width `min(920px, 100% - 48px)`, about 72 px high, fully rounded, `--glass-strong` with a 1 px line and a shadow):
+`PlayerBar` becomes a pill pinned to the bottom, centered over the content columns so it never covers the sidebar (width `min(920px, content width - 48px)`, about 72 px high, fully rounded, `--glass-strong` with a 1 px line and a shadow):
 - left: cover, title, artist, like button; clicking cover or title toggles the right panel
 - center: shuffle, previous, **play (filled with `--accent`, white icon)**, next, repeat, and the seek slider with times under them
 - right: the listen-together button and volume
 
-The main area and sidebar list get about 110 px of bottom padding so the pill never covers content.
+A panel icon in the right cluster also toggles the right panel, so it is reachable without a track. The listen button shows only its icon in the pill; the label stays on the Berdua card and in the panel.
+
+The main area and the right panel get about 120 px of bottom padding so the pill never covers content.
 
 ## Not changing
 Colors, fonts, themes, the notch overlay, the inner content of Search, Disukai, Riwayat, Playlist, Playlist publik, Playlist pasangan, Import and Profil (they just sit in the new frame), the player logic and all IPC.
 
 ## Files
-- Create: `components/Sidebar.tsx`, `components/SearchBox.tsx`, `screens/TogetherView.tsx`, `components/ListenCard.tsx` (the card shared by Home and Berdua)
+- Create: `components/Sidebar.tsx`, `components/SearchBox.tsx`, `screens/TogetherView.tsx`, `components/ListenCard.tsx` (the card shared by Home and Berdua), `components/PartnerShelf.tsx` (the "Dari pasangan" shelf shared by Home and Berdua), `sync/status.ts` (shared live-status text)
 - Delete: `components/TopBar.tsx`, `components/LibraryPanel.tsx`
 - Modify: `App.tsx`, `views.ts` (add `together`), `components/PlayerBar.tsx`, `components/NowPlaying.tsx` (session block), `screens/Home.tsx`, `styles.css`
 
