@@ -1,7 +1,8 @@
-import { Heart, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { HomeFeed, Track } from '../../../shared/types'
+import { ListenCard } from '../components/ListenCard'
 import { CoverArt, MediaCard } from '../components/MediaCard'
+import { PartnerShelf } from '../components/PartnerShelf'
 import { PlaylistCover } from '../components/PlaylistCover'
 import { Shelf } from '../components/Shelf'
 import { useLibrary } from '../library/LibraryProvider'
@@ -16,15 +17,7 @@ function greeting(): string {
   return 'Selamat malam'
 }
 
-interface Shortcut {
-  key: string
-  title: string
-  thumb: React.ReactNode
-  open: () => void
-  play: () => void
-}
-
-export function Home({ nav }: { nav: Nav }): React.JSX.Element {
+export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Element {
   const player = usePlayer()
   const lib = useLibrary()
   const [feed, setFeed] = useState<HomeFeed | null>(null)
@@ -33,7 +26,10 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
   const [forYou, setForYou] = useState<Track[]>([])
 
   useEffect(() => {
-    window.phinas.listRecentPlays(20).then(setRecent).catch(() => setRecent([]))
+    window.phinas
+      .listRecentPlays(20)
+      .then(setRecent)
+      .catch(() => setRecent([]))
     // With no history yet, or when the request fails, Quick picks stays as the fallback.
     window.phinas
       .getRecommendations()
@@ -42,41 +38,16 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
   }, [])
 
   useEffect(() => {
-    window.phinas.getHomeFeed().then(setFeed).catch(() => setFeedFailed(true))
+    window.phinas
+      .getHomeFeed()
+      .then(setFeed)
+      .catch(() => setFeedFailed(true))
   }, [])
 
   const playPlaylist = async (id: string): Promise<void> => {
     const p = await window.phinas.getPlaylist(id)
     if (p?.tracks.length) player.play(p.tracks, 0)
   }
-
-  const shortcuts: Shortcut[] = [
-    {
-      key: 'liked',
-      title: 'Lagu yang disukai',
-      thumb: (
-        <div className="pcover pcover-liked" style={{ width: 56, height: 56 }}>
-          <Heart size={22} fill="currentColor" />
-        </div>
-      ),
-      open: () => nav({ name: 'liked' }),
-      play: () => lib.likes.length && player.play(lib.likes, 0)
-    },
-    ...lib.playlists.slice(0, 5).map((p) => ({
-      key: p.id,
-      title: p.name,
-      thumb: <PlaylistCover covers={p.coverUrls} size={56} />,
-      open: () => nav({ name: 'playlist', id: p.id }),
-      play: () => void playPlaylist(p.id)
-    })),
-    ...lib.partner.slice(0, 2).map((p) => ({
-      key: `partner-${p.id}`,
-      title: p.name,
-      thumb: <PlaylistCover covers={p.coverUrls} size={56} />,
-      open: () => nav({ name: 'partner', id: p.id }),
-      play: () => p.tracks.length && player.play(p.tracks, 0)
-    }))
-  ].slice(0, 8)
 
   const trackCards = (tracks: Track[]): React.ReactNode =>
     tracks.map((t, i) => (
@@ -92,27 +63,11 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
 
   return (
     <>
-      <h2 className="page-title">{greeting()}</h2>
+      <h2 className="page-title">{name ? `${greeting()}, ${name}` : greeting()}</h2>
 
-      <div className="shortcuts">
-        {shortcuts.map((s) => (
-          <div key={s.key} className="shortcut">
-            <button className="shortcut-main" onClick={s.open}>
-              {s.thumb}
-              <span className="shortcut-title">{s.title}</span>
-            </button>
-            <button className="shortcut-play" onClick={s.play} aria-label={`Putar ${s.title}`}>
-              <Play size={20} fill="currentColor" />
-            </button>
-          </div>
-        ))}
-      </div>
+      <ListenCard />
 
-      {recent.length > 0 && (
-        <Shelf title="Putar lagi">
-          {trackCards(recent)}
-        </Shelf>
-      )}
+      {recent.length > 0 && <Shelf title="Putar lagi">{trackCards(recent)}</Shelf>}
       {forYou.length > 0 && <Shelf title="Pilihan untukmu">{trackCards(forYou)}</Shelf>}
       {feed && feed.trending.length > 0 && <Shelf title="Lagi tren">{trackCards(feed.trending)}</Shelf>}
       {forYou.length === 0 && feed && feed.picks.length > 0 && <Shelf title="Pilihan untukmu">{trackCards(feed.picks)}</Shelf>}
@@ -134,20 +89,7 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
         </Shelf>
       )}
 
-      {lib.partner.length > 0 && (
-        <Shelf title="Dari pasangan">
-          {lib.partner.map((p) => (
-            <MediaCard
-              key={p.id}
-              art={<PlaylistCover covers={p.coverUrls} />}
-              title={p.name}
-              subtitle={p.ownerName}
-              onOpen={() => nav({ name: 'partner', id: p.id })}
-              onPlay={() => p.tracks.length && player.play(p.tracks, 0)}
-            />
-          ))}
-        </Shelf>
-      )}
+      <PartnerShelf nav={nav} />
     </>
   )
 }

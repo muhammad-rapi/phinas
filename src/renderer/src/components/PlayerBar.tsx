@@ -1,5 +1,6 @@
 import {
   Heart,
+  PanelRight,
   Pause,
   Play,
   Repeat,
@@ -20,7 +21,7 @@ import { formatTime } from './TrackRow'
 const pct = (value: number, max: number): CSSProperties =>
   ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties
 
-export function PlayerBar(): React.JSX.Element {
+export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTogglePanel: () => void }): React.JSX.Element {
   const p = usePlayer()
   const lib = useLibrary()
   const liked = p.track ? lib.likes.some((x) => x.videoId === p.track!.videoId) : false
@@ -38,11 +39,13 @@ export function PlayerBar(): React.JSX.Element {
       <div className="pb-track">
         {p.track && (
           <>
-            <div className="pb-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
-            <div className="pb-info">
-              <div className="pb-title">{p.track.title}</div>
-              <div className="muted pb-artist">{p.track.artist}</div>
-            </div>
+            <button className="pb-open" onClick={onTogglePanel} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
+              <span className="pb-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+              <span className="pb-info">
+                <span className="pb-title">{p.track.title}</span>
+                <span className="muted pb-artist">{p.track.artist}</span>
+              </span>
+            </button>
             <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
               <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             </button>
@@ -92,6 +95,15 @@ export function PlayerBar(): React.JSX.Element {
 
       <div className="pb-volume">
         <ListenButton />
+        <button
+          className={`icon-btn${panelOpen ? ' on' : ''}`}
+          onClick={onTogglePanel}
+          aria-pressed={panelOpen}
+          aria-label="Tampilkan panel sedang diputar"
+          title="Sedang diputar"
+        >
+          <PanelRight size={18} />
+        </button>
         <VolumeIcon size={18} />
         <input
           className="slider"

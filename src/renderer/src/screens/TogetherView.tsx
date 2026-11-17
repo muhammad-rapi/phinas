@@ -10,11 +10,7 @@ export function TogetherView({ nav }: { nav: Nav }): React.JSX.Element {
   return (
     <>
       <h2 className="page-title">Berdua</h2>
-      {listen.available ? (
-        <ListenCard />
-      ) : (
-        <p className="muted">Masuk di Profil untuk dengarkan bareng dan melihat playlist pasangan.</p>
-      )}
+      {listen.available ? <ListenCard /> : <p className="muted">Masuk di Profil untuk dengarkan bareng dan melihat playlist pasangan.</p>}
       <PartnerShelf nav={nav} />
       {listen.available && lib.partner.length === 0 && <p className="muted">Pasangan belum membagikan playlist.</p>}
     </>

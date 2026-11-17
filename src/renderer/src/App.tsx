@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { LibraryPanel } from './components/LibraryPanel'
 import { ListenBanner } from './components/ListenTogether'
 import { LyricsFull } from './components/LyricsFull'
 import { NowPlaying } from './components/NowPlaying'
 import { PlayerBar } from './components/PlayerBar'
-import { TopBar } from './components/TopBar'
+import { Sidebar } from './components/Sidebar'
 import { LibraryProvider, useLibrary } from './library/LibraryProvider'
 import { keyToCommand } from './player/keymap'
 import { RecentView } from './screens/RecentView'
@@ -20,7 +19,7 @@ import { ImportView } from './screens/ImportView'
 import { Profile } from './screens/Profile'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
-import { ListenTogetherProvider } from './sync/ListenTogetherProvider'
+import { ListenTogetherProvider, useListen } from './sync/ListenTogetherProvider'
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
 import type { Nav, View } from './views'
@@ -32,6 +31,12 @@ function Shell(): React.JSX.Element {
   const { theme, setTheme } = useTheme(cover)
   const recents = useRecent()
   const profile = useProfile()
+  const listen = useListen()
+  const [panelOpen, setPanelOpen] = useState(false)
+  // A session brings the side panel up; the user can still close it afterwards.
+  useEffect(() => {
+    if (listen.state.status === 'active') setPanelOpen(true)
+  }, [listen.state.status])
   const [view, setView] = useState<View>({ name: 'home' })
   const [query, setQuery] = useState('')
   const [submitNonce, setSubmitNonce] = useState(0)
@@ -122,7 +127,7 @@ function Shell(): React.JSX.Element {
   const body = ((): React.JSX.Element => {
     switch (view.name) {
       case 'home':
-        return <Home nav={nav} />
+        return <Home nav={nav} name={profile.name} />
       case 'search':
         return <Search query={query} submitNonce={submitNonce} onPick={recents.rememberTrack} nav={nav} />
       case 'liked':
@@ -145,9 +150,12 @@ function Shell(): React.JSX.Element {
   })()
 
   return (
-    <div className="app">
+    <div className={`app${panelOpen ? ' with-panel' : ''}`}>
       {cover && theme !== 'light' && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
-      <TopBar
+      <div className="drag-strip" />
+      <Sidebar
+        view={view}
+        nav={nav}
         query={query}
         onQuery={onQuery}
         onSubmit={() => {
@@ -162,14 +170,9 @@ function Shell(): React.JSX.Element {
           recents.rememberTrack(t, '')
           player.play([t], 0)
         }}
-        onHome={() => nav({ name: 'home' })}
-        onProfile={() => nav({ name: 'profile' })}
-        homeActive={view.name === 'home'}
-        profileActive={view.name === 'profile'}
         initial={profile.initial}
       />
-      <LibraryPanel view={view} nav={nav} />
-      <main ref={mainRef} className="panel main">
+      <main ref={mainRef} className="main">
         <ListenBanner />
         {player.notice && (
           <div className="notice" onClick={player.dismissNotice} role="status">
@@ -178,10 +181,12 @@ function Shell(): React.JSX.Element {
         )}
         {body}
       </main>
-      <aside className="panel right">
-        <NowPlaying onExpandLyrics={() => setLyricsFull(true)} />
-      </aside>
-      <PlayerBar />
+      {panelOpen && (
+        <aside className="right">
+          <NowPlaying onExpandLyrics={() => setLyricsFull(true)} />
+        </aside>
+      )}
+      <PlayerBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((o) => !o)} />
       {lyricsFull && <LyricsFull cover={cover} onClose={() => setLyricsFull(false)} />}
     </div>
   )

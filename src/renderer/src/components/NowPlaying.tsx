@@ -1,9 +1,28 @@
 import { Disc3, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { usePlayer } from '../player/PlayerProvider'
+import { useListen } from '../sync/ListenTogetherProvider'
+import { liveLabel } from '../sync/status'
 import { LyricsPanel } from './LyricsPanel'
 
 type Tab = 'queue' | 'lyrics'
+
+/** Shown at the top of the panel while a listen-together session is active. */
+function SessionBlock(): React.JSX.Element | null {
+  const l = useListen()
+  if (!l.available || l.state.status !== 'active') return null
+  const name = l.partnerName ?? 'pasangan'
+  return (
+    <div className="np-session">
+      <span>
+        ● Bareng {name} · {liveLabel(l.state, name)}
+      </span>
+      <button className="pill-btn" onClick={l.end}>
+        Akhiri
+      </button>
+    </div>
+  )
+}
 
 export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): React.JSX.Element {
   const p = usePlayer()
@@ -11,6 +30,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
   if (!p.track) {
     return (
       <div className="nowplaying nowplaying-empty">
+        <SessionBlock />
         <Disc3 size={48} strokeWidth={1.4} />
         <p className="muted">Pilih lagu untuk mulai. Sampulnya akan tampil di sini.</p>
       </div>
@@ -19,6 +39,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
   const upcoming = p.queue.tracks.slice(p.queue.index + 1)
   return (
     <div className="nowplaying">
+      <SessionBlock />
       <div className="np-tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'queue'} className={tab === 'queue' ? 'active' : ''} onClick={() => setTab('queue')}>
           Sedang diputar
