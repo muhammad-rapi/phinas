@@ -17,6 +17,12 @@ A desktop music player for macOS and Windows, for personal use by two people (th
 - Offline audio downloads.
 - Optional YouTube account login.
 - Listen together: the user's device and the partner's device stay in sync and play the same song at the same time (shared current track, queue, play/pause and position). Supabase Realtime is the likely transport, since Supabase is already the sync backend.
+  - Notes from the first look (2026-11-17, not a design yet):
+    - Audio is not sent. Each device streams the same `videoId` itself; only state is sent (track, queue, play/pause, position), probably as Realtime broadcast with no new tables.
+    - Incoming commands can run through `player.run()` in `PlayerProvider`, like the notch and global shortcuts.
+    - Hard part is timing: devices drift by a few hundred ms to about 1 s because of network and buffering. Under about 200 ms needs clock sync and small playback-rate corrections.
+    - Open decisions: one host or both can control; what happens when one side goes offline or its stream fails; how an invite is accepted.
+    - Rough size: simple version about 3-4 days, polished version about a week.
 
 ## Constraints and decisions
 - Music data comes from YouTube Music via the unofficial `youtubei.js` library. This can break when YouTube changes; fix is usually updating the library. Personal use only.
