@@ -16,6 +16,7 @@ A desktop music player for macOS and Windows, for personal use by two people (th
 - Global keyboard shortcuts and media keys for play/pause, next, previous, working while the app is in the background.
 - Offline audio downloads.
 - Optional YouTube account login.
+- Listen together: the user's device and the partner's device stay in sync and play the same song at the same time (shared current track, queue, play/pause and position). Supabase Realtime is the likely transport, since Supabase is already the sync backend.
 
 ## Constraints and decisions
 - Music data comes from YouTube Music via the unofficial `youtubei.js` library. This can break when YouTube changes; fix is usually updating the library. Personal use only.
