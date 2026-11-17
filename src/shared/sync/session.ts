@@ -170,6 +170,17 @@ export class SyncSession {
           this.set({ status: 'idle' })
         }
         return
+      case 'action':
+        if (this.state.status === 'active') this.applyIncoming(m.action, m.ts, m.from)
+        return
+      case 'ping':
+        if (this.state.status === 'active') this.send({ type: 'pong', id: m.id, t0: m.ts })
+        return
+      case 'pong':
+        if (this.state.status !== 'active') return
+        this.clock.add(m.t0, m.ts, this.now())
+        this.set({ looseSync: !this.clock.stable })
+        return
       default:
         return
     }
@@ -205,13 +216,64 @@ export class SyncSession {
     }
     this.clearInviteTimer()
     this.startActive(this.me)
+    // Whoever is already playing sets the starting state; the inviter wins if both are.
+    const mine = this.snapshotAction()
+    if (mine) this.localAction(mine)
+    else if (m.snapshot) this.applyIncoming(m.snapshot, m.ts, m.from)
   }
 
   // ---- internals ----
 
+  /** Called by the player whenever the user does something. Applied locally already; this tells the partner. */
+  localAction(action: SyncAction): void {
+    if (this.state.status !== 'active') return
+    const a = action.kind === 'queue' ? this.windowed(action) : action
+    const ts = this.now()
+    this.lastAction = { ts, from: this.me }
+    this.lead = this.me
+    this.send({ type: 'action', action: a }, ts)
+  }
+
+  /** Applies an action from the partner unless a later one (ours or theirs) already won. */
+  private applyIncoming(action: SyncAction, peerTs: number, from: string): void {
+    const ts = this.clock.toLocal(peerTs)
+    const last = this.lastAction
+    if (last && (last.ts > ts || (last.ts === ts && last.from < from))) return
+    this.lastAction = { ts, from }
+    this.lead = from
+    this.rejoining = false
+    this.player.apply(action)
+  }
+
+  private windowed(a: Extract<SyncAction, { kind: 'queue' }>): SyncAction {
+    const w = windowQueue(a.tracks, a.index)
+    return { ...a, tracks: w.tracks, index: w.index }
+  }
+
+  /** The current queue as an action, or null when nothing is loaded. */
+  private snapshotAction(): SyncAction | null {
+    const s = this.player.snapshot()
+    if (!s.tracks[s.index]) return null
+    return this.windowed({ kind: 'queue', tracks: s.tracks, index: s.index, position: s.position, playing: s.playing })
+  }
+
+  private sendSnapshot(): void {
+    const a = this.snapshotAction()
+    if (a) this.localAction(a)
+  }
+
+  private burstPings(n: number, gapMs: number): void {
+    for (let i = 0; i < n; i++) setTimeout(() => this.sendPing(), i * gapMs)
+  }
+
+  private sendPing(): void {
+    if (this.state.status !== 'active') return
+    this.send({ type: 'ping', id: `${this.me}:${++this.pingSeq}` })
+  }
+
   private doAccept(inviter: string): void {
     this.clearInviteTimer()
-    this.send({ type: 'accept', version: PROTOCOL_VERSION, snapshot: null })
+    this.send({ type: 'accept', version: PROTOCOL_VERSION, snapshot: this.snapshotAction() })
     this.startActive(inviter)
   }
 
@@ -222,6 +284,8 @@ export class SyncSession {
     this.failedId = null
     this.clock = new ClockEstimator()
     this.set({ status: 'active', endReason: null, partnerError: false, looseSync: true })
+    this.burstPings(5, 200)
+    this.clockTimer = setInterval(() => this.sendPing(), CLOCK_RESYNC_MS)
   }
 
   private onPresence(here: boolean): void {

@@ -144,3 +144,109 @@ test('subscribers hear about state changes and can unsubscribe', () => {
   t.a.end()
   expect(seen).toEqual(['inviting'])
 })
+
+import type { SyncAction } from '../src/shared/sync/protocol'
+
+const pause = (position: number): SyncAction => ({ kind: 'pause', position })
+const play = (position: number): SyncAction => ({ kind: 'play', position })
+const queueOf = (ids: string[], index = 0, position = 0, playing = true): SyncAction => ({
+  kind: 'queue',
+  tracks: ids.map(track),
+  index,
+  position,
+  playing
+})
+
+test('clock pings run after the session starts and settle the estimate', () => {
+  const t = activate()
+  expect(t.a.getState().looseSync).toBe(false)
+  expect(t.b.getState().looseSync).toBe(false)
+})
+
+test('a local action is sent and applied by the other side', () => {
+  const t = activate()
+  t.a.localAction(pause(42))
+  vi.advanceTimersByTime(1)
+  expect(t.pb.applied).toEqual([pause(42)])
+})
+
+test('applying a remote action does not send it back', () => {
+  const t = activate()
+  t.a.localAction(pause(42))
+  vi.advanceTimersByTime(50)
+  expect(t.tb.sentOfType('action')).toHaveLength(0)
+})
+
+test('local actions are ignored outside an active session', () => {
+  const t = setup()
+  t.a.localAction(pause(1))
+  expect(t.ta.sentOfType('action')).toHaveLength(0)
+})
+
+test('the later action wins when two sides act at nearly the same time', () => {
+  const t = activate(setup({ latency: 100 }))
+  t.a.localAction(pause(10)) // at T
+  vi.advanceTimersByTime(50)
+  t.b.localAction(play(10)) // at T + 50
+  vi.advanceTimersByTime(300)
+  expect(t.pa.applied).toEqual([play(10)]) // a accepted the later action
+  expect(t.pb.applied).toEqual([]) // b ignored the earlier one
+})
+
+test('the later action wins even when the two clocks disagree', () => {
+  const t = activate(setup({ latency: 100, skewB: 500 }))
+  t.a.localAction(pause(10)) // real time T
+  vi.advanceTimersByTime(50)
+  t.b.localAction(play(10)) // real time T + 50, stamped T + 550 on b's clock
+  vi.advanceTimersByTime(300)
+  expect(t.pa.applied).toEqual([play(10)])
+  expect(t.pb.applied).toEqual([])
+})
+
+test('with identical timestamps the smaller user id wins on both sides', () => {
+  const t = activate(setup({ latency: 100 }))
+  t.a.localAction(pause(10))
+  t.b.localAction(play(10)) // same instant
+  vi.advanceTimersByTime(300)
+  expect(t.pb.applied).toEqual([pause(10)]) // b took a's action
+  expect(t.pa.applied).toEqual([]) // a ignored b's
+})
+
+test("the inviter's queue is the starting state when it is already playing", () => {
+  const t = setup()
+  t.a.invite()
+  vi.advanceTimersByTime(1)
+  t.pa.snap = { tracks: [track('x'), track('y')], index: 1, position: 30, playing: true }
+  t.pb.snap = { tracks: [track('other')], index: 0, position: 5, playing: true }
+  t.b.accept()
+  vi.advanceTimersByTime(5)
+  expect(t.pb.applied[0]).toMatchObject({ kind: 'queue', index: 1, position: 30 })
+  expect(t.pa.applied).toEqual([]) // b's own queue lost
+})
+
+test("the acceptor's queue is used when the inviter has nothing playing", () => {
+  const t = setup()
+  t.a.invite()
+  vi.advanceTimersByTime(1)
+  t.pb.snap = { tracks: [track('mine')], index: 0, position: 12, playing: true }
+  t.b.accept()
+  vi.advanceTimersByTime(5)
+  expect(t.pa.applied[0]).toMatchObject({ kind: 'queue', position: 12 })
+})
+
+test('both idle: the session starts empty', () => {
+  const t = activate()
+  expect(t.pa.applied).toEqual([])
+  expect(t.pb.applied).toEqual([])
+})
+
+test('a very long queue is windowed before sending', () => {
+  const t = activate()
+  const ids = Array.from({ length: 300 }, (_, i) => `t${i}`)
+  t.a.localAction(queueOf(ids, 150))
+  vi.advanceTimersByTime(1)
+  const got = t.pb.applied[0]
+  if (got.kind !== 'queue') throw new Error('expected a queue action')
+  expect(got.tracks).toHaveLength(100)
+  expect(got.tracks[got.index].videoId).toBe('t150')
+})
