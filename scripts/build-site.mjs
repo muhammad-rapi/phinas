@@ -7,7 +7,7 @@ import { readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 const root = new URL('../', import.meta.url)
 const read = (p) => readFileSync(new URL(p, root))
 const REPO = 'muhammad-rapi/phinas'
-const VERSION = '0.2.1'
+const VERSION = '0.3.0'
 const files = {
   mac: { name: `Phinas-${VERSION}-arm64.dmg`, path: `dist/Phinas-${VERSION}-arm64.dmg` },
   win: { name: `Phinas-Setup-${VERSION}.exe`, path: `dist/Phinas-Setup-${VERSION}.exe` }
@@ -52,6 +52,10 @@ const dict = {
     f7_d: 'Phinas mengingat yang kamu dengarkan, sukai, dan lewati, lalu menyusun Pilihan untukmu. Saat antrean habis, lagu serupa lanjut diputar otomatis.',
     f8_t: 'Notch di layar',
     f8_d: 'Pill kecil di tengah atas layar di Mac dan Windows, lengkap dengan lirik yang berjalan, tombol kontrol, geser posisi lagu, dan tambah ke playlist.',
+    f9_t: 'Dengarkan bareng',
+    f9_d: 'Ajak pasanganmu mendengarkan lagu yang sama pada detik yang sama. Jeda, putar, dan geser lagu berlaku untuk berdua.',
+    f10_t: 'Beranda yang baru',
+    f10_d: 'Sidebar, kotak-kotak Lanjutkan, Pilihan untukmu dan Artis favoritmu, tombol Putar acak di setiap daftar, dan ikon di menu bar Mac untuk menampilkan notch.',
     s_title: 'Seperti ini tampilannya',
     s1: 'Beranda dengan lagu yang sedang tren dan playlist-mu',
     s2: 'Pencarian dengan playlist publik dan lagu',
@@ -101,6 +105,10 @@ const dict = {
     f7_d: 'Phinas remembers what you play, like and skip, and builds Picks for you from it. When the queue ends, similar songs keep playing on their own.',
     f8_t: 'A notch on your screen',
     f8_d: 'A small pill at the top centre of the screen on Mac and Windows, with live lyrics, controls, seeking, and add to playlist.',
+    f9_t: 'Listen together',
+    f9_d: 'Invite your partner to hear the same song at the same second. Pause, play and seek apply to both of you.',
+    f10_t: 'A new Home',
+    f10_d: 'A sidebar, tiles for Continue, Picks for you and Favourite artists, a Shuffle button on every list, and a Mac menu bar icon to show the notch.',
     s_title: 'What it looks like',
     s1: 'Home, with what is trending and your playlists',
     s2: 'Search, with public playlists and songs',
@@ -293,7 +301,7 @@ const body = `
     <section>
       <h2 data-i18n="f_title">${t.f_title}</h2>
       <div class="features">
-        ${feature(1, 'lyrics')}${feature(2, 'two')}${feature(3, 'import')}${feature(4, 'search')}${feature(5, 'color')}${feature(6, 'queue')}${feature(7, 'taste')}${feature(8, 'notch')}
+        ${feature(1, 'lyrics')}${feature(2, 'two')}${feature(3, 'import')}${feature(4, 'search')}${feature(5, 'color')}${feature(6, 'queue')}${feature(7, 'taste')}${feature(8, 'notch')}${feature(9, 'two')}${feature(10, 'queue')}
       </div>
     </section>
 
