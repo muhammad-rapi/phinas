@@ -250,3 +250,120 @@ test('a very long queue is windowed before sending', () => {
   expect(got.tracks).toHaveLength(100)
   expect(got.tracks[got.index].videoId).toBe('t150')
 })
+
+const T1 = track('song1')
+
+/** 'a' leads (it invited). Both play song1; b is `bPosition`, a is at 10. */
+function withSong(bPosition: number, bPlaying = true) {
+  const t = activate()
+  // Fake timers turn a 0 ms timeout set during a tick into 1 ms, so a heartbeat landing exactly on
+  // the end of an advance would be delivered just after it. Shift the phase so beats land mid-advance.
+  vi.advanceTimersByTime(10)
+  t.pa.snap = { tracks: [T1], index: 0, position: 10, playing: true }
+  t.pb.snap = { tracks: [T1], index: 0, position: bPosition, playing: bPlaying }
+  return t
+}
+
+test('the lead sends heartbeats every 3 s and the follower does not', () => {
+  const t = withSong(10)
+  const before = t.ta.sentOfType('heartbeat').length
+  vi.advanceTimersByTime(9000)
+  expect(t.ta.sentOfType('heartbeat').length - before).toBe(3)
+  expect(t.tb.sentOfType('heartbeat')).toHaveLength(0)
+})
+
+test('a follower that is a little ahead slows down, then returns to normal speed', () => {
+  const t = withSong(10.5)
+  vi.advanceTimersByTime(3000)
+  expect(t.pb.rate).toBe(0.97)
+  t.pb.snap = { ...t.pb.snap, position: 10 } // caught up
+  vi.advanceTimersByTime(3000)
+  expect(t.pb.rate).toBe(1)
+})
+
+test('a follower that is a little behind speeds up', () => {
+  const t = withSong(9.6)
+  vi.advanceTimersByTime(3000)
+  expect(t.pb.rate).toBe(1.03)
+})
+
+test('a follower that is far off seeks to the expected position', () => {
+  const t = withSong(13)
+  vi.advanceTimersByTime(3000)
+  const seek = t.pb.applied.at(-1)
+  expect(seek).toMatchObject({ kind: 'seek' })
+  expect((seek as { position: number }).position).toBeCloseTo(10, 1)
+  expect(t.pb.rate).toBe(1)
+})
+
+test('a follower that is in sync is left alone', () => {
+  const t = withSong(10.05)
+  vi.advanceTimersByTime(3000)
+  expect(t.pb.applied).toEqual([])
+  expect(t.pb.rate).toBe(1)
+})
+
+test('a follower that is paused while the lead plays is told to play', () => {
+  const t = withSong(10, false)
+  vi.advanceTimersByTime(3000)
+  expect(t.pb.applied.at(-1)).toMatchObject({ kind: 'play' })
+})
+
+test('a heartbeat for another track makes the follower ask for a resync and get a snapshot', () => {
+  const t = withSong(10)
+  t.pb.snap = { tracks: [track('other')], index: 0, position: 3, playing: true }
+  vi.advanceTimersByTime(3000)
+  expect(t.tb.sentOfType('resync')).toHaveLength(1)
+  vi.advanceTimersByTime(10)
+  expect(t.pb.applied.at(-1)).toMatchObject({ kind: 'queue', index: 0 })
+})
+
+test('after the follower acts, it becomes the lead and the other side follows its heartbeats', () => {
+  const t = withSong(10)
+  t.b.localAction(pause(10))
+  vi.advanceTimersByTime(10)
+  const aBefore = t.ta.sentOfType('heartbeat').length
+  vi.advanceTimersByTime(6000)
+  expect(t.ta.sentOfType('heartbeat').length).toBe(aBefore) // a stopped sending
+  expect(t.tb.sentOfType('heartbeat').length).toBeGreaterThan(0)
+})
+
+test('loose sync tolerates twice the drift', () => {
+  const t = setup()
+  t.a.invite()
+  vi.advanceTimersByTime(1)
+  t.b.accept()
+  // Heartbeat arrives before the pings could settle the clock: still loose.
+  t.pa.snap = { tracks: [T1], index: 0, position: 10, playing: true }
+  t.pb.snap = { tracks: [T1], index: 0, position: 10.3, playing: true }
+  t.tb.deliver(msg('a', { type: 'heartbeat', videoId: 'song1', position: 10, playing: true }))
+  expect(t.pb.rate).toBe(1)
+})
+
+test('a stream error on one side is reported and does not break the session', () => {
+  const t = activate()
+  t.b.reportStreamError('song1')
+  vi.advanceTimersByTime(1)
+  expect(t.a.getState().partnerError).toBe(true)
+  expect(t.a.getState().status).toBe('active')
+})
+
+test('the failed side does not ask for a resync of the track it could not play', () => {
+  const t = activate()
+  t.pa.snap = { tracks: [T1], index: 0, position: 10, playing: true }
+  t.pb.snap = { tracks: [track('next')], index: 0, position: 0, playing: true } // skipped past song1
+  t.b.reportStreamError('song1')
+  vi.advanceTimersByTime(9000)
+  expect(t.tb.sentOfType('resync')).toHaveLength(0)
+})
+
+test('the error clears once the lead moves on', () => {
+  const t = activate()
+  t.pa.snap = { tracks: [T1], index: 0, position: 10, playing: true }
+  t.pb.snap = { tracks: [track('next')], index: 0, position: 0, playing: true }
+  t.b.reportStreamError('song1')
+  vi.advanceTimersByTime(1)
+  t.pa.snap = { tracks: [track('next')], index: 0, position: 1, playing: true }
+  vi.advanceTimersByTime(3010) // the heartbeat, then b's "ok" reply, each take a timer tick
+  expect(t.a.getState().partnerError).toBe(false)
+})

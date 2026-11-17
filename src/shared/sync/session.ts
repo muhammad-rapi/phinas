@@ -181,6 +181,15 @@ export class SyncSession {
         this.clock.add(m.t0, m.ts, this.now())
         this.set({ looseSync: !this.clock.stable })
         return
+      case 'heartbeat':
+        if (this.state.status === 'active') this.onHeartbeat(m)
+        return
+      case 'resync':
+        if (this.state.status === 'active' && this.lead === this.me) this.sendSnapshot()
+        return
+      case 'status':
+        if (this.state.status === 'active') this.set({ partnerError: m.state === 'error' })
+        return
       default:
         return
     }
@@ -271,6 +280,55 @@ export class SyncSession {
     this.send({ type: 'ping', id: `${this.me}:${++this.pingSeq}` })
   }
 
+  /** The player calls this when a track cannot be streamed, so the session does not fight the skip. */
+  reportStreamError(videoId: string): void {
+    if (this.state.status !== 'active') return
+    this.failedId = videoId
+    this.send({ type: 'status', state: 'error' })
+  }
+
+  private beat(): void {
+    if (this.state.status !== 'active' || this.lead !== this.me) return
+    const s = this.player.snapshot()
+    this.send({
+      type: 'heartbeat',
+      videoId: s.tracks[s.index]?.videoId ?? null,
+      position: s.position,
+      playing: s.playing
+    })
+  }
+
+  private onHeartbeat(m: MessageOf<'heartbeat'>): void {
+    if (this.lead === this.me) return
+    // A heartbeat with no track says nothing about the song we failed on, so it must not clear the error.
+    if (this.failedId && m.videoId !== null && m.videoId !== this.failedId) {
+      this.failedId = null
+      this.send({ type: 'status', state: 'ok' })
+    }
+    const s = this.player.snapshot()
+    const mine = s.tracks[s.index]?.videoId ?? null
+    if (m.videoId !== mine) {
+      // A missed message, or we skipped a track we could not play. Ask again unless it is the latter.
+      if (m.videoId !== null && m.videoId !== this.failedId) this.send({ type: 'resync' })
+      return
+    }
+    if (mine === null) return
+    const expected = expectedPosition(m, this.clock.toLocal(m.ts), this.now())
+    if (m.playing !== s.playing) {
+      this.player.apply({ kind: m.playing ? 'play' : 'pause', position: expected })
+      return
+    }
+    const c = reconcile(s.position - expected, { loose: !this.clock.stable, correcting: this.rate !== 1 })
+    if (c.kind === 'seek') {
+      this.player.apply({ kind: 'seek', position: expected })
+      this.setRate(1)
+    } else if (c.kind === 'rate') {
+      this.setRate(c.rate)
+    } else {
+      this.setRate(1)
+    }
+  }
+
   private doAccept(inviter: string): void {
     this.clearInviteTimer()
     this.send({ type: 'accept', version: PROTOCOL_VERSION, snapshot: this.snapshotAction() })
@@ -286,6 +344,7 @@ export class SyncSession {
     this.set({ status: 'active', endReason: null, partnerError: false, looseSync: true })
     this.burstPings(5, 200)
     this.clockTimer = setInterval(() => this.sendPing(), CLOCK_RESYNC_MS)
+    this.heartbeatTimer = setInterval(() => this.beat(), HEARTBEAT_MS)
   }
 
   private onPresence(here: boolean): void {

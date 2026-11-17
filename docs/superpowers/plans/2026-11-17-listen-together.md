@@ -1279,6 +1279,9 @@ const T1 = track('song1')
 /** 'a' leads (it invited). Both play song1; b is `bPosition`, a is at 10. */
 function withSong(bPosition: number, bPlaying = true) {
   const t = activate()
+  // Fake timers turn a 0 ms timeout set during a tick into 1 ms, so a heartbeat landing exactly on
+  // the end of an advance would be delivered just after it. Shift the phase so beats land mid-advance.
+  vi.advanceTimersByTime(10)
   t.pa.snap = { tracks: [T1], index: 0, position: 10, playing: true }
   t.pb.snap = { tracks: [T1], index: 0, position: bPosition, playing: bPlaying }
   return t
@@ -1310,7 +1313,9 @@ test('a follower that is a little behind speeds up', () => {
 test('a follower that is far off seeks to the expected position', () => {
   const t = withSong(13)
   vi.advanceTimersByTime(3000)
-  expect(t.pb.applied.at(-1)).toEqual({ kind: 'seek', position: 10 })
+  const seek = t.pb.applied.at(-1)
+  expect(seek).toMatchObject({ kind: 'seek' })
+  expect((seek as { position: number }).position).toBeCloseTo(10, 1)
   expect(t.pb.rate).toBe(1)
 })
 
@@ -1382,7 +1387,7 @@ test('the error clears once the lead moves on', () => {
   t.b.reportStreamError('song1')
   vi.advanceTimersByTime(1)
   t.pa.snap = { tracks: [track('next')], index: 0, position: 1, playing: true }
-  vi.advanceTimersByTime(3000)
+  vi.advanceTimersByTime(3010) // the heartbeat, then b's "ok" reply, each take a timer tick
   expect(t.a.getState().partnerError).toBe(false)
 })
 ```
@@ -1439,7 +1444,8 @@ Edit `src/shared/sync/session.ts`.
 
   private onHeartbeat(m: MessageOf<'heartbeat'>): void {
     if (this.lead === this.me) return
-    if (this.failedId && m.videoId !== this.failedId) {
+    // A heartbeat with no track says nothing about the song we failed on, so it must not clear the error.
+    if (this.failedId && m.videoId !== null && m.videoId !== this.failedId) {
       this.failedId = null
       this.send({ type: 'status', state: 'ok' })
     }
