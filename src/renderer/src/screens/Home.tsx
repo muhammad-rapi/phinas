@@ -69,17 +69,18 @@ function TogetherTile({ nav }: { nav: Nav }): React.JSX.Element {
   )
 }
 
-function PickGrid({ tracks }: { tracks: Track[] }): React.JSX.Element {
+/** Tracks as square covers filling the tile; `ranked` puts the chart position on each cover. */
+function CoverGrid({ tracks, ranked }: { tracks: Track[]; ranked?: boolean }): React.JSX.Element {
   const player = usePlayer()
   return (
-    <div className="pick-grid">
+    <div className="cover-grid">
       {tracks.map((t, i) => (
-        <button key={`${t.videoId}-${i}`} className="pick" onClick={() => player.play(tracks, i)}>
-          <span className="queue-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
-          <span className="queue-text">
-            <span className="queue-name">{t.title}</span>
-            <span className="muted queue-artist">{t.artist}</span>
+        <button key={`${t.videoId}-${i}`} className="cover-card" onClick={() => player.play(tracks, i)}>
+          <span className="cover-card-art" style={{ backgroundImage: `url("${t.coverUrl}")` }}>
+            {ranked && <span className="cover-card-rank">{i + 1}</span>}
           </span>
+          <span className="cover-card-title">{t.title}</span>
+          <span className="muted cover-card-sub">{t.artist}</span>
         </button>
       ))}
     </div>
@@ -116,14 +117,12 @@ function PlaylistTile({ nav }: { nav: Nav }): React.JSX.Element {
           </button>
         </>
       ) : (
-        <div className="pl-grid">
+        <div className="cover-grid">
           {items.map((p) => (
-            <button key={p.key} className="lib-row" onClick={() => nav(p.view)}>
-              <PlaylistCover covers={p.covers} size={48} />
-              <span className="lib-row-text">
-                <span className="lib-row-title">{p.name}</span>
-                <span className="muted lib-row-sub">{p.sub}</span>
-              </span>
+            <button key={p.key} className="cover-card" onClick={() => nav(p.view)}>
+              <PlaylistCover covers={p.covers} />
+              <span className="cover-card-title">{p.name}</span>
+              <span className="muted cover-card-sub">{p.sub}</span>
             </button>
           ))}
         </div>
@@ -178,7 +177,7 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
         )}
         {picks.length > 0 && (
           <Tile span={8} title="Pilihan untukmu">
-            <PickGrid tracks={picks.slice(0, 8)} />
+            <CoverGrid tracks={picks.slice(0, 8)} />
           </Tile>
         )}
       </BentoRow>
@@ -187,13 +186,13 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
         {showTrending && (
           <Tile span={6} title="Lagi tren">
             {feed ? (
-              <TrackRows numbered tracks={feed.trending.slice(0, 5)} onPlay={(i) => player.play(feed.trending, i)} />
+              <CoverGrid ranked tracks={feed.trending.slice(0, 6)} />
             ) : feedFailed ? (
               <p className="muted">Tidak bisa memuat yang lagi tren. Cek koneksi internetmu.</p>
             ) : (
-              <div className="track-rows" aria-hidden="true">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <div key={i} className="track-row skeleton" />
+              <div className="cover-grid" aria-hidden="true">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} className="cover-card-art skeleton" />
                 ))}
               </div>
             )}

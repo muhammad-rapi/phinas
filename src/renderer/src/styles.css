@@ -362,7 +362,8 @@ button.tile-title:hover { text-decoration: underline; }
 .track-row { width: 100%; justify-content: flex-start; gap: 12px; padding: 6px; border-radius: 10px; text-align: left; }
 .track-row:hover { background: var(--hover); }
 .track-row-n { width: 18px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
-.track-row.skeleton { height: 52px; background: var(--hover); animation: skeleton 1.2s ease-in-out infinite alternate; }
+.track-row.skeleton { height: 52px; }
+.track-row.skeleton, .cover-card-art.skeleton { background: var(--hover); animation: skeleton 1.2s ease-in-out infinite alternate; }
 @keyframes skeleton { from { opacity: 0.45; } to { opacity: 1; } }
 
 .continue { flex-direction: row; align-items: center; gap: 22px; min-height: 220px; }
@@ -383,11 +384,16 @@ button.tile-title:hover { text-decoration: underline; }
 .cover-stack span:nth-child(2) { left: 44px; z-index: 2; transform: rotate(2deg); }
 .cover-stack span:nth-child(3) { left: 88px; z-index: 1; transform: rotate(8deg); }
 
-.pick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.pick { justify-content: flex-start; gap: 10px; min-width: 0; padding: 6px; border-radius: 10px; text-align: left; }
-.pick:hover { background: var(--hover); }
-.pick .queue-thumb { width: 48px; height: 48px; }
-.pl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.track-row .queue-thumb { width: 48px; height: 48px; }
+/* Square covers that fill the tile's width: as many columns as fit, never sideways scrolling. */
+.cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.cover-card { flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; padding: 8px; border-radius: 14px; text-align: left; transition: background 0.15s; }
+.cover-card:hover { background: var(--hover); }
+.cover-card-art, .cover-card .pcover { width: 100%; aspect-ratio: 1; margin-bottom: 6px; border-radius: 10px; background: var(--hover) center / cover; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); }
+.cover-card-art { position: relative; }
+.cover-card-rank { position: absolute; left: 8px; bottom: 6px; font-size: 34px; font-weight: 800; line-height: 1; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7); }
+.cover-card-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover-card-sub { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .bento-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .bento-cards .mcard { width: auto; }
@@ -398,9 +404,6 @@ button.tile-title:hover { text-decoration: underline; }
 .listen-card-title.link { padding: 0; color: inherit; text-align: left; }
 .listen-card-title.link:hover { text-decoration: underline; }
 
-@container (max-width: 1000px) {
-  .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @container (max-width: 760px) {
   /* Same specificity as the span rules above, so these win by coming later. */
   .bento-row > .span-4, .bento-row > .span-6, .bento-row > .span-8 { grid-column: 1 / -1; }
