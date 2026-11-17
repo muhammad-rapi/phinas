@@ -345,3 +345,16 @@ h1, h2, h3, h4 { margin: 0; }
   background: var(--accent);
   color: #fff;
 }
+
+/* ---------- listen-together card ---------- */
+.listen-card { display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 8px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, var(--accent), #c04bd8); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); transition: background 0.5s; }
+.listen-card.live { background: linear-gradient(120deg, #c04bd8, var(--accent)); }
+.listen-card-icon { flex: none; opacity: 0.9; }
+.listen-card-text { flex: 1; min-width: 0; }
+.listen-card-line { font-size: 12px; opacity: 0.9; }
+.listen-card-title { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+.listen-card-actions { display: flex; gap: 8px; }
+.listen-card-btn { height: 38px; padding: 0 20px; border-radius: 19px; background: #fff; color: #1b1233; font-weight: 700; transition: transform 0.15s; }
+.listen-card-btn:hover:not(:disabled) { transform: scale(1.04); }
+.listen-card-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.listen-card-btn.ghost { background: rgba(255, 255, 255, 0.22); color: #fff; }

@@ -2,6 +2,7 @@ import { Headphones } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { EndReason } from '../../../shared/sync/session'
 import { useListen } from '../sync/ListenTogetherProvider'
+import { liveLabel } from '../sync/status'
 
 const ENDED_TEXT: Record<EndReason, string> = {
   ended: 'Sesi diakhiri.',
@@ -16,17 +17,11 @@ const ENDED_TEXT: Record<EndReason, string> = {
 export function ListenButton(): React.JSX.Element | null {
   const l = useListen()
   if (!l.available) return null
-  const { status, connected, partnerHere, partnerError } = l.state
+  const { status, connected, partnerHere } = l.state
   const name = l.partnerName ?? 'pasangan'
 
   if (status === 'active') {
-    const label = !connected
-      ? 'Koneksi terputus'
-      : !partnerHere
-        ? `${name} terputus`
-        : partnerError
-          ? `${name}: gagal memutar`
-          : 'Tersambung'
+    const label = liveLabel(l.state, name)
     return (
       <button className="icon-btn on listen-btn" onClick={l.end} title="Akhiri sesi" aria-label="Akhiri sesi dengarkan bareng">
         <Headphones size={18} />

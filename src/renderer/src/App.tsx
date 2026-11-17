@@ -15,6 +15,7 @@ import { PartnerView } from './screens/PartnerView'
 import { PlaylistView } from './screens/PlaylistView'
 import { PublicPlaylistView } from './screens/PublicPlaylistView'
 import { Search } from './screens/Search'
+import { TogetherView } from './screens/TogetherView'
 import { ImportView } from './screens/ImportView'
 import { Profile } from './screens/Profile'
 import { useProfile } from './profile/useProfile'
@@ -134,6 +135,8 @@ function Shell(): React.JSX.Element {
         return <PublicPlaylistView key={view.id} id={view.id} author={view.author} nav={nav} />
       case 'partner':
         return <PartnerView id={view.id} nav={nav} />
+      case 'together':
+        return <TogetherView nav={nav} />
       case 'import':
         return <ImportView nav={nav} />
       case 'profile':
