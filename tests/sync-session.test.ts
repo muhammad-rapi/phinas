@@ -367,3 +367,83 @@ test('the error clears once the lead moves on', () => {
   vi.advanceTimersByTime(3010) // the heartbeat, then b's "ok" reply, each take a timer tick
   expect(t.a.getState().partnerError).toBe(false)
 })
+
+test('the session survives a short absence', () => {
+  const t = activate()
+  t.ta.emitPresence(false)
+  vi.advanceTimersByTime(119_000)
+  expect(t.a.getState().status).toBe('active')
+  expect(t.a.getState().partnerHere).toBe(false)
+})
+
+test('the session ends after 2 minutes without the partner, on both sides', () => {
+  const t = activate()
+  t.ta.emitPresence(false)
+  vi.advanceTimersByTime(121_000)
+  expect(t.a.getState()).toMatchObject({ status: 'ended', endReason: 'timeout' })
+  expect(t.b.getState()).toMatchObject({ status: 'ended', endReason: 'partner-ended' })
+})
+
+test('the partner returning in time cancels the countdown', () => {
+  const t = activate()
+  t.ta.emitPresence(false)
+  vi.advanceTimersByTime(60_000)
+  t.ta.emitPresence(true)
+  vi.advanceTimersByTime(180_000)
+  expect(t.a.getState().status).toBe('active')
+})
+
+test('the dropped side closes its own session after 2 minutes too', () => {
+  const t = activate()
+  t.tb.down = true
+  t.tb.emitConnection(false)
+  vi.advanceTimersByTime(121_000)
+  expect(t.b.getState()).toMatchObject({ status: 'ended', endReason: 'timeout' })
+})
+
+test('a side that regains its connection catches up to the current position', () => {
+  const t = activate()
+  t.pa.snap = { tracks: [T1], index: 0, position: 42, playing: true }
+  t.pb.snap = { tracks: [T1], index: 0, position: 5, playing: false }
+  t.tb.down = true
+  t.tb.emitConnection(false)
+  t.ta.emitPresence(false)
+  vi.advanceTimersByTime(30_000)
+  t.tb.down = false
+  t.tb.emitConnection(true)
+  t.ta.emitPresence(true)
+  vi.advanceTimersByTime(10)
+  expect(t.pb.applied.at(-1)).toMatchObject({ kind: 'queue', position: 42, playing: true })
+  expect(t.b.getState().status).toBe('active')
+})
+
+test('if both sides were away, only the smaller id sends the snapshot', () => {
+  const t = activate()
+  t.pa.snap = { tracks: [T1], index: 0, position: 42, playing: true }
+  t.pb.snap = { tracks: [track('stale')], index: 0, position: 9, playing: true }
+  for (const tr of [t.ta, t.tb]) {
+    tr.emitConnection(false)
+  }
+  t.tb.down = t.ta.down = true
+  vi.advanceTimersByTime(5000)
+  t.tb.down = t.ta.down = false
+  t.ta.emitConnection(true)
+  t.tb.emitConnection(true)
+  vi.advanceTimersByTime(10)
+  expect(t.pb.applied.at(-1)).toMatchObject({ kind: 'queue', position: 42 })
+  expect(t.pa.applied).toEqual([])
+})
+
+test('a hello from a different protocol version ends the session', () => {
+  const t = activate()
+  t.ta.deliver(msg('b', { type: 'hello', version: PROTOCOL_VERSION + 1 }))
+  expect(t.a.getState()).toMatchObject({ status: 'ended', endReason: 'version' })
+})
+
+test('the presence and connection flags are exposed in the state', () => {
+  const t = setup()
+  expect(t.a.getState()).toMatchObject({ connected: true, partnerHere: true })
+  t.ta.emitConnection(false)
+  t.ta.emitPresence(false)
+  expect(t.a.getState()).toMatchObject({ connected: false, partnerHere: false })
+})

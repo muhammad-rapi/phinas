@@ -190,6 +190,9 @@ export class SyncSession {
       case 'status':
         if (this.state.status === 'active') this.set({ partnerError: m.state === 'error' })
         return
+      case 'hello':
+        if (this.state.status === 'active') this.onHello(m)
+        return
       default:
         return
     }
@@ -280,6 +283,24 @@ export class SyncSession {
     this.send({ type: 'ping', id: `${this.me}:${++this.pingSeq}` })
   }
 
+  private onHello(m: MessageOf<'hello'>): void {
+    if (m.version !== PROTOCOL_VERSION) {
+      this.send({ type: 'end' })
+      this.finish('version')
+      return
+    }
+    this.burstPings(3, 200) // latency may have changed with the new connection
+    if (this.rejoining) {
+      // Both sides were away: the smaller id's state stands, the other waits for it.
+      if (this.me < m.from) {
+        this.rejoining = false
+        this.sendSnapshot()
+      }
+      return
+    }
+    this.sendSnapshot()
+  }
+
   /** The player calls this when a track cannot be streamed, so the session does not fight the skip. */
   reportStreamError(videoId: string): void {
     if (this.state.status !== 'active') return
@@ -345,14 +366,38 @@ export class SyncSession {
     this.burstPings(5, 200)
     this.clockTimer = setInterval(() => this.sendPing(), CLOCK_RESYNC_MS)
     this.heartbeatTimer = setInterval(() => this.beat(), HEARTBEAT_MS)
+    this.updateGrace()
   }
 
   private onPresence(here: boolean): void {
     this.set({ partnerHere: here })
+    this.updateGrace()
   }
 
   private onConnection(up: boolean): void {
+    const was = this.state.connected
     this.set({ connected: up })
+    if (up && !was && this.state.status === 'active') {
+      // We were away: tell the partner and wait for the current state.
+      this.rejoining = true
+      this.send({ type: 'hello', version: PROTOCOL_VERSION })
+    }
+    this.updateGrace()
+  }
+
+  /** Starts or cancels the 2-minute countdown depending on whether either side is away. */
+  private updateGrace(): void {
+    const away = this.state.status === 'active' && (!this.state.partnerHere || !this.state.connected)
+    if (away && !this.graceTimer) {
+      this.graceTimer = setTimeout(() => {
+        this.graceTimer = null
+        this.send({ type: 'end' }) // best effort: it is lost if we are the side that is offline
+        this.finish('timeout')
+      }, GRACE_MS)
+    } else if (!away && this.graceTimer) {
+      clearTimeout(this.graceTimer)
+      this.graceTimer = null
+    }
   }
 
   private finish(reason: EndReason): void {
