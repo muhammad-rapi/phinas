@@ -14,6 +14,7 @@ import {
 import type { CSSProperties } from 'react'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
+import { ListenButton } from './ListenTogether'
 import { formatTime } from './TrackRow'
 
 const pct = (value: number, max: number): CSSProperties =>
@@ -90,6 +91,7 @@ export function PlayerBar(): React.JSX.Element {
       </div>
 
       <div className="pb-volume">
+        <ListenButton />
         <VolumeIcon size={18} />
         <input
           className="slider"

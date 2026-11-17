@@ -329,3 +329,19 @@ h1, h2, h3, h4 { margin: 0; }
 .lyrics-large .lyric-line { font-size: clamp(28px, 4.2vw, 56px); line-height: 1.25; justify-content: center; text-align: center; padding: 8px 12px; transform-origin: center; }
 .lyrics-large .lyric-line.active { transform: scale(1.05); }
 .lyrics-large.lyrics-plain { font-size: clamp(20px, 2.4vw, 30px); line-height: 1.8; }
+
+/* Listen together (kept minimal; the redesign will restyle it) */
+.listen-btn { display: inline-flex; align-items: center; gap: 6px; }
+.listen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.listen-label { font-size: 12px; white-space: nowrap; }
+.listen-banner { display: flex; align-items: center; gap: 12px; }
+.listen-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+}

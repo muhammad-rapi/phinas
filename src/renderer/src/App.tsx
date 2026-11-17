@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { LibraryPanel } from './components/LibraryPanel'
+import { ListenBanner } from './components/ListenTogether'
 import { LyricsFull } from './components/LyricsFull'
 import { NowPlaying } from './components/NowPlaying'
 import { PlayerBar } from './components/PlayerBar'
@@ -18,6 +19,7 @@ import { ImportView } from './screens/ImportView'
 import { Profile } from './screens/Profile'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
+import { ListenTogetherProvider } from './sync/ListenTogetherProvider'
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
 import type { Nav, View } from './views'
@@ -165,6 +167,7 @@ function Shell(): React.JSX.Element {
       />
       <LibraryPanel view={view} nav={nav} />
       <main ref={mainRef} className="panel main">
+        <ListenBanner />
         {player.notice && (
           <div className="notice" onClick={player.dismissNotice} role="status">
             {player.notice}
@@ -185,7 +188,9 @@ export function App(): React.JSX.Element {
   return (
     <LibraryProvider>
       <PlayerProvider>
-        <Shell />
+        <ListenTogetherProvider>
+          <Shell />
+        </ListenTogetherProvider>
       </PlayerProvider>
     </LibraryProvider>
   )
