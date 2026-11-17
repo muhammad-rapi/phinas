@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { PlayTracker } from '../../../shared/playTracker'
+import type { SyncAction } from '../../../shared/sync/protocol'
+import type { PlayerSnapshot } from '../../../shared/sync/session'
 import type { PlayerCommand, Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import {
@@ -44,7 +46,31 @@ interface PlayerApi {
   toggleAutoplay(): void
   /** The one place that runs player commands (shortcuts, media keys, notch). */
   run(cmd: PlayerCommand): void
+  /** Listen-together bridge. User actions go out through the bound sink; remote ones come in through `apply`. */
+  sync: SyncBridge
 }
+
+/** Where the player reports user actions and stream failures. Set by the listen-together provider. */
+export interface SyncSink {
+  action(a: SyncAction): void
+  streamError(videoId: string): void
+}
+
+export interface SyncBridge {
+  bind(sink: SyncSink | null): void
+  snapshot(): PlayerSnapshot
+  /** Applies a partner's action. Never reported back to the sink. */
+  apply(a: SyncAction): void
+  setRate(rate: number): void
+}
+
+const queueAction = (q: QueueState, position: number, playing: boolean): SyncAction => ({
+  kind: 'queue',
+  tracks: q.tracks,
+  index: q.index,
+  position,
+  playing
+})
 
 const Ctx = createContext<PlayerApi | null>(null)
 
@@ -86,6 +112,11 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   const libRef = useRef(lib)
   libRef.current = lib
   const preMuteVolume = useRef<number | null>(null)
+  const sinkRef = useRef<SyncSink | null>(null)
+  const queueRef = useRef(queue)
+  queueRef.current = queue
+  // Position and play state to restore once a track requested by the partner has loaded.
+  const pendingStart = useRef<{ videoId: string; position: number; playing: boolean } | null>(null)
   const tracker = useMemo(
     () =>
       new PlayTracker((rec) => {
@@ -174,6 +205,7 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
     const skip = (): void => {
       if (cancelled) return
       tracker.finish(false)
+      sinkRef.current?.streamError(track.videoId)
       setNotice(`Tidak bisa memutar "${track.title}", dilewati.`)
       advance()
     }
@@ -181,8 +213,17 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       .streamUrl(track.videoId)
       .then((url) => {
         if (cancelled) return
+        const start = pendingStart.current?.videoId === track.videoId ? pendingStart.current : null
+        pendingStart.current = null
         audio.src = url
         audio.onerror = skip
+        if (start && start.position > 0) {
+          audio.addEventListener('loadedmetadata', () => (audio.currentTime = start.position), { once: true })
+        }
+        if (start && !start.playing) {
+          setPlaying(false)
+          return
+        }
         return audio.play()
       })
       .catch(skip)
@@ -218,6 +259,10 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   }, [autoplay, track, queue.index, queue.tracks, repeat])
 
   const api = useMemo<PlayerApi>(() => {
+    const emit = (action: SyncAction): void => {
+      if (action.kind === 'queue' && action.tracks.length === 0) return
+      sinkRef.current?.action(action)
+    }
     const a: PlayerApi = {
       queue,
       track,
@@ -232,39 +277,61 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       play: (tracks, index) => {
         tracker.finish(true)
         const q = startQueue(tracks, index)
-        setQueue(shuffle ? shuffleOn(q) : q)
+        const nq = shuffle ? shuffleOn(q) : q
+        setQueue(nq)
         setToken((t) => t + 1)
+        emit(queueAction(nq, 0, true))
       },
       addToQueue: (t) => {
-        setQueue((q) => (q.tracks.length ? enqueue(q, t) : startQueue([t], 0)))
+        const had = queue.tracks.length > 0
+        const nq = had ? enqueue(queue, t) : startQueue([t], 0)
+        setQueue(nq)
         setNotice(`"${t.title}" ditambahkan ke antrean.`)
+        emit(queueAction(nq, had ? audio.currentTime : 0, had ? !audio.paused : true))
       },
       playNext: (t) => {
-        setQueue((q) => (q.tracks.length ? insertNext(q, t) : startQueue([t], 0)))
+        const had = queue.tracks.length > 0
+        const nq = had ? insertNext(queue, t) : startQueue([t], 0)
+        setQueue(nq)
         setNotice(`"${t.title}" akan diputar berikutnya.`)
+        emit(queueAction(nq, had ? audio.currentTime : 0, had ? !audio.paused : true))
       },
       toggle: () => {
         if (!audio.src) return
-        if (audio.paused) void audio.play()
-        else audio.pause()
+        if (audio.paused) {
+          void audio.play()
+          emit({ kind: 'play', position: audio.currentTime })
+        } else {
+          audio.pause()
+          emit({ kind: 'pause', position: audio.currentTime })
+        }
       },
       next: () => {
         tracker.finish(true)
         advance()
+        const n = next(queue, repeat)
+        if (n) emit(queueAction(n, 0, true))
       },
       prev: () => {
-        if (audio.currentTime > 3) audio.currentTime = 0
-        else {
+        if (audio.currentTime > 3) {
+          audio.currentTime = 0
+          emit({ kind: 'seek', position: 0 })
+        } else {
           if (queue.index > 0) tracker.finish(true)
-          setQueue((q) => prev(q))
+          const p = prev(queue)
+          setQueue(p)
+          if (p !== queue) emit(queueAction(p, 0, true))
         }
       },
       jump: (i) => {
         tracker.finish(true)
-        setQueue((q) => jumpTo(q, i))
+        const j = jumpTo(queue, i)
+        setQueue(j)
+        emit(queueAction(j, 0, true))
       },
       seek: (s) => {
         audio.currentTime = s
+        emit({ kind: 'seek', position: s })
       },
       setVolume: (v) => {
         setVolumeState(v)
@@ -272,8 +339,10 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         if (systemMode) void window.phinas.setSystemVolume(v)
       },
       toggleShuffle: () => {
+        const nq = shuffle ? shuffleOff(queue) : shuffleOn(queue)
         setShuffle(!shuffle)
-        setQueue((q) => (shuffle ? shuffleOff(q) : shuffleOn(q)))
+        setQueue(nq)
+        if (queue.tracks.length) emit(queueAction(nq, audio.currentTime, !audio.paused))
       },
       cycleRepeat: () => setRepeat((r) => REPEAT_ORDER[(REPEAT_ORDER.indexOf(r) + 1) % REPEAT_ORDER.length]),
       dismissNotice: () => setNotice(null),
@@ -315,6 +384,53 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
           }
           case 'focusSearch':
             return document.querySelector<HTMLInputElement>('.searchpill input')?.focus()
+        }
+      },
+      sync: {
+        bind: (sink) => {
+          sinkRef.current = sink
+        },
+        snapshot: () => ({
+          tracks: queueRef.current.tracks,
+          index: queueRef.current.index,
+          position: audio.currentTime,
+          playing: !audio.paused
+        }),
+        setRate: (rate) => {
+          audio.playbackRate = rate
+        },
+        apply: (action) => {
+          switch (action.kind) {
+            case 'play':
+              if (!audio.src) return
+              if (Math.abs(audio.currentTime - action.position) > 0.3) audio.currentTime = action.position
+              void audio.play()
+              return
+            case 'pause':
+              audio.pause()
+              if (Math.abs(audio.currentTime - action.position) > 0.3) audio.currentTime = action.position
+              return
+            case 'seek':
+              audio.currentTime = action.position
+              return
+            case 'queue': {
+              const target = action.tracks[action.index]
+              if (!target) return
+              const nq: QueueState = { tracks: action.tracks, index: action.index }
+              if (current(queueRef.current)?.videoId === target.videoId) {
+                // Same song: take the new queue and only correct position and play state.
+                setQueue(nq)
+                if (Math.abs(audio.currentTime - action.position) > 0.5) audio.currentTime = action.position
+                if (action.playing && audio.paused) void audio.play()
+                if (!action.playing && !audio.paused) audio.pause()
+                return
+              }
+              tracker.finish(true)
+              pendingStart.current = { videoId: target.videoId, position: action.position, playing: action.playing }
+              setQueue(nq)
+              setToken((t) => t + 1)
+            }
+          }
         }
       }
     }
