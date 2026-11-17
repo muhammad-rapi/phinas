@@ -55,7 +55,8 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
 
   return (
     <aside className="sidebar" aria-label="Navigasi">
-      <div className="sb-brand">Phinas</div>
+      {/* Empty: the window's drag handle, with room for the macOS window buttons. */}
+      <div className="sb-brand" />
       <SearchBox query={query} onQuery={onQuery} onSubmit={onSubmit} recent={recent} onForget={onForget} onPlayTrack={onPlayTrack} />
 
       <nav className="sb-nav">

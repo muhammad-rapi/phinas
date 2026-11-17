@@ -79,8 +79,7 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ---------- sidebar ---------- */
 .sidebar { position: relative; z-index: 5; display: flex; flex-direction: column; min-height: 0; padding: 0 12px 14px; background: var(--glass); border-right: 1px solid var(--line); }
-.sb-brand { -webkit-app-region: drag; flex: none; height: 60px; display: flex; align-items: center; padding-left: 8px; font-weight: 800; font-size: 18px; letter-spacing: -0.02em; }
-:root[data-platform='mac'] .sb-brand { padding-left: 76px; }
+.sb-brand { -webkit-app-region: drag; flex: none; height: 52px; }
 .searchbox { margin-bottom: 10px; }
 .sb-nav { display: flex; flex-direction: column; gap: 2px; }
 .sb-item { width: 100%; justify-content: flex-start; gap: 12px; padding: 9px 10px; border-radius: 10px; font-weight: 600; color: var(--muted); transition: background 0.15s, color 0.15s; }
