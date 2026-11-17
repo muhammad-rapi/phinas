@@ -1,6 +1,7 @@
 import {
   Heart,
   PanelRight,
+  PanelTop,
   Pause,
   Play,
   Repeat,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import { useLibrary } from '../library/LibraryProvider'
+import { useNotchEnabled } from '../notch/useNotchEnabled'
 import { usePlayer } from '../player/PlayerProvider'
 import { ListenButton } from './ListenTogether'
 import { formatTime } from './TrackRow'
@@ -24,6 +26,7 @@ const pct = (value: number, max: number): CSSProperties =>
 export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTogglePanel: () => void }): React.JSX.Element {
   const p = usePlayer()
   const lib = useLibrary()
+  const [notch, setNotch] = useNotchEnabled()
   const liked = p.track ? lib.likes.some((x) => x.videoId === p.track!.videoId) : false
 
   const toggleLike = async (): Promise<void> => {
@@ -95,6 +98,17 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
 
       <div className="pb-volume">
         <ListenButton />
+        {notch !== null && (
+          <button
+            className={`icon-btn${notch ? ' on' : ''}`}
+            onClick={() => setNotch(!notch)}
+            aria-pressed={notch}
+            aria-label={notch ? 'Sembunyikan notch' : 'Tampilkan notch'}
+            title={notch ? 'Sembunyikan notch' : 'Tampilkan notch'}
+          >
+            <PanelTop size={18} />
+          </button>
+        )}
         <button
           className={`icon-btn${panelOpen ? ' on' : ''}`}
           onClick={onTogglePanel}

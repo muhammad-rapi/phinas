@@ -22,6 +22,7 @@ const events: PhinasEvents = {
   onLibraryChanged: (cb) => subscribe('library:changed', () => cb()),
   setNotchExpanded: (expanded) => ipcRenderer.send('notch:expanded', expanded),
   onNotchLayout: (cb) => subscribe('notch:layout', cb),
+  onNotchEnabled: (cb) => subscribe('notch:enabled', cb),
   listenSend: (msg) => ipcRenderer.send('listen:send', msg),
   onListenMessage: (cb) => subscribe('listen:message', cb),
   onListenPresence: (cb) => subscribe('listen:presence', cb),

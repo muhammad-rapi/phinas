@@ -184,6 +184,15 @@ export function Notch(): React.JSX.Element | null {
             <button className={`ico like${state.liked ? ' on' : ''}`} onClick={() => cmd('like')} aria-label="Suka" tabIndex={open ? 0 : -1}>
               <Heart size={19} fill={state.liked ? 'currentColor' : 'none'} />
             </button>
+            <button
+              className="ico"
+              onClick={() => void window.phinas.setNotchEnabled(false)}
+              aria-label="Sembunyikan notch"
+              title="Sembunyikan notch (tampilkan lagi dari player di app)"
+              tabIndex={open ? 0 : -1}
+            >
+              <X size={19} />
+            </button>
           </div>
 
           <div className="lyrics">

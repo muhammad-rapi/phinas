@@ -18,6 +18,7 @@ import { createNotch } from './notch/window'
 import { Recommender } from './recommend/service'
 import { SettingsStore } from './settings'
 import { registerShortcuts } from './shortcuts'
+import { createTray, type TrayController } from './tray'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const SYNC_INTERVAL_MS = 15_000
@@ -114,6 +115,15 @@ app.whenReady().then(async () => {
         }
       })
 
+  let tray: TrayController | null = null
+  /** Shows or hides the notch, wherever that was asked (Profil, player bar, the notch, the menu bar). */
+  const showNotch = (enabled: boolean): void => {
+    settings.set('notch', enabled)
+    notch?.setEnabled(enabled)
+    mainWindow?.webContents.send('notch:enabled', enabled)
+    tray?.refresh()
+  }
+
   const handlers = createHandlers({
     library,
     source,
@@ -126,7 +136,7 @@ app.whenReady().then(async () => {
     lastError,
     recommender,
     settings,
-    setNotchEnabled: (enabled) => notch?.setEnabled(enabled)
+    setNotchEnabled: showNotch
   })
   for (const name of CHANNELS) {
     ipcMain.handle(name, (_e, ...args) =>
@@ -140,7 +150,26 @@ app.whenReady().then(async () => {
     mainWindow = null
     // The notch is a window too: without this the app would never see window-all-closed.
     notch?.destroy()
+    tray?.destroy()
+    tray = null
   })
+
+  if (!shot && process.platform === 'darwin') {
+    try {
+      tray = createTray({
+        notchEnabled: () => settings.get('notch'),
+        setNotchEnabled: showNotch,
+        showApp: () => {
+          mainWindow?.show()
+          mainWindow?.focus()
+          app.focus({ steal: true })
+        },
+        quit: () => app.quit()
+      })
+    } catch (e) {
+      console.error('menu bar icon could not be created, running without it:', e)
+    }
+  }
 
   if (!shot) {
     registerShortcuts(globalShortcut, (cmd) => mainWindow?.webContents.send('player:command', cmd))

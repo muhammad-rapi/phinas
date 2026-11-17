@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
+import { useNotchEnabled } from '../notch/useNotchEnabled'
 import type { ThemeName } from '../theme/useTheme'
 
 const THEMES: { id: ThemeName; label: string; hint: string }[] = [
@@ -23,11 +24,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [notch, setNotch] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    window.phinas.getNotchEnabled().then(setNotch).catch(() => setNotch(null))
-  }, [])
+  const [notch, setNotch] = useNotchEnabled()
 
   const load = useCallback(() => window.phinas.syncStatus().then(setStatus), [])
 
@@ -99,10 +96,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             type="checkbox"
             checked={notch ?? true}
             disabled={notch === null}
-            onChange={(e) => {
-              setNotch(e.target.checked)
-              void window.phinas.setNotchEnabled(e.target.checked)
-            }}
+            onChange={(e) => setNotch(e.target.checked)}
           />
           <span>Tampilkan notch</span>
         </label>

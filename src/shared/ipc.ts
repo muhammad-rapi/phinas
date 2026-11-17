@@ -71,6 +71,8 @@ export interface PhinasEvents {
   setNotchExpanded(expanded: boolean): void
   /** Notch window: where the pill sits (set once by the main process). */
   onNotchLayout(cb: (layout: NotchLayout) => void): () => void
+  /** Main window: the notch was shown or hidden (from Profil, the player bar or the notch itself). Returns an unsubscribe. */
+  onNotchEnabled(cb: (enabled: boolean) => void): () => void
   /** Sends a listen-together message to the partner. */
   listenSend(msg: SyncMessage): void
   /** A raw message from the partner (validate it with `parseMessage`). Returns an unsubscribe. */
