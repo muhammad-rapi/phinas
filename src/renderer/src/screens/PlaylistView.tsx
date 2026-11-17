@@ -80,7 +80,7 @@ export function PlaylistView({ id, nav }: { id: string; nav: Nav }): React.JSX.E
           )
         }
         meta={`${pl.tracks.length} lagu`}
-        onPlay={pl.tracks.length ? () => player.play(pl.tracks, 0) : undefined}
+        tracks={pl.tracks}
       >
         <button className="icon-btn" onClick={remove} aria-label="Hapus playlist" title="Hapus playlist">
           <Trash2 size={22} />

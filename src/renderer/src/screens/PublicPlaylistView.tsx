@@ -52,7 +52,7 @@ export function PublicPlaylistView({ id, author, nav }: { id: string; author?: s
         kind={`Playlist dari ${author ?? pl.author}`}
         title={pl.title}
         meta={`${pl.tracks.length} lagu`}
-        onPlay={pl.tracks.length ? () => player.play(pl.tracks, 0) : undefined}
+        tracks={pl.tracks}
       >
         <button className="pill-btn" onClick={() => void save()} disabled={saving || pl.tracks.length === 0}>
           <CopyPlus size={18} />

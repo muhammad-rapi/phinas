@@ -10,6 +10,7 @@ import {
   prev,
   shuffleOff,
   shuffleOn,
+  shuffleStart,
   startQueue
 } from '../src/renderer/src/player/queue'
 import type { Track } from '../src/shared/types'
@@ -126,5 +127,25 @@ describe('insertNext', () => {
   test('shuffle can still be turned off afterwards and still contains the added song', () => {
     const q = shuffleOff(insertNext(shuffleOn(startQueue([t(1), t(2), t(3)], 0)), t(9)))
     expect(q.tracks.map((x) => x.videoId)).toContain(t(9).videoId)
+  })
+})
+
+describe('shuffleStart', () => {
+  const five = [1, 2, 3, 4, 5].map(t)
+
+  test('starts on a random track, keeps every track once, and is shuffled', () => {
+    const q = shuffleStart(five, () => 0.5)
+    expect(isShuffled(q)).toBe(true)
+    expect(q.index).toBe(0)
+    expect(current(q)?.title).toBe('T3')
+    expect(q.tracks.map((x) => x.title).sort()).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+  })
+
+  test('the original order is kept for turning shuffle off', () => {
+    expect(shuffleStart(five, () => 0.99).original?.map((x) => x.title)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+  })
+
+  test('an empty list gives an empty queue', () => {
+    expect(shuffleStart([], () => 0.5)).toEqual(empty)
   })
 })

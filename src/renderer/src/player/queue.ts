@@ -65,3 +65,14 @@ export function shuffleOff(q: QueueState): QueueState {
   const index = playing ? q.original.findIndex((t) => t.videoId === playing.videoId) : -1
   return { tracks: q.original, index: index === -1 ? 0 : index }
 }
+
+/**
+ * "Putar acak": starts on a random track with the rest shuffled after it. `original` stays the
+ * list's real order, so turning shuffle off afterwards restores it.
+ */
+export function shuffleStart(tracks: Track[], rand: () => number = Math.random): QueueState {
+  if (tracks.length === 0) return empty
+  const first = Math.floor(rand() * tracks.length)
+  const reordered = [tracks[first], ...tracks.slice(0, first), ...tracks.slice(first + 1)]
+  return { ...shuffleOn(startQueue(reordered, 0), rand), original: tracks }
+}

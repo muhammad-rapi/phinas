@@ -25,7 +25,7 @@ export function RecentView(): React.JSX.Element {
         kind="Riwayat"
         title="Baru diputar"
         meta={`${list.length} lagu`}
-        onPlay={list.length ? () => player.play(list, 0) : undefined}
+        tracks={list}
       />
       {tracks && list.length === 0 && (
         <p className="muted">Belum ada riwayat. Lagu yang kamu dengarkan lebih dari 30 detik akan muncul di sini.</p>

@@ -14,6 +14,7 @@ import {
   prev,
   shuffleOff,
   shuffleOn,
+  shuffleStart,
   startQueue,
   type QueueState,
   type RepeatMode
@@ -32,6 +33,8 @@ interface PlayerApi {
   notice: string | null
   autoplay: boolean
   play(tracks: Track[], index: number): void
+  /** Turns shuffle on and plays the list from a random track. */
+  shufflePlay(tracks: Track[]): void
   addToQueue(track: Track): void
   playNext(track: Track): void
   toggle(): void
@@ -278,6 +281,15 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         tracker.finish(true)
         const q = startQueue(tracks, index)
         const nq = shuffle ? shuffleOn(q) : q
+        setQueue(nq)
+        setToken((t) => t + 1)
+        emit(queueAction(nq, 0, true))
+      },
+      shufflePlay: (tracks) => {
+        if (tracks.length === 0) return
+        tracker.finish(true)
+        const nq = shuffleStart(tracks)
+        setShuffle(true)
         setQueue(nq)
         setToken((t) => t + 1)
         emit(queueAction(nq, 0, true))

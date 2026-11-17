@@ -26,7 +26,7 @@ export function PartnerView({ id, nav }: { id: string; nav: Nav }): React.JSX.El
         kind={`Playlist dari ${pl.ownerName}`}
         title={pl.name}
         meta={`${pl.tracks.length} lagu`}
-        onPlay={pl.tracks.length ? () => player.play(pl.tracks, 0) : undefined}
+        tracks={pl.tracks}
       >
         <button className="pill-btn" onClick={copy}>
           <CopyPlus size={18} />

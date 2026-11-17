@@ -18,7 +18,7 @@ export function LikedView(): React.JSX.Element {
         kind="Playlist"
         title="Lagu yang disukai"
         meta={`${likes.length} lagu`}
-        onPlay={likes.length ? () => player.play(likes, 0) : undefined}
+        tracks={likes}
       />
       {likes.length === 0 && <p className="muted">Belum ada lagu yang disukai. Tekan ikon hati di lagu mana pun.</p>}
       {likes.map((t, i) => (
