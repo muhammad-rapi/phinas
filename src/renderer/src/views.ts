@@ -5,6 +5,7 @@ export type View =
   | { name: 'profile' }
   | { name: 'import' }
   | { name: 'liked' }
+  | { name: 'recent' }
   | { name: 'playlist'; id: string }
   | { name: 'partner'; id: string }
   | { name: 'public'; id: string; author?: string }

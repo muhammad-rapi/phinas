@@ -4,7 +4,9 @@ import { LyricsFull } from './components/LyricsFull'
 import { NowPlaying } from './components/NowPlaying'
 import { PlayerBar } from './components/PlayerBar'
 import { TopBar } from './components/TopBar'
-import { LibraryProvider } from './library/LibraryProvider'
+import { LibraryProvider, useLibrary } from './library/LibraryProvider'
+import { keyToCommand } from './player/keymap'
+import { RecentView } from './screens/RecentView'
 import { PlayerProvider, usePlayer } from './player/PlayerProvider'
 import { Home } from './screens/Home'
 import { LikedView } from './screens/LikedView'
@@ -22,6 +24,7 @@ import type { Nav, View } from './views'
 
 function Shell(): React.JSX.Element {
   const player = usePlayer()
+  const lib = useLibrary()
   const cover = useCover(player.track)
   const { theme, setTheme } = useTheme(cover)
   const recents = useRecent()
@@ -43,37 +46,70 @@ function Shell(): React.JSX.Element {
     setView(q.trim() ? { name: 'search' } : (v) => (v.name === 'search' ? { name: 'home' } : v))
   }
 
-  // Keyboard shortcuts. Cmd on a Mac, Ctrl on Windows. The ref keeps the listener registered once
-  // even though `player` changes on every time update.
+  // Keyboard shortcuts (window focused). The ref keeps the listener registered once even though
+  // `player` changes on every time update. Commands run in PlayerProvider, same as the notch's.
   const playerRef = useRef(player)
   playerRef.current = player
+  const libRef = useRef(lib)
+  libRef.current = lib
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const typing = (e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable]') !== null
-      const mod = e.metaKey || e.ctrlKey
       if (e.key === 'Escape') {
         setLyricsFull(false)
         return
       }
-      if (mod && e.key.toLowerCase() === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        document.querySelector<HTMLInputElement>('.searchpill input')?.focus()
-      } else if (typing) {
+        playerRef.current.run('focusSearch')
         return
-      } else if (e.code === 'Space' && !mod) {
-        e.preventDefault()
-        playerRef.current.toggle()
-      } else if (mod && e.key === 'ArrowRight') {
-        e.preventDefault()
-        playerRef.current.next()
-      } else if (mod && e.key === 'ArrowLeft') {
-        e.preventDefault()
-        playerRef.current.prev()
       }
+      if (typing) return
+      const cmd = keyToCommand(e)
+      if (!cmd) return
+      e.preventDefault()
+      playerRef.current.run(cmd)
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    // Global shortcuts and the notch's buttons arrive from the main process.
+    const offCmd = window.phinas.onPlayerCommand((cmd) => playerRef.current.run(cmd))
+    const offSeek = window.phinas.onPlayerSeek((sec) => playerRef.current.seek(sec))
+    const offLib = window.phinas.onLibraryChanged(() => void libRef.current.refresh())
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      offCmd()
+      offSeek()
+      offLib()
+    }
   }, [])
+
+  // Keep the notch overlay in step with the player and the app's theme.
+  const [colors, setColors] = useState({ accent: '#8b5cf6', accentText: '#b79cff', gradTop: '#2b2150' })
+  useEffect(() => {
+    // The theme hook sets the accent variables a moment after the cover or theme changes.
+    const t = setTimeout(() => {
+      const cs = getComputedStyle(document.documentElement)
+      const get = (v: string, fallback: string): string => cs.getPropertyValue(v).trim() || fallback
+      setColors({
+        accent: get('--accent', '#8b5cf6'),
+        accentText: get('--accent-text', '#b79cff'),
+        gradTop: get('--grad-top', '#2b2150')
+      })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [cover, theme])
+  const liked = player.track ? lib.likes.some((l) => l.videoId === player.track!.videoId) : false
+  useEffect(() => {
+    window.phinas.pushNotchState({
+      track: player.track,
+      playing: player.playing,
+      time: player.time,
+      duration: player.duration,
+      liked,
+      theme,
+      ...colors
+    })
+  }, [player.track, player.playing, player.time, player.duration, liked, theme, colors])
 
   // Every new screen starts at the top.
   useEffect(() => {
@@ -88,6 +124,8 @@ function Shell(): React.JSX.Element {
         return <Search query={query} submitNonce={submitNonce} onPick={recents.rememberTrack} nav={nav} />
       case 'liked':
         return <LikedView />
+      case 'recent':
+        return <RecentView />
       case 'playlist':
         return <PlaylistView key={view.id} id={view.id} nav={nav} />
       case 'public':

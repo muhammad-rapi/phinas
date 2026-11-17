@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import type { Playlist, PlaylistWithTracks, Track } from '../../shared/types'
+import type { LikeEntry, PlayEntry, PlayRecord, Playlist, PlaylistWithTracks, Track } from '../../shared/types'
 
 interface TrackRow {
   video_id: string
@@ -177,6 +177,85 @@ export class Library {
       }
       this.enqueue('likes')
     })
+  }
+
+  /** Likes with their timestamp, newest first. */
+  likeEntries(): LikeEntry[] {
+    const rows = this.db
+      .prepare(
+        `SELECT video_id, title, artist, cover_url, duration_sec, liked_at
+         FROM liked_tracks ORDER BY liked_at DESC, rowid DESC`
+      )
+      .all() as unknown as (TrackRow & { liked_at: number })[]
+    return rows.map((r) => ({ ...toTrack(r), likedAt: r.liked_at }))
+  }
+
+  /** History is local only: no outbox entry, never synced. */
+  recordPlay(rec: PlayRecord, playedAt: number = this.now()): void {
+    const t = rec.track
+    this.db
+      .prepare(
+        `INSERT INTO plays(video_id, title, artist, cover_url, duration_sec, played_at, listened_sec, skipped)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        t.videoId,
+        t.title,
+        t.artist,
+        t.coverUrl,
+        t.durationSec,
+        playedAt,
+        Math.max(0, Math.round(rec.listenedSec)),
+        rec.skipped ? 1 : 0
+      )
+  }
+
+  /** Raw history rows, newest first (used to build the taste profile). */
+  playEntries(limit = 2000): PlayEntry[] {
+    const rows = this.db
+      .prepare(
+        `SELECT video_id, title, artist, cover_url, duration_sec, played_at, listened_sec, skipped
+         FROM plays ORDER BY played_at DESC, id DESC LIMIT ?`
+      )
+      .all(limit) as unknown as (TrackRow & { played_at: number; listened_sec: number; skipped: number })[]
+    return rows.map((r) => ({
+      ...toTrack(r),
+      playedAt: r.played_at,
+      listenedSec: r.listened_sec,
+      skipped: r.skipped === 1
+    }))
+  }
+
+  /** Unique tracks that were really played (not skipped), most recent first. */
+  recentPlays(limit = 50): Track[] {
+    const rows = this.db
+      .prepare(
+        `SELECT video_id, title, artist, cover_url, duration_sec, MAX(played_at) AS last_at
+         FROM plays WHERE skipped = 0
+         GROUP BY video_id ORDER BY last_at DESC, MAX(id) DESC LIMIT ?`
+      )
+      .all(limit) as unknown as TrackRow[]
+    return rows.map(toTrack)
+  }
+
+  /** Artists ordered by how many times their tracks were played (skips not counted). */
+  topArtists(limit = 10): { artist: string; plays: number }[] {
+    return this.db
+      .prepare(
+        `SELECT artist, COUNT(*) AS plays FROM plays WHERE skipped = 0
+         GROUP BY artist ORDER BY plays DESC, MAX(played_at) DESC LIMIT ?`
+      )
+      .all(limit) as { artist: string; plays: number }[]
+  }
+
+  /** Play and skip counts per track. */
+  trackStats(): Map<string, { plays: number; skips: number }> {
+    const rows = this.db
+      .prepare(
+        `SELECT video_id, SUM(skipped = 0) AS plays, SUM(skipped = 1) AS skips FROM plays GROUP BY video_id`
+      )
+      .all() as { video_id: string; plays: number; skips: number }[]
+    return new Map(rows.map((r) => [r.video_id, { plays: r.plays, skips: r.skips }]))
   }
 
   pendingKeys(): string[] {

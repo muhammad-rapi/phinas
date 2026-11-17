@@ -23,6 +23,11 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [notch, setNotch] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    window.phinas.getNotchEnabled().then(setNotch).catch(() => setNotch(null))
+  }, [])
 
   const load = useCallback(() => window.phinas.syncStatus().then(setStatus), [])
 
@@ -85,6 +90,23 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             </button>
           ))}
         </div>
+      </section>
+
+      <section className="profile-section">
+        <h3>Notch</h3>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <input
+            type="checkbox"
+            checked={notch ?? true}
+            disabled={notch === null}
+            onChange={(e) => {
+              setNotch(e.target.checked)
+              void window.phinas.setNotchEnabled(e.target.checked)
+            }}
+          />
+          <span>Tampilkan notch</span>
+        </label>
+        <p className="muted">Pill kecil di tengah atas layar saat ada lagu. Arahkan kursor untuk membuka kontrolnya.</p>
       </section>
 
       <section className="profile-section">

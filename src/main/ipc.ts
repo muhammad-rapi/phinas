@@ -8,6 +8,8 @@ import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
 import type { SupabaseRemote } from './sync/supabase-remote'
 import type { SystemVolume } from './system-volume'
+import type { Recommender } from './recommend/service'
+import type { SettingsStore } from './settings'
 
 export interface Deps {
   library: Library
@@ -18,6 +20,10 @@ export interface Deps {
   remote: SupabaseRemote | null
   engine: SyncEngine | null
   lastError: { value?: string }
+  recommender: Recommender
+  settings: SettingsStore
+  /** Shows or hides the notch window right away. */
+  setNotchEnabled: (enabled: boolean) => void
 }
 
 export function createHandlers(d: Deps): PhinasApi {
@@ -75,6 +81,22 @@ export function createHandlers(d: Deps): PhinasApi {
       }
     },
     listPartnerPlaylists: async () => requireRemote().listPartnerPlaylists(),
+    recordPlay: async (rec) => {
+      // History must never break playback.
+      try {
+        d.library.recordPlay(rec)
+      } catch (e) {
+        console.error('could not record play:', e)
+      }
+    },
+    listRecentPlays: async (limit = 50) => d.library.recentPlays(Math.min(limit, 50)),
+    getRecommendations: () => d.recommender.forHome(),
+    getAutoplay: (current, queueIds) => d.recommender.autoplay(current, queueIds),
+    getNotchEnabled: async () => d.settings.get('notch'),
+    setNotchEnabled: async (enabled) => {
+      d.settings.set('notch', enabled)
+      d.setNotchEnabled(enabled)
+    },
     copyPartnerPlaylist: async (p) => {
       const copy = d.library.createPlaylist(`${p.name} (dari ${p.ownerName})`)
       for (const t of p.tracks) d.library.addTrack(copy.id, t)

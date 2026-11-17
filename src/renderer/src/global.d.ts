@@ -1,8 +1,8 @@
-import type { PhinasApi } from '../../shared/ipc'
+import type { PhinasApi, PhinasEvents } from '../../shared/ipc'
 
 declare global {
   interface Window {
-    phinas: PhinasApi
+    phinas: PhinasApi & PhinasEvents
   }
 }
 

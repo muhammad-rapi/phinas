@@ -10,6 +10,16 @@ export interface RawSong {
   thumbnail?: { contents: { url: string; width: number }[] } | null
 }
 
+/** An item of the "up next" panel (PlaylistPanelVideo). Its shape differs from search results. */
+export interface RawPanelItem {
+  video_id?: string
+  title?: { text?: string } | string
+  duration?: { seconds: number }
+  artists?: { name: string }[]
+  author?: string
+  thumbnail?: { url: string; width: number }[]
+}
+
 export interface RawPlaylistItem {
   id?: string
   title?: string
@@ -63,6 +73,23 @@ export function mapSongItem(raw: RawSong): Track | null {
     videoId: raw.id,
     title: raw.title,
     artist: artists.length ? artists.join(', ') : 'Unknown artist',
+    coverUrl: best ? upsizeCover(best.url) : '',
+    durationSec: raw.duration?.seconds ?? 0
+  }
+}
+
+export function mapPanelItem(raw: RawPanelItem): Track | null {
+  const title = typeof raw.title === 'string' ? raw.title : raw.title?.text
+  if (!raw.video_id || !title) return null
+  const best = (raw.thumbnail ?? []).reduce<{ url: string; width: number } | null>(
+    (a, b) => (!a || b.width > a.width ? b : a),
+    null
+  )
+  const artists = (raw.artists ?? []).map((a) => a.name).filter(Boolean)
+  return {
+    videoId: raw.video_id,
+    title,
+    artist: artists.length ? artists.join(', ') : raw.author?.trim() || 'Unknown artist',
     coverUrl: best ? upsizeCover(best.url) : '',
     durationSec: raw.duration?.seconds ?? 0
   }

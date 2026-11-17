@@ -40,6 +40,10 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
             <h4 className="np-title">{p.track.title}</h4>
             <div className="muted">{p.track.artist}</div>
           </div>
+          <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+            <input type="checkbox" checked={p.autoplay} onChange={p.toggleAutoplay} />
+            Autoplay: lanjut ke lagu serupa saat antrean habis
+          </label>
           <div className="queue-title">Berikutnya</div>
           {upcoming.length === 0 && <div className="muted">Antrean kosong</div>}
           {upcoming.map((t, i) => (

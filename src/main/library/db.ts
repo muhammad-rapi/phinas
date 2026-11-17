@@ -24,6 +24,20 @@ CREATE TABLE IF NOT EXISTS liked_tracks(
   duration_sec INTEGER NOT NULL,
   liked_at INTEGER NOT NULL
 );
+-- Local listening history. Never synced and never queued in the outbox.
+CREATE TABLE IF NOT EXISTS plays(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  video_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  artist TEXT NOT NULL,
+  cover_url TEXT NOT NULL,
+  duration_sec INTEGER NOT NULL,
+  played_at INTEGER NOT NULL,
+  listened_sec INTEGER NOT NULL,
+  skipped INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS plays_played_at ON plays(played_at);
+CREATE INDEX IF NOT EXISTS plays_video ON plays(video_id);
 CREATE TABLE IF NOT EXISTS outbox(
   key TEXT PRIMARY KEY,
   created_at INTEGER NOT NULL

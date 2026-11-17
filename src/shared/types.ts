@@ -69,3 +69,46 @@ export interface SyncStatus {
   pending: number
   lastError?: string
 }
+
+/** One finished listen of a track, as stored in the local history. */
+export interface PlayRecord {
+  track: Track
+  listenedSec: number
+  /** True when the user moved on before the track counted as played. */
+  skipped: boolean
+}
+
+/** A history row: the track plus when it was played. */
+export interface PlayEntry extends Track {
+  playedAt: number
+  listenedSec: number
+  skipped: boolean
+}
+
+/** A liked track with the time it was liked (used to weigh taste by age). */
+export interface LikeEntry extends Track {
+  likedAt: number
+}
+
+/** Home "Pilihan untukmu": ranked tracks, or none when there is no taste data yet. */
+export interface Recommendations {
+  personalized: boolean
+  tracks: Track[]
+}
+
+/** Commands any window can send to the player. The main window is the only one that runs them. */
+export type PlayerCommand = 'toggle' | 'next' | 'prev' | 'like' | 'volumeUp' | 'volumeDown' | 'mute' | 'shuffle' | 'repeat' | 'focusSearch'
+
+/** What the notch overlay needs to draw itself. */
+export interface NotchState {
+  track: Track | null
+  playing: boolean
+  time: number
+  duration: number
+  liked: boolean
+  /** The app's current theme, so the notch looks like the app. */
+  theme: 'dynamic' | 'dark' | 'light'
+  accent: string
+  accentText: string
+  gradTop: string
+}

@@ -1,4 +1,4 @@
-import { Download, Heart, Library, Plus } from 'lucide-react'
+import { Download, Heart, History, Library, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useLibrary } from '../library/LibraryProvider'
 import { sameView, type Nav, type View } from '../views'
@@ -70,6 +70,19 @@ export function LibraryPanel({ view, nav }: { view: View; nav: Nav }): React.JSX
         ))}
       </div>
       <div className="library-list">
+        {showMine && (
+          <LibraryRow
+            thumb={
+              <div className="pcover pcover-liked" style={{ width: 48, height: 48 }}>
+                <History size={20} />
+              </div>
+            }
+            title="Baru diputar"
+            sub="Riwayat"
+            active={sameView(view, { name: 'recent' })}
+            onClick={() => nav({ name: 'recent' })}
+          />
+        )}
         {showMine && (
           <LibraryRow
             thumb={

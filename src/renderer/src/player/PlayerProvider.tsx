@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Track } from '../../../shared/types'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { PlayTracker } from '../../../shared/playTracker'
+import type { PlayerCommand, Track } from '../../../shared/types'
+import { useLibrary } from '../library/LibraryProvider'
 import {
   current,
   empty,
@@ -26,6 +28,7 @@ interface PlayerApi {
   shuffle: boolean
   repeat: RepeatMode
   notice: string | null
+  autoplay: boolean
   play(tracks: Track[], index: number): void
   addToQueue(track: Track): void
   playNext(track: Track): void
@@ -38,6 +41,9 @@ interface PlayerApi {
   toggleShuffle(): void
   cycleRepeat(): void
   dismissNotice(): void
+  toggleAutoplay(): void
+  /** The one place that runs player commands (shortcuts, media keys, notch). */
+  run(cmd: PlayerCommand): void
 }
 
 const Ctx = createContext<PlayerApi | null>(null)
@@ -49,6 +55,16 @@ export function usePlayer(): PlayerApi {
 }
 
 const REPEAT_ORDER: RepeatMode[] = ['off', 'all', 'one']
+const AUTOPLAY_KEY = 'phinas.autoplay'
+const VOLUME_STEP = 0.05
+
+function readAutoplay(): boolean {
+  try {
+    return localStorage.getItem(AUTOPLAY_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
 
 export function PlayerProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [audio] = useState(() => new Audio())
@@ -65,6 +81,19 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   const [shuffle, setShuffle] = useState(false)
   const [repeat, setRepeat] = useState<RepeatMode>('off')
   const [notice, setNotice] = useState<string | null>(null)
+  const [autoplay, setAutoplay] = useState(readAutoplay)
+  const lib = useLibrary()
+  const libRef = useRef(lib)
+  libRef.current = lib
+  const preMuteVolume = useRef<number | null>(null)
+  const tracker = useMemo(
+    () =>
+      new PlayTracker((rec) => {
+        // History must never get in the way of playback.
+        window.phinas.recordPlay(rec).catch((e) => console.warn('[history] not saved:', e))
+      }),
+    []
+  )
 
   const track = current(queue)
 
@@ -83,13 +112,15 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
   }, [audio, repeat])
 
   const onEnded = useCallback(() => {
+    tracker.finish(false)
     if (repeat === 'one') {
+      if (track) tracker.start(track)
       audio.currentTime = 0
       void audio.play()
     } else {
       advance()
     }
-  }, [audio, repeat, advance])
+  }, [audio, repeat, advance, tracker, track])
 
   useEffect(() => {
     audio.volume = systemMode ? 1 : volume
@@ -123,21 +154,26 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       return () => audio.removeEventListener(e, fn)
     }
     const offs = [
-      on('timeupdate', () => setTime(audio.currentTime)),
+      on('timeupdate', () => {
+        setTime(audio.currentTime)
+        tracker.tick(audio.currentTime)
+      }),
       on('durationchange', () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0)),
       on('play', () => setPlaying(true)),
       on('pause', () => setPlaying(false)),
       on('ended', onEnded)
     ]
     return () => offs.forEach((off) => off())
-  }, [audio, onEnded])
+  }, [audio, onEnded, tracker])
 
   // Load and start whenever the current track (or a replay request) changes.
   useEffect(() => {
     if (!track) return
     let cancelled = false
+    tracker.start(track)
     const skip = (): void => {
       if (cancelled) return
+      tracker.finish(false)
       setNotice(`Tidak bisa memutar "${track.title}", dilewati.`)
       advance()
     }
@@ -157,8 +193,32 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track?.videoId, queue.index, token])
 
-  const api = useMemo<PlayerApi>(
-    () => ({
+  // Autoplay: when one track is left (or the queue is done), append ranked suggestions.
+  const autoplayAsked = useRef<string | null>(null)
+  useEffect(() => {
+    if (!autoplay || !track || repeat === 'all') return
+    if (queue.tracks.length - queue.index > 1) return
+    const key = `${track.videoId}:${queue.tracks.length}`
+    if (autoplayAsked.current === key) return
+    autoplayAsked.current = key
+    window.phinas
+      .getAutoplay(track, queue.tracks.map((t) => t.videoId))
+      .then((more) => {
+        if (more.length === 0) return
+        setQueue((q) => {
+          // The user may have changed the queue meanwhile: only append to the same one.
+          if (current(q)?.videoId !== track.videoId) return q
+          const have = new Set(q.tracks.map((t) => t.videoId))
+          return more.filter((t) => !have.has(t.videoId)).reduce(enqueue, q)
+        })
+      })
+      .catch(() => {
+        /* offline: autoplay adds nothing and shows no error */
+      })
+  }, [autoplay, track, queue.index, queue.tracks, repeat])
+
+  const api = useMemo<PlayerApi>(() => {
+    const a: PlayerApi = {
       queue,
       track,
       playing,
@@ -168,7 +228,9 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
       shuffle,
       repeat,
       notice,
+      autoplay,
       play: (tracks, index) => {
+        tracker.finish(true)
         const q = startQueue(tracks, index)
         setQueue(shuffle ? shuffleOn(q) : q)
         setToken((t) => t + 1)
@@ -186,12 +248,21 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         if (audio.paused) void audio.play()
         else audio.pause()
       },
-      next: () => advance(),
+      next: () => {
+        tracker.finish(true)
+        advance()
+      },
       prev: () => {
         if (audio.currentTime > 3) audio.currentTime = 0
-        else setQueue((q) => prev(q))
+        else {
+          if (queue.index > 0) tracker.finish(true)
+          setQueue((q) => prev(q))
+        }
       },
-      jump: (i) => setQueue((q) => jumpTo(q, i)),
+      jump: (i) => {
+        tracker.finish(true)
+        setQueue((q) => jumpTo(q, i))
+      },
       seek: (s) => {
         audio.currentTime = s
       },
@@ -205,10 +276,50 @@ export function PlayerProvider({ children }: { children: ReactNode }): React.JSX
         setQueue((q) => (shuffle ? shuffleOff(q) : shuffleOn(q)))
       },
       cycleRepeat: () => setRepeat((r) => REPEAT_ORDER[(REPEAT_ORDER.indexOf(r) + 1) % REPEAT_ORDER.length]),
-      dismissNotice: () => setNotice(null)
-    }),
-    [queue, track, playing, time, duration, volume, shuffle, repeat, notice, audio, advance, systemMode]
-  )
+      dismissNotice: () => setNotice(null),
+      toggleAutoplay: () => {
+        setAutoplay(!autoplay)
+        try {
+          localStorage.setItem(AUTOPLAY_KEY, autoplay ? 'off' : 'on')
+        } catch {
+          /* ignore */
+        }
+      },
+      run: (cmd) => {
+        switch (cmd) {
+          case 'toggle':
+            return a.toggle()
+          case 'next':
+            return a.next()
+          case 'prev':
+            return a.prev()
+          case 'volumeUp':
+            return a.setVolume(Math.min(1, volume + VOLUME_STEP))
+          case 'volumeDown':
+            return a.setVolume(Math.max(0, volume - VOLUME_STEP))
+          case 'mute':
+            if (volume > 0) {
+              preMuteVolume.current = volume
+              return a.setVolume(0)
+            }
+            return a.setVolume(preMuteVolume.current ?? 0.5)
+          case 'shuffle':
+            return a.toggleShuffle()
+          case 'repeat':
+            return a.cycleRepeat()
+          case 'like': {
+            if (!track) return
+            const liked = libRef.current.likes.some((l) => l.videoId === track.videoId)
+            void window.phinas.setLiked(track, !liked).then(() => libRef.current.refresh())
+            return
+          }
+          case 'focusSearch':
+            return document.querySelector<HTMLInputElement>('.searchpill input')?.focus()
+        }
+      }
+    }
+    return a
+  }, [queue, track, playing, time, duration, volume, shuffle, repeat, notice, autoplay, audio, advance, systemMode, tracker])
 
   // Messages fade away on their own; a click still dismisses them sooner.
   useEffect(() => {

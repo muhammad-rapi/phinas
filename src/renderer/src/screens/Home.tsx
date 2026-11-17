@@ -29,6 +29,17 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
   const lib = useLibrary()
   const [feed, setFeed] = useState<HomeFeed | null>(null)
   const [feedFailed, setFeedFailed] = useState(false)
+  const [recent, setRecent] = useState<Track[]>([])
+  const [forYou, setForYou] = useState<Track[]>([])
+
+  useEffect(() => {
+    window.phinas.listRecentPlays(20).then(setRecent).catch(() => setRecent([]))
+    // With no history yet, or when the request fails, Quick picks stays as the fallback.
+    window.phinas
+      .getRecommendations()
+      .then((r) => setForYou(r.personalized ? r.tracks : []))
+      .catch(() => setForYou([]))
+  }, [])
 
   useEffect(() => {
     window.phinas.getHomeFeed().then(setFeed).catch(() => setFeedFailed(true))
@@ -97,8 +108,14 @@ export function Home({ nav }: { nav: Nav }): React.JSX.Element {
         ))}
       </div>
 
+      {recent.length > 0 && (
+        <Shelf title="Putar lagi">
+          {trackCards(recent)}
+        </Shelf>
+      )}
+      {forYou.length > 0 && <Shelf title="Pilihan untukmu">{trackCards(forYou)}</Shelf>}
       {feed && feed.trending.length > 0 && <Shelf title="Lagi tren">{trackCards(feed.trending)}</Shelf>}
-      {feed && feed.picks.length > 0 && <Shelf title="Pilihan untukmu">{trackCards(feed.picks)}</Shelf>}
+      {forYou.length === 0 && feed && feed.picks.length > 0 && <Shelf title="Pilihan untukmu">{trackCards(feed.picks)}</Shelf>}
       {!feed && !feedFailed && <p className="muted">Memuat yang lagi tren...</p>}
       {feedFailed && <p className="muted">Tidak bisa memuat yang lagi tren. Cek koneksi internetmu.</p>}
 

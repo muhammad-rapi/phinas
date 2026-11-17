@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, session } from 'electron'
 import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,11 +13,15 @@ import { createSystemVolume } from './system-volume'
 import { YoutubeMusicSource } from './music/source'
 import { SyncEngine } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
+import { createNotch } from './notch/window'
+import { Recommender } from './recommend/service'
+import { SettingsStore } from './settings'
+import { registerShortcuts } from './shortcuts'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const SYNC_INTERVAL_MS = 15_000
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -43,6 +47,7 @@ function createWindow(): void {
   maybeCaptureAndQuit(win)
   if (process.env['ELECTRON_RENDERER_URL']) win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   else win.loadFile(join(here, '../renderer/index.html'))
+  return win
 }
 
 function applyCsp(): void {
@@ -89,6 +94,22 @@ app.whenReady().then(async () => {
     }, SYNC_INTERVAL_MS)
   }
 
+  const settings = new SettingsStore(join(userData, 'settings.json'))
+  const recommender = new Recommender(library, source)
+  let mainWindow: BrowserWindow | null = null
+  const shot = Boolean(process.env['PHINAS_SHOT'])
+  const notch = shot
+    ? null
+    : createNotch({
+        here,
+        enabled: settings.get('notch'),
+        mainWindow: () => mainWindow,
+        loadPage: (w) => {
+          if (process.env['ELECTRON_RENDERER_URL']) w.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/notch.html`)
+          else w.loadFile(join(here, '../renderer/notch.html'))
+        }
+      })
+
   const handlers = createHandlers({
     library,
     source,
@@ -97,7 +118,10 @@ app.whenReady().then(async () => {
     proxyPort: () => proxyPort,
     remote,
     engine,
-    lastError
+    lastError,
+    recommender,
+    settings,
+    setNotchEnabled: (enabled) => notch?.setEnabled(enabled)
   })
   for (const name of CHANNELS) {
     ipcMain.handle(name, (_e, ...args) =>
@@ -105,7 +129,18 @@ app.whenReady().then(async () => {
     )
   }
 
-  createWindow()
+  mainWindow = createWindow()
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    // The notch is a window too: without this the app would never see window-all-closed.
+    notch?.destroy()
+  })
+
+  if (!shot) {
+    registerShortcuts(globalShortcut, (cmd) => mainWindow?.webContents.send('player:command', cmd))
+  }
 })
+
+app.on('will-quit', () => globalShortcut.unregisterAll())
 
 app.on('window-all-closed', () => app.quit())

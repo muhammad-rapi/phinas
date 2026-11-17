@@ -1,6 +1,6 @@
 import { Innertube } from 'youtubei.js'
 import type { HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
-import { mapPlaylistItem, mapSongItem, sectionTracks, type RawPlaylistItem, type RawSection, type RawSong } from './mapper'
+import { mapPanelItem, mapPlaylistItem, mapSongItem, sectionTracks, type RawPanelItem, type RawPlaylistItem, type RawSection, type RawSong } from './mapper'
 
 export interface MusicSource {
   search(query: string): Promise<Track[]>
@@ -9,9 +9,13 @@ export interface MusicSource {
   getHomeFeed(): Promise<HomeFeed>
   searchPlaylists(query: string): Promise<PublicPlaylist[]>
   getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
+  /** Songs that follow `videoId` on YouTube Music (up next plus related), best first. */
+  getRelated(videoId: string): Promise<Track[]>
 }
 
 const HOME_TTL_MS = 10 * 60 * 1000
+const RELATED_TTL_MS = 30 * 60 * 1000
+const RELATED_CACHE_MAX = 200
 
 /**
  * Verified 2026-11-16 against live YouTube: only VISIONOS serves the whole file.
@@ -24,6 +28,7 @@ const CLIENTS = ['VISIONOS'] as const
 export class YoutubeMusicSource implements MusicSource {
   private yt?: Promise<Innertube>
   private home?: { at: number; feed: HomeFeed }
+  private related = new Map<string, { at: number; tracks: Track[] }>()
 
   /** `location` is a 2-letter country code (e.g. "ID") that decides what is trending. */
   constructor(private location?: string) {}
@@ -93,6 +98,21 @@ export class YoutubeMusicSource implements MusicSource {
     }
     if (feed.trending.length || feed.picks.length) this.home = { at: Date.now(), feed }
     return feed
+  }
+
+  async getRelated(videoId: string): Promise<Track[]> {
+    const hit = this.related.get(videoId)
+    if (hit && Date.now() - hit.at < RELATED_TTL_MS) return hit.tracks
+    const yt = await this.client()
+    const panel = await yt.music.getUpNext(videoId)
+    const tracks = ((panel.contents ?? []) as unknown as RawPanelItem[])
+      .map(mapPanelItem)
+      .filter((t): t is Track => t !== null && t.videoId !== videoId)
+    if (tracks.length) {
+      if (this.related.size >= RELATED_CACHE_MAX) this.related.delete(this.related.keys().next().value as string)
+      this.related.set(videoId, { at: Date.now(), tracks })
+    }
+    return tracks
   }
 
   async getStreamUrl(videoId: string, fresh = false): Promise<string> {

@@ -8,6 +8,14 @@ export default defineConfig({
   renderer: {
     root: 'src/renderer',
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          notch: resolve('src/renderer/notch.html')
+        }
+      }
+    },
     resolve: { alias: { '@shared': resolve('src/shared') } }
   }
 })
