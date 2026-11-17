@@ -393,6 +393,11 @@ button.tile-title:hover { text-decoration: underline; }
 .bento-cards .mcard { width: auto; }
 .bento-cards .mcard-play { top: auto; bottom: 76px; }
 
+.listen-card.compact { flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0; padding: 18px; }
+.listen-card.compact .listen-card-title { font-size: 17px; }
+.listen-card-title.link { padding: 0; color: inherit; text-align: left; }
+.listen-card-title.link:hover { text-decoration: underline; }
+
 @container (max-width: 1000px) {
   .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
