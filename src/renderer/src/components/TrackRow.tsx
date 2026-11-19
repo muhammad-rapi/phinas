@@ -2,6 +2,7 @@ import { Heart, ListPlus, Play, X } from 'lucide-react'
 import { useState } from 'react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
+import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
 
 export const formatTime = (s: number): string =>
@@ -45,7 +46,7 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
       </button>
       <div className="meta">
         <div className="title">{track.title}</div>
-        <div className="muted">{track.artist}</div>
+        <ArtistLinks className="muted row-artist" artist={track.artist} />
       </div>
       <div className="row-actions" onClick={(e) => e.stopPropagation()}>
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>

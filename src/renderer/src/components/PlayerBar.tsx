@@ -19,6 +19,7 @@ import { useNotchEnabled } from '../notch/useNotchEnabled'
 import { usePlayer } from '../player/PlayerProvider'
 import { ListenButton } from './ListenTogether'
 import { formatTime } from './TrackRow'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 
 const pct = (value: number, max: number): CSSProperties =>
   ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties
@@ -42,13 +43,13 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
       <div className="pb-track">
         {p.track && (
           <>
-            <button className="pb-open" onClick={onTogglePanel} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
+            <div className="pb-open press" {...pressable(onTogglePanel)} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
               <span className="pb-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
               <span className="pb-info">
                 <span className="pb-title">{p.track.title}</span>
-                <span className="muted pb-artist">{p.track.artist}</span>
+                <ArtistLinks className="muted pb-artist" artist={p.track.artist} />
               </span>
-            </button>
+            </div>
             <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
               <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             </button>

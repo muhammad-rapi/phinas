@@ -43,7 +43,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0; }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, .press:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 h1, h2, h3, h4 { margin: 0; }
 .muted { color: var(--muted); }
 
@@ -321,7 +321,9 @@ h1, h2, h3, h4 { margin: 0; }
 .listen-btn { display: inline-flex; align-items: center; gap: 6px; }
 .listen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .listen-label { font-size: 12px; white-space: nowrap; }
-.listen-banner { display: flex; align-items: center; gap: 12px; }
+/* Sticky so an invite is seen even when the page is scrolled down. */
+.listen-banner { position: sticky; top: 12px; z-index: 20; display: flex; align-items: center; gap: 12px; background: var(--glass-strong); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); cursor: default; }
+.listen-banner > span { flex: 1; }
 .listen-action {
   border: 0;
   border-radius: 999px;
@@ -334,19 +336,20 @@ h1, h2, h3, h4 { margin: 0; }
 }
 
 /* ---------- listen-together card ---------- */
-.listen-card { display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 8px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, var(--accent), #c04bd8); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); transition: background 0.5s; }
-.listen-card.live { background: linear-gradient(120deg, #c04bd8, var(--accent)); }
+/* Follows the theme's accent, toned down toward the background (a second saturated hue read as neon). */
+.listen-card { display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 8px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, #15131c), color-mix(in srgb, var(--accent) 25%, #15131c)); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); transition: background 0.5s; }
+.listen-card.live { background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 65%, #15131c), color-mix(in srgb, var(--accent) 35%, #15131c)); }
 .listen-card-icon { flex: none; opacity: 0.9; }
 .listen-card-text { flex: 1; min-width: 0; }
 .listen-card-line { font-size: 12px; opacity: 0.9; }
 .listen-card-title { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
 .listen-card-actions { display: flex; gap: 8px; }
-.listen-card-btn { height: 38px; padding: 0 20px; border-radius: 19px; background: #fff; color: #1b1233; font-weight: 700; transition: transform 0.15s; }
+.listen-card-btn { height: 38px; padding: 0 20px; border-radius: 19px; background: #fff; color: #15131c; font-weight: 700; transition: transform 0.15s; }
 .listen-card-btn:hover:not(:disabled) { transform: scale(1.04); }
 .listen-card-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .listen-card-btn.ghost { background: rgba(255, 255, 255, 0.22); color: #fff; }
 
-.np-session { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 600; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 45%, transparent), rgba(192, 75, 216, 0.35)); }
+.np-session { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; font-size: 13px; font-weight: 600; background: color-mix(in srgb, var(--accent) 28%, transparent); }
 
 /* ---------- bento (Beranda, Berdua) ---------- */
 .main { container-type: inline-size; }
@@ -354,6 +357,7 @@ h1, h2, h3, h4 { margin: 0; }
 .bento-row > .span-4 { grid-column: span 4; }
 .bento-row > .span-6 { grid-column: span 6; }
 .bento-row > .span-8 { grid-column: span 8; }
+.bento-row > .span-12 { grid-column: 1 / -1; }
 .bento-row.single > * { grid-column: 1 / -1; }
 .tile { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--line); }
 .tile .tile-title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
@@ -417,3 +421,40 @@ button.tile-title:hover { text-decoration: underline; }
   .bento-row > .span-4, .bento-row > .span-6, .bento-row > .span-8 { grid-column: 1 / -1; }
   .bento-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------- artist links and page ---------- */
+.artist-link { display: inline; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.artist-link:hover { color: var(--text); text-decoration: underline; }
+.row-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-hero { width: 100%; height: 100%; border-radius: 50%; background: var(--hover) center / cover; }
+.artist-more { margin: 8px 0 24px; }
+.collection-cover:has(.artist-hero) { border-radius: 50%; }
+/* A div acting as a button (it holds artist links, which a <button> cannot). */
+.press { display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+/* Cards stack art, title and artist full width, so the title can truncate. */
+.cover-card.press { align-items: stretch; gap: 4px; }
+.cover-card > .cover-card-sub { display: block; }
+.artist-skel { border-radius: 50%; }
+.artist-skel-row { height: 56px; margin-bottom: 6px; }
+.back-btn { position: sticky; top: 12px; z-index: 21; margin-top: 12px; width: 36px; height: 36px; border-radius: 50%; background: var(--glass-strong); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+
+/* ---------- mood & genre ---------- */
+.genre-group + .genre-group { margin-top: 18px; }
+.genre-label { margin-bottom: 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.genre-chip { justify-content: flex-start; gap: 10px; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; font-weight: 600; font-size: 14px; text-align: left; background: var(--hover); border: 1px solid var(--line); transition: background 0.15s, border-color 0.15s; }
+.genre-chip:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.genre-icon { flex: none; color: var(--accent-text); }
+.genre-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A single row of cover cards that scrolls sideways (Lagi tren, Video musik baru). */
+.cover-row { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x proximity; }
+.cover-row > * { scroll-snap-align: start; }
+.cover-row.wide { grid-auto-columns: 260px; }
+.cover-row.wide .cover-card-art { aspect-ratio: 16 / 9; }
+.cover-row .cover-card-art.skeleton { width: 168px; }
+.mood-badge { position: sticky; top: 12px; z-index: 21; float: right; display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; height: 32px; padding: 0 6px 0 14px; border-radius: 16px; font-size: 12px; font-weight: 700; color: var(--accent-text); background: var(--glass-strong); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25); }
+.mood-badge .icon-btn { width: 22px; height: 22px; }
+.update-banner { display: flex; align-items: center; gap: 12px; cursor: default; }
+.update-banner > span { flex: 1; }
+.update-banner .listen-action { display: inline-flex; gap: 6px; }

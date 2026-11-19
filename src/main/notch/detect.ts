@@ -5,8 +5,6 @@ export const MAC_NOTCH_WIDTH = 200
 /** A plain menu bar is 24-25 pt; with a notch it grows to about 32-38 pt. */
 const NOTCH_MENU_BAR_MIN = 30
 const FLOATING_PILL_HEIGHT = 38
-/** Gap between the top edge and a floating pill. */
-export const FLOAT_GAP = 8
 /** Transparent margin around the pill inside the window, so the shadow is not cut off. */
 export const PAD = 20
 const EXPANDED_SIZE = { w: 440, h: 252 }
@@ -40,7 +38,8 @@ export function detectNotch(platform: string, bounds: Rect, workArea: Rect): Not
 /**
  * Window rectangle for the notch, centred on the display's top edge.
  * The window is as big as the pill plus its margin: the pill is animated inside it.
- * On Windows the taskbar may sit at the top, so a floating pill starts below it.
+ * Every pill hangs from the top edge, like Apple's Dynamic Island. On Windows the taskbar may sit
+ * at the top, so the pill hangs from the taskbar's bottom edge instead.
  */
 export function computeBounds(
   platform: string,
@@ -55,7 +54,7 @@ export function computeBounds(
   const baseY = platform === 'win32' ? Math.max(bounds.y, workArea.y) : bounds.y
   return {
     x: Math.round(bounds.x + (bounds.width - width) / 2),
-    y: baseY + (layout.hasNotch ? 0 : FLOAT_GAP),
+    y: baseY,
     width,
     height
   }

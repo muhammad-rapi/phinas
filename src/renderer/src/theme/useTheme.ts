@@ -32,7 +32,11 @@ async function pixelsOf(dataUrl: string): Promise<Uint8ClampedArray> {
  * (given as a data URL). Returns the active theme and whether the ambient cover
  * background should show.
  */
-export function useTheme(coverData: string | null): {
+export function useTheme(
+  coverData: string | null,
+  /** A mood's colours, which win over the theme's accent while set. */
+  mood: { accent: string; accentText: string; gradTop: string } | null = null
+): {
   theme: ThemeName
   setTheme: (t: ThemeName) => void
 } {
@@ -57,6 +61,14 @@ export function useTheme(coverData: string | null): {
       root.style.removeProperty('--accent-text')
       root.style.removeProperty('--grad-top')
     }
+    if (mood) {
+      root.style.setProperty('--accent', mood.accent)
+      // On the light theme the lighter text tone would be too faint: use the accent itself.
+      root.style.setProperty('--accent-text', theme === 'light' ? mood.accent : mood.accentText)
+      if (theme === 'light') root.style.removeProperty('--grad-top')
+      else root.style.setProperty('--grad-top', mood.gradTop)
+      return
+    }
     if (theme !== 'dynamic' || !coverData) {
       reset()
       return
@@ -77,7 +89,7 @@ export function useTheme(coverData: string | null): {
     return () => {
       cancelled = true
     }
-  }, [theme, coverData])
+  }, [theme, coverData, mood])
 
   return { theme, setTheme }
 }

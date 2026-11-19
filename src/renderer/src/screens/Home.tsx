@@ -9,6 +9,8 @@ import { usePlayer } from '../player/PlayerProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
 import type { Nav, View } from '../views'
 import { continueTrack } from './home/continue'
+import { genreIcon, isMood } from './home/genreIcon'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -70,18 +72,18 @@ function TogetherTile({ nav }: { nav: Nav }): React.JSX.Element {
 }
 
 /** Tracks as square covers filling the tile; `ranked` puts the chart position on each cover. */
-function CoverGrid({ tracks, ranked }: { tracks: Track[]; ranked?: boolean }): React.JSX.Element {
+function CoverGrid({ tracks, ranked, row, wide }: { tracks: Track[]; ranked?: boolean; row?: boolean; wide?: boolean }): React.JSX.Element {
   const player = usePlayer()
   return (
-    <div className="cover-grid">
+    <div className={`${row ? 'cover-row' : 'cover-grid'}${wide ? ' wide' : ''}`}>
       {tracks.map((t, i) => (
-        <button key={`${t.videoId}-${i}`} className="cover-card" onClick={() => player.play(tracks, i)}>
+        <div key={`${t.videoId}-${i}`} className="cover-card press" {...pressable(() => player.play(tracks, i))}>
           <span className="cover-card-art" style={{ backgroundImage: `url("${t.coverUrl}")` }}>
             {ranked && <span className="cover-card-rank">{i + 1}</span>}
           </span>
           <span className="cover-card-title">{t.title}</span>
-          <span className="muted cover-card-sub">{t.artist}</span>
-        </button>
+          <ArtistLinks className="muted cover-card-sub" artist={t.artist} />
+        </div>
       ))}
     </div>
   )
@@ -184,31 +186,92 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
         )}
       </BentoRow>
 
-      <BentoRow>
-        {showTrending && (
-          <Tile span={6} title="Lagi tren">
+      {showTrending && (
+        <BentoRow>
+          <Tile
+            span={12}
+            title="Lagi tren"
+            onTitle={feed?.trendingId ? () => nav({ name: 'public', id: feed.trendingId!, author: 'YouTube Music' }) : undefined}
+          >
             {feed ? (
-              <CoverGrid ranked tracks={feed.trending.slice(0, 6)} />
+              <CoverGrid ranked row tracks={feed.trending} />
             ) : feedFailed ? (
               <p className="muted">Tidak bisa memuat yang lagi tren. Cek koneksi internetmu.</p>
             ) : (
-              <div className="cover-grid" aria-hidden="true">
-                {Array.from({ length: 6 }, (_, i) => (
+              <div className="cover-row" aria-hidden="true">
+                {Array.from({ length: 8 }, (_, i) => (
                   <div key={i} className="cover-card-art skeleton" />
                 ))}
               </div>
             )}
           </Tile>
+        </BentoRow>
+      )}
+
+      <BentoRow>
+        {feed && feed.releases.length > 0 && (
+          <Tile span={6} title="Rilis baru">
+            <div className="cover-grid">
+              {feed.releases.slice(0, 6).map((r) => (
+                <button key={r.id} className="cover-card" onClick={() => nav({ name: 'album', id: r.id })}>
+                  <span className="cover-card-art" style={{ backgroundImage: `url("${r.coverUrl}")` }} />
+                  <span className="cover-card-title">{r.title}</span>
+                  <span className="muted cover-card-sub">{r.author}</span>
+                </button>
+              ))}
+            </div>
+          </Tile>
         )}
         <PlaylistTile nav={nav} />
       </BentoRow>
+
+      {feed && feed.videos.length > 0 && (
+        <BentoRow>
+          <Tile span={12} title="Video musik baru">
+            <CoverGrid row wide tracks={feed.videos} />
+          </Tile>
+        </BentoRow>
+      )}
+
+      {feed && feed.genres.length > 0 && (
+        <BentoRow>
+          <Tile span={12} title="Mood & genre">
+            {[
+              { label: 'Mood', items: feed.genres.filter((g) => isMood(g.title)) },
+              { label: 'Genre', items: feed.genres.filter((g) => !isMood(g.title)) }
+            ]
+              .filter((group) => group.items.length > 0)
+              .map((group) => (
+                <div key={group.label} className="genre-group">
+                  <div className="genre-label">{group.label}</div>
+                  <div className="genre-grid">
+                    {group.items.map((g) => {
+                      const Icon = genreIcon(g.title)
+                      return (
+                        <button
+                          key={g.params}
+                          className="genre-chip"
+                          title={g.title}
+                          onClick={() => nav({ name: 'genre', id: g.params, title: g.title })}
+                        >
+                          <Icon size={18} className="genre-icon" aria-hidden="true" />
+                          <span className="genre-name">{g.title}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+          </Tile>
+        </BentoRow>
+      )}
 
       <BentoRow>
         {artists.length > 0 && (
           <Tile span={8} title="Artis favoritmu">
             <div className="artist-grid">
               {artists.map((a) => (
-                <button key={a.artist} className="artist" onClick={() => player.play(a.tracks, 0)} aria-label={`Putar ${a.artist}`}>
+                <button key={a.artist} className="artist" onClick={() => nav({ name: 'artist', id: a.artist })} aria-label={`Buka ${a.artist}`}>
                   <span className="artist-photo" style={{ backgroundImage: `url("${a.coverUrl}")` }} />
                   <span className="cover-card-title">{a.artist}</span>
                   <span className="muted cover-card-sub">{a.plays} kali diputar</span>

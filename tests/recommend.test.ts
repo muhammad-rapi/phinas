@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { buildProfile, pickSeeds, RECENT_WINDOW } from '../src/main/recommend/profile'
-import { rank } from '../src/main/recommend/rank'
+import { MAX_PER_ARTIST, rank, titleKey } from '../src/main/recommend/rank'
 import type { LikeEntry, PlayEntry, Track } from '../src/shared/types'
 
 const DAY = 86_400_000
@@ -62,9 +62,9 @@ describe('pickSeeds', () => {
 describe('rank', () => {
   const profile = buildProfile([like('l1', 'Loved')], [], NOW)
 
-  test('liked artists rise above unknown ones', () => {
-    const out = rank([t('x', 'Unknown'), t('y', 'Loved')], profile)
-    expect(out.map((o) => o.videoId)).toEqual(['y', 'x'])
+  test('liked artists rise above unknown ones near them', () => {
+    const out = rank([t('x', 'Unknown'), t('y', 'Loved'), t('a', 'A'), t('b', 'B'), t('c', 'C')], profile)
+    expect(out[0].videoId).toBe('y')
   })
 
   test('skipped tracks fall to the bottom', () => {
@@ -79,19 +79,70 @@ describe('rank', () => {
     expect(out.map((o) => o.videoId)).toEqual(['keep'])
   })
 
-  test('never more than 2 tracks in a row by one artist', () => {
+  test('two tracks in a row never share an artist', () => {
     const cands = [t('1', 'Loved'), t('2', 'Loved'), t('3', 'Loved'), t('4', 'Other'), t('5', 'Other2')]
     const out = rank(cands, profile).map((o) => o.artist)
-    for (let i = 2; i < out.length; i++) expect(!(out[i] === out[i - 1] && out[i] === out[i - 2])).toBe(true)
+    for (let i = 1; i < out.length; i++) expect(out[i]).not.toBe(out[i - 1])
     expect(out).toHaveLength(5)
   })
 
-  test('stops rather than break the artist cap when only one artist is left', () => {
+  test('a collaboration counts for every artist on it', () => {
+    const cands = [t('1', 'Gus'), t('2', 'Skinny & Gus'), t('3', 'Other'), t('4', 'Gus')]
+    const out = rank(cands, buildProfile([], [], NOW)).map((o) => o.videoId)
+    for (let i = 1; i < out.length; i++) {
+      const pair = [out[i - 1], out[i]]
+      expect(pair.includes('1') && pair.includes('2')).toBe(false)
+      expect(pair.includes('2') && pair.includes('4')).toBe(false)
+    }
+  })
+
+  test('caps how often one artist appears', () => {
+    const cands = Array.from({ length: 12 }, (_, i) => t(`s${i}`, i % 2 ? `Other${i}` : 'Heavy'))
+    const out = rank(cands, buildProfile([like('h', 'Heavy')], [], NOW))
+    expect(out.filter((o) => o.artist === 'Heavy')).toHaveLength(MAX_PER_ARTIST)
+  })
+
+  test('a heavily played artist does not bury YouTube relevance', () => {
+    const plays = Array.from({ length: 30 }, (_, i) => play(`old${i}`, 'Heavy'))
+    const p = buildProfile([], plays, NOW)
+    const cands = [t('top', 'Fresh'), ...Array.from({ length: 9 }, (_, i) => t(`f${i}`, `Filler${i}`)), t('h', 'Heavy')]
+    expect(rank(cands, p)[0].videoId).toBe('top')
+  })
+
+  test('only one artist left: one track, never two in a row', () => {
     const out = rank([t('1', 'Solo'), t('2', 'Solo'), t('3', 'Solo')], profile)
-    expect(out).toHaveLength(2)
+    expect(out).toHaveLength(1)
   })
 
   test('respects limit', () => {
     expect(rank([t('1', 'A'), t('2', 'B'), t('3', 'C')], profile, new Set(), { limit: 2 })).toHaveLength(2)
+  })
+})
+
+describe('titleKey', () => {
+  test('versions of a song share a key', () => {
+    expect(titleKey('Let Down')).toBe('let down')
+    expect(titleKey('Let Down (Remastered 2017)')).toBe('let down')
+    expect(titleKey('Let Down - Live at Glastonbury')).toBe('let down')
+    expect(titleKey('LET DOWN [Official Audio]')).toBe('let down')
+  })
+  test('keeps non-latin titles', () => {
+    expect(titleKey('Sampai Jadi Debu')).toBe('sampai jadi debu')
+    expect(titleKey('夜に駆ける')).toBe('夜に駆ける')
+  })
+})
+
+describe('rank: one version per song', () => {
+  const song = (id: string, title: string, artist = 'A'): Track => ({ videoId: id, title, artist, coverUrl: '', durationSec: 200 })
+  const empty = buildProfile([], [], NOW)
+  test('drops other versions of the playing song', () => {
+    const out = rank([song('a', 'Let Down - Live'), song('b', 'No Surprises'), song('c', 'Let Down (Cover)', 'B')], empty, new Set(), {
+      excludeTitles: ['Let Down']
+    })
+    expect(out.map((t) => t.videoId)).toEqual(['b'])
+  })
+  test('keeps only the first version among candidates', () => {
+    const out = rank([song('a', 'Creep', 'A'), song('b', 'Creep (Acoustic)', 'B'), song('c', 'Karma Police', 'C')], empty)
+    expect(out.map((t) => t.videoId)).toEqual(['a', 'c'])
   })
 })

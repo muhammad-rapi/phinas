@@ -11,6 +11,7 @@ import type { PairChannel } from './sync/realtime'
 import type { SystemVolume } from './system-volume'
 import type { Recommender } from './recommend/service'
 import type { SettingsStore } from './settings'
+import type { Updater } from './updater'
 
 export interface Deps {
   library: Library
@@ -27,6 +28,7 @@ export interface Deps {
   settings: SettingsStore
   /** Shows or hides the notch window right away. */
   setNotchEnabled: (enabled: boolean) => void
+  updater: Updater
 }
 
 export function createHandlers(d: Deps): PhinasApi {
@@ -54,6 +56,13 @@ export function createHandlers(d: Deps): PhinasApi {
     getHomeFeed: () => d.source.getHomeFeed(),
     searchPlaylists: (q) => d.source.searchPlaylists(q),
     getPublicPlaylist: (id) => d.source.getPublicPlaylist(id),
+    getUpdateStatus: async () => d.updater.status(),
+    checkForUpdate: () => d.updater.check(),
+    installUpdate: async () => d.updater.install(),
+    getArtist: (name) => d.source.getArtist(name),
+    getArtistSongs: (id) => d.source.getArtistSongs(id),
+    getAlbum: (id) => d.source.getAlbum(id),
+    getGenre: (params) => d.source.getGenre(params),
     streamUrl: async (id) => `http://127.0.0.1:${d.proxyPort()}/stream/${id}`,
     coverData: (url) => d.coverData(url),
     getSystemVolume: () => d.systemVolume.get(),

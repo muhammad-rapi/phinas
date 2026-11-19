@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, session } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, Notification, session, shell } from 'electron'
 import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +7,7 @@ import { createHandlers } from './ipc'
 import { openDb } from './library/db'
 import { Library } from './library/library'
 import { maybeCaptureAndQuit } from './dev-shot'
+import { createUpdater, electronAutoInstaller, fetchLatestRelease } from './updater'
 import { createCoverFetcher } from './music/cover'
 import { createStreamProxy } from './music/proxy'
 import { createSystemVolume } from './system-volume'
@@ -124,6 +125,17 @@ app.whenReady().then(async () => {
     tray?.refresh()
   }
 
+  const updater = createUpdater({
+    currentVersion: app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+    fetchRelease: fetchLatestRelease,
+    // Unsigned Mac apps cannot replace themselves, so only Windows installs in place.
+    autoInstaller: process.platform === 'win32' && app.isPackaged ? electronAutoInstaller : undefined,
+    openExternal: (url) => void shell.openExternal(url),
+    send: (status) => mainWindow?.webContents.send('update:status', status)
+  })
+
   const handlers = createHandlers({
     library,
     source,
@@ -136,7 +148,8 @@ app.whenReady().then(async () => {
     lastError,
     recommender,
     settings,
-    setNotchEnabled: showNotch
+    setNotchEnabled: showNotch,
+    updater
   })
   for (const name of CHANNELS) {
     ipcMain.handle(name, (_e, ...args) =>
@@ -144,6 +157,23 @@ app.whenReady().then(async () => {
     )
   }
   ipcMain.on('listen:send', (_e, msg) => pair?.send(msg))
+  // An invite only shows inside the app, so without this a partner in another app never sees it.
+  ipcMain.on('listen:invited', (_e, name: unknown) => {
+    const win = mainWindow
+    if (!win || win.isFocused()) return
+    const who = typeof name === 'string' && name.trim() ? name.trim() : 'Pasangan'
+    if (Notification.isSupported()) {
+      const n = new Notification({ title: 'Dengarkan bareng', body: `${who} mengajak kamu dengarkan bareng.` })
+      n.on('click', () => {
+        mainWindow?.show()
+        mainWindow?.focus()
+        app.focus({ steal: true })
+      })
+      n.show()
+    }
+    if (process.platform === 'darwin') app.dock?.bounce('informational')
+    else win.flashFrame(true)
+  })
 
   mainWindow = createWindow()
   mainWindow.on('closed', () => {
@@ -174,6 +204,8 @@ app.whenReady().then(async () => {
   if (!shot) {
     registerShortcuts(globalShortcut, (cmd) => mainWindow?.webContents.send('player:command', cmd))
   }
+  // Installed builds look for updates on their own; dev runs only when asked from Profil.
+  if (!shot && app.isPackaged) updater.start()
 })
 
 app.on('will-quit', () => globalShortcut.unregisterAll())

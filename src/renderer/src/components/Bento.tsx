@@ -1,5 +1,6 @@
 import { Children, type ReactNode } from 'react'
 import type { Track } from '../../../shared/types'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 
 /**
  * One row of the bento grid. Pass tiles conditionally (`{cond && <Tile …/>}`): a tile left out is
@@ -13,7 +14,7 @@ export function BentoRow({ children }: { children: ReactNode }): React.JSX.Eleme
 
 interface TileProps {
   /** Columns out of 12 when the row has two tiles. */
-  span: 4 | 6 | 8
+  span: 4 | 6 | 8 | 12
   title?: string
   /** Makes the title a link (for example "Putar lagi" opens Riwayat). */
   onTitle?: () => void
@@ -51,14 +52,14 @@ export function TrackRows({
     <ol className="track-rows">
       {tracks.map((t, i) => (
         <li key={`${t.videoId}-${i}`}>
-          <button className="track-row" onClick={() => onPlay(i)}>
+          <div className="track-row press" {...pressable(() => onPlay(i))}>
             {numbered && <span className="track-row-n">{i + 1}</span>}
             <span className="queue-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
             <span className="queue-text">
               <span className="queue-name">{t.title}</span>
-              <span className="muted queue-artist">{t.artist}</span>
+              <ArtistLinks className="muted queue-artist" artist={t.artist} />
             </span>
-          </button>
+          </div>
         </li>
       ))}
     </ol>

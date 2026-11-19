@@ -4,6 +4,7 @@ import { usePlayer } from '../player/PlayerProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
 import { liveLabel } from '../sync/status'
 import { LyricsPanel } from './LyricsPanel'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 
 type Tab = 'queue' | 'lyrics'
 
@@ -59,7 +60,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
           <div className="np-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
           <div>
             <h4 className="np-title">{p.track.title}</h4>
-            <div className="muted">{p.track.artist}</div>
+            <ArtistLinks className="muted" artist={p.track.artist} />
           </div>
           <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
             <input type="checkbox" checked={p.autoplay} onChange={p.toggleAutoplay} />
@@ -68,13 +69,13 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
           <div className="queue-title">Berikutnya</div>
           {upcoming.length === 0 && <div className="muted">Antrean kosong</div>}
           {upcoming.map((t, i) => (
-            <button key={`${t.videoId}-${i}`} className="queue-item" onClick={() => p.jump(p.queue.index + 1 + i)}>
+            <div key={`${t.videoId}-${i}`} className="queue-item press" {...pressable(() => p.jump(p.queue.index + 1 + i))}>
               <span className="queue-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
               <span className="queue-text">
                 <span className="queue-name">{t.title}</span>
-                <span className="muted queue-artist">{t.artist}</span>
+                <ArtistLinks className="muted queue-artist" artist={t.artist} />
               </span>
-            </button>
+            </div>
           ))}
         </>
       ) : (
@@ -83,7 +84,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
             <span className="queue-thumb" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
             <span className="queue-text">
               <span className="queue-name">{p.track.title}</span>
-              <span className="muted queue-artist">{p.track.artist}</span>
+              <ArtistLinks className="muted queue-artist" artist={p.track.artist} />
             </span>
           </div>
           <LyricsPanel track={p.track} />

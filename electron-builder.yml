@@ -8,6 +8,12 @@ files:
   - package.json
 asar: true
 afterPack: scripts/after-pack.cjs
+# Where installed apps look for updates. Builds also write latest.yml (Windows), which must be
+# uploaded to the GitHub release next to the installer and its .blockmap.
+publish:
+  provider: github
+  owner: muhammad-rapi
+  repo: phinas
 mac:
   category: public.app-category.music
   icon: build/icon.png

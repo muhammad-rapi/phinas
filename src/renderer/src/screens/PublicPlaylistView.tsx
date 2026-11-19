@@ -10,8 +10,16 @@ import type { Nav } from '../views'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; playlist: PublicPlaylistDetail }
 
-/** A playlist from YouTube Music's public catalogue: play it, or save a copy to the library. */
-export function PublicPlaylistView({ id, author, nav }: { id: string; author?: string; nav: Nav }): React.JSX.Element {
+interface Props {
+  id: string
+  author?: string
+  /** An album or single (opened from an artist page) instead of a playlist. */
+  album?: boolean
+  nav: Nav
+}
+
+/** A playlist or album from YouTube Music's public catalogue: play it, or save a copy to the library. */
+export function PublicPlaylistView({ id, author, album = false, nav }: Props): React.JSX.Element {
   const player = usePlayer()
   const lib = useLibrary()
   const [state, setState] = useState<State>({ status: 'loading' })
@@ -20,17 +28,17 @@ export function PublicPlaylistView({ id, author, nav }: { id: string; author?: s
   useEffect(() => {
     let cancelled = false
     setState({ status: 'loading' })
-    window.phinas
-      .getPublicPlaylist(id)
+    ;(album ? window.phinas.getAlbum(id) : window.phinas.getPublicPlaylist(id))
       .then((playlist) => !cancelled && setState({ status: 'ready', playlist }))
       .catch(() => !cancelled && setState({ status: 'error' }))
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, album])
 
-  if (state.status === 'loading') return <p className="muted">Memuat playlist...</p>
-  if (state.status === 'error') return <div className="notice">Playlist ini tidak bisa dibuka. Cek koneksi internet kamu.</div>
+  const noun = album ? 'album' : 'playlist'
+  if (state.status === 'loading') return <p className="muted">Memuat {noun}...</p>
+  if (state.status === 'error') return <div className="notice">{album ? 'Album' : 'Playlist'} ini tidak bisa dibuka. Cek koneksi internet kamu.</div>
 
   const pl = state.playlist
   const save = async (): Promise<void> => {
@@ -49,7 +57,7 @@ export function PublicPlaylistView({ id, author, nav }: { id: string; author?: s
     <>
       <CollectionHeader
         cover={<CoverArt url={pl.coverUrl} />}
-        kind={`Playlist dari ${author ?? pl.author}`}
+        kind={album ? `Album · ${pl.author}` : `Playlist dari ${author ?? pl.author}`}
         title={pl.title}
         meta={`${pl.tracks.length} lagu`}
         tracks={pl.tracks}

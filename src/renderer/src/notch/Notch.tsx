@@ -1,5 +1,5 @@
 import { Check, Heart, ListPlus, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { NotchLayout } from '../../../shared/ipc'
 import type { LyricLine, NotchState, Playlist } from '../../../shared/types'
 import { activeLine } from '../lyrics/active'
@@ -15,7 +15,11 @@ const FALLBACK_LAYOUT: NotchLayout = {
   pad: 20
 }
 /** How long the pill takes to shrink; the window is resized only after that. */
-const COLLAPSE_MS = 360
+const COLLAPSE_MS = 520
+/** How long the "now playing" peek stays out after the song changes. */
+const PEEK_MS = 3500
+/** Song changes this soon after the window opens are start-up noise, not news. */
+const STARTUP_QUIET_MS = 3000
 
 const fmt = (s: number): string => {
   const t = Math.max(0, Math.floor(s))
@@ -43,6 +47,26 @@ function useSyncedLyrics(state: NotchState | null): LyricLine[] | null {
   return lines
 }
 
+/**
+ * The title in the compact pill. Fits: shown still. Too long: two copies scroll as one loop,
+ * so the pill is never left empty while the text wraps around.
+ */
+function Marquee({ text }: { text: string }): React.JSX.Element {
+  const box = useRef<HTMLSpanElement>(null)
+  const [overflow, setOverflow] = useState(false)
+  useLayoutEffect(() => {
+    const el = box.current
+    const holder = el?.parentElement
+    if (el && holder) setOverflow(el.scrollWidth > holder.clientWidth)
+  }, [text])
+  return (
+    <span key={text} ref={box} className={overflow ? 'loop' : ''}>
+      <span>{text}</span>
+      {overflow && <span aria-hidden="true">{text}</span>}
+    </span>
+  )
+}
+
 export function Notch(): React.JSX.Element | null {
   const [state, setState] = useState<NotchState | null>(null)
   const [layout, setLayout] = useState<NotchLayout>(FALLBACK_LAYOUT)
@@ -57,18 +81,37 @@ export function Notch(): React.JSX.Element | null {
   const [added, setAdded] = useState<Record<string, 'added' | 'dup'>>({})
   const trackId = state?.track?.videoId
   useEffect(() => setAdded({}), [trackId])
-
+  // Like a live activity: when the song changes, the island grows for a moment to show it.
+  const [peek, setPeek] = useState(false)
+  const openRef = useRef(open)
+  openRef.current = open
+  const peekTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const prevTrack = useRef<string | undefined>(undefined)
+  const mountedAt = useRef(Date.now())
   useEffect(() => {
-    const offState = window.phinas.onNotchState(setState)
-    const offLayout = window.phinas.onNotchLayout(setLayout)
-    return () => {
-      offState()
-      offLayout()
-    }
-  }, [])
+    const before = prevTrack.current
+    prevTrack.current = trackId
+    // No peek for the first song the window sees, nor while the app is still starting up.
+    if (!trackId || !before || before === trackId) return
+    if (openRef.current || Date.now() - mountedAt.current < STARTUP_QUIET_MS) return
+    clearTimeout(collapseTimer.current)
+    clearTimeout(peekTimer.current)
+    setPeek(true)
+    window.phinas.setNotchExpanded(true)
+    // Not cleared when the song changes again: a newer peek replaces it, so the pill always shrinks back.
+    peekTimer.current = setTimeout(() => {
+      setPeek(false)
+      collapseTimer.current = setTimeout(() => {
+        if (!openRef.current) window.phinas.setNotchExpanded(false)
+      }, COLLAPSE_MS)
+    }, PEEK_MS)
+  }, [trackId])
+  useEffect(() => () => clearTimeout(peekTimer.current), [])
 
   const enter = (): void => {
     clearTimeout(collapseTimer.current)
+    clearTimeout(peekTimer.current)
+    setPeek(false)
     setOpen(true)
     window.phinas.setNotchExpanded(true)
   }
@@ -108,9 +151,13 @@ export function Notch(): React.JSX.Element | null {
   }
   const paddingTop = layout.hasNotch ? layout.barHeight + 6 : 18
 
-  // The camera notch is black, so the pill must be too when it merges with it.
+  // Follows the app's theme. With a camera notch it stays dark: the notch itself is black.
   const tone = state.theme === 'light' && !layout.hasNotch ? 'light' : 'dark'
-  const size = open ? layout.expanded : layout.compact
+  const peekSize = {
+    w: Math.min(layout.expanded.w, layout.compact.w + (layout.hasNotch ? 60 : 90)),
+    h: layout.hasNotch ? layout.barHeight + 40 : 60
+  }
+  const size = open ? layout.expanded : peek ? peekSize : layout.compact
   const style = {
     '--accent': state.accent,
     '--accent-text': state.accentText,
@@ -126,9 +173,10 @@ export function Notch(): React.JSX.Element | null {
   return (
     <div className="stage" style={style} onMouseLeave={leave}>
       <div
-        className={`pill ${layout.hasNotch ? 'attached' : 'floating'} ${tone}${open ? ' open' : ''}`}
+        className={`pill ${layout.hasNotch ? 'attached' : 'floating'} ${tone}${open ? ' open' : peek ? ' peek' : ''}`}
         onMouseEnter={enter}
       >
+
         {state.theme === 'dynamic' && tone === 'dark' && track.coverUrl && (
           <div key={track.coverUrl} className="ambient" style={{ backgroundImage: `url("${track.coverUrl}")` }} />
         )}
@@ -140,9 +188,13 @@ export function Notch(): React.JSX.Element | null {
             <div className="cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} />
             {!layout.hasNotch && (
               <div className="marquee">
-                <span key={compactText} className={line ? 'lyric-in' : 'scroll'}>
-                  {compactText}
-                </span>
+                {line ? (
+                  <span key={compactText} className="lyric-in">
+                    {compactText}
+                  </span>
+                ) : (
+                  <Marquee text={compactText} />
+                )}
               </div>
             )}
           </div>
@@ -157,6 +209,27 @@ export function Notch(): React.JSX.Element | null {
           </div>
           <div className="hair">
             <div style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        {/* Peek: the new song, shown for a moment after it starts. */}
+        <div
+          className="peek-view"
+          aria-hidden={!peek || open}
+          style={{ width: peekSize.w, height: peekSize.h, paddingTop: layout.hasNotch ? layout.barHeight : 0 }}
+        >
+          <div key={track.videoId} className="peek-row">
+            <div className="cover mid" style={{ backgroundImage: `url("${track.coverUrl}")` }} />
+            <div className="meta">
+              <div className="title">{track.title}</div>
+              <div className="artist">{track.artist}</div>
+            </div>
+            <div className={`bars${state.playing ? ' on' : ''}`}>
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
           </div>
         </div>
 

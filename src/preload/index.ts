@@ -26,7 +26,9 @@ const events: PhinasEvents = {
   listenSend: (msg) => ipcRenderer.send('listen:send', msg),
   onListenMessage: (cb) => subscribe('listen:message', cb),
   onListenPresence: (cb) => subscribe('listen:presence', cb),
-  onListenConnection: (cb) => subscribe('listen:connection', cb)
+  onListenConnection: (cb) => subscribe('listen:connection', cb),
+  notifyListenInvite: (name) => ipcRenderer.send('listen:invited', name),
+  onUpdateStatus: (cb) => subscribe('update:status', cb)
 }
 
 contextBridge.exposeInMainWorld('phinas', { ...invoke, ...events })

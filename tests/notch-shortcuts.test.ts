@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { computeBounds, detectNotch, FLOAT_GAP } from '../src/main/notch/detect'
+import { computeBounds, detectNotch } from '../src/main/notch/detect'
 import { GLOBAL_SHORTCUTS, registerShortcuts } from '../src/main/shortcuts'
 import { seekFromPointer } from '../src/renderer/src/notch/seek'
 import { keyToCommand, type KeyLike } from '../src/renderer/src/player/keymap'
@@ -26,17 +26,17 @@ describe('computeBounds', () => {
   const win = detectNotch('win32', rect(0, 0, 1920, 1080), rect(0, 0, 1920, 1040))
   const mac = detectNotch('darwin', rect(0, 0, 1728, 1117), rect(0, 38, 1728, 1079))
 
-  test('windows: centred, a few px below the top edge, window fits pill plus margin', () => {
+  test('windows: centred, touching the top edge, window fits pill plus margin', () => {
     const b = computeBounds('win32', rect(0, 0, 1920, 1080), rect(0, 0, 1920, 1040), win, false)
     expect(b.width).toBe(win.compact.w + win.pad * 2)
     expect(b.height).toBe(win.compact.h + win.pad)
     expect(b.x + b.width / 2).toBe(960)
-    expect(b.y).toBe(FLOAT_GAP)
+    expect(b.y).toBe(0)
   })
 
-  test('windows with the taskbar at the top: the pill starts below it', () => {
+  test('windows with the taskbar at the top: the pill hangs from it', () => {
     const b = computeBounds('win32', rect(0, 0, 1920, 1080), rect(0, 48, 1920, 1032), win, false)
-    expect(b.y).toBe(48 + FLOAT_GAP)
+    expect(b.y).toBe(48)
   })
 
   test('windows second monitor to the left (negative x) stays centred on it', () => {

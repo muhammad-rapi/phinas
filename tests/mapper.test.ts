@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { mapPlaylistItem, mapSongItem, sectionTracks, upsizeCover } from '../src/main/music/mapper'
+import { mapPlaylistItem, mapSongItem, sectionTracks, upsizeCover, mapVideoCard, mapNewRelease } from '../src/main/music/mapper'
 
 describe('author fallback', () => {
   test('uses authors when artists is missing (video items)', () => {
@@ -103,5 +103,35 @@ describe('mapPlaylistItem', () => {
   test('falls back when author or thumbnails are missing, and skips items without an id', () => {
     expect(mapPlaylistItem({ id: 'VLPL1', title: 'T' })).toEqual({ id: 'VLPL1', title: 'T', author: 'YouTube Music', coverUrl: '' })
     expect(mapPlaylistItem({ title: 'No id' })).toBeNull()
+  })
+})
+
+describe('Explore cards', () => {
+  const thumb = [
+    { url: 'https://x/small=w60-h60', width: 60 },
+    { url: 'https://x/big=w226-h226', width: 226 }
+  ]
+  test('a video card plays by the id in its overlay, not its browse id', () => {
+    const t = mapVideoCard({
+      id: 'MPED_abc',
+      title: { text: 'Song (Official Video)' },
+      subtitle: { text: 'Someone • 1.2M views' },
+      thumbnail: thumb,
+      thumbnail_overlay: { content: { endpoint: { payload: { videoId: 'abcdefghijk' } } } }
+    })
+    expect(t).toEqual({ videoId: 'abcdefghijk', title: 'Song (Official Video)', artist: 'Someone', coverUrl: 'https://x/big=w226-h226', durationSec: 0 })
+  })
+  test('podcast episodes and cards without a video id are skipped', () => {
+    const podcast = { watchEndpointMusicSupportedConfigs: { watchEndpointMusicConfig: { musicVideoType: 'MUSIC_VIDEO_TYPE_PODCAST_EPISODE' } } }
+    expect(mapVideoCard({ title: 'Ep 1', thumbnail_overlay: { content: { endpoint: { payload: { videoId: 'abcdefghijk', ...podcast } } } } })).toBeNull()
+    expect(mapVideoCard({ id: 'MPED_x', title: 'No id' })).toBeNull()
+  })
+  test('a new release keeps its kind and artist line', () => {
+    expect(mapNewRelease({ id: 'MPREb_1', title: { text: 'Kekasih' }, subtitle: { text: 'Single • Tereza' }, thumbnail: thumb })).toEqual({
+      id: 'MPREb_1',
+      title: 'Kekasih',
+      author: 'Single • Tereza',
+      coverUrl: 'https://x/big=w544-h544'
+    })
   })
 })

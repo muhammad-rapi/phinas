@@ -29,6 +29,17 @@ export interface PublicPlaylistDetail extends PublicPlaylist {
   tracks: Track[]
 }
 
+/** An artist page from YouTube Music. */
+export interface ArtistDetail {
+  id: string
+  name: string
+  photoUrl: string
+  /** Their top songs, most popular first (the full list comes from getArtistSongs). */
+  songs: Track[]
+  /** Albums, then singles and EPs. `author` holds the kind and year (e.g. "Album • 2021"). */
+  releases: PublicPlaylist[]
+}
+
 /** A Spotify playlist or album matched against YouTube Music. */
 export interface ImportResult {
   name: string
@@ -40,10 +51,31 @@ export interface ImportResult {
 }
 
 export interface HomeFeed {
-  /** What is trending now in the user's region. */
+  /** What is trending now in the user's region (YouTube Music's chart, refreshed by YouTube about weekly). */
   trending: Track[]
+  /** The full trending chart as a public playlist id, when YouTube links one. */
+  trendingId?: string
   /** Personalised-looking quick picks from the anonymous home feed. */
   picks: Track[]
+  /** YouTube Music's moods and genres for the region. */
+  genres: Genre[]
+  /** New albums and singles (open with getAlbum). */
+  releases: PublicPlaylist[]
+  /** New music videos, played as audio like any track. */
+  videos: Track[]
+}
+
+/** A mood or genre from YouTube Music's Explore page. */
+export interface Genre {
+  title: string
+  /** Opaque browse params; pass back to getGenre. */
+  params: string
+}
+
+/** A mood or genre page: shelves of playlists. */
+export interface GenrePage {
+  /** Only playlist and album shelves; `album` says which (they open differently). */
+  shelves: { title: string; album: boolean; playlists: PublicPlaylist[] }[]
 }
 
 export interface Playlist {
@@ -135,4 +167,17 @@ export interface ListenInfo {
 export interface ListenStatus {
   connected: boolean
   partnerHere: boolean
+}
+
+/** The app update, as the updater sees it. */
+export interface UpdateStatus {
+  /** idle: up to date or not checked yet; available: a newer version can be downloaded;
+   *  downloading/ready: Windows fetches it in the background, then installs on restart. */
+  state: 'idle' | 'available' | 'downloading' | 'ready'
+  current: string
+  latest?: string
+  /** The installer (or release page) for this platform. */
+  url?: string
+  /** 0-100 while downloading. */
+  progress?: number
 }

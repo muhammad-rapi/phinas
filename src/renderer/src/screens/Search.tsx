@@ -86,13 +86,15 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
             </Shelf>
           )}
           {results.length > 0 && playlists.length > 0 && <h3 className="shelf-title" style={{ margin: '8px 0 8px' }}>Lagu</h3>}
-          {results.map((t, i) => (
+          {results.map((t) => (
             <TrackRow
               key={t.videoId}
               track={t}
               onPlay={() => {
                 onPick(t, q)
-                player.play(results, i)
+                // Only the picked song: the other results are mostly versions of the same one.
+                // Autoplay fills in what comes next from recommendations.
+                player.play([t], 0)
               }}
             />
           ))}

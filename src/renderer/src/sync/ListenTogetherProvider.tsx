@@ -81,6 +81,18 @@ export function ListenTogetherProvider({ children }: { children: ReactNode }): R
     }
   }, [info])
 
+  // Tell the main process about a new invite so it can notify outside the app.
+  const notifiedFor = useRef(false)
+  useEffect(() => {
+    if (state.status !== 'invited') {
+      notifiedFor.current = false
+      return
+    }
+    if (notifiedFor.current) return
+    notifiedFor.current = true
+    window.phinas.notifyListenInvite(info?.partnerName ?? '')
+  }, [state.status, info?.partnerName])
+
   const api = useMemo<ListenApi>(
     () => ({
       available: info !== null,

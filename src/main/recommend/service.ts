@@ -5,7 +5,8 @@ import { buildProfile, hasTaste, pickSeeds } from './profile'
 import { rank } from './rank'
 
 const HOME_SEEDS = 4
-const AUTOPLAY_PROFILE_SEEDS = 3
+/** Autoplay follows the song playing; one taste seed adds a little of what you usually like. */
+const AUTOPLAY_PROFILE_SEEDS = 1
 const HOME_LIMIT = 20
 const AUTOPLAY_LIMIT = 10
 
@@ -55,7 +56,7 @@ export class Recommender {
       const { likes, plays, profile } = this.profile()
       const seeds = [current, ...pickSeeds(profile, likes, plays, AUTOPLAY_PROFILE_SEEDS).filter((s) => s.videoId !== current.videoId)]
       const pool = await this.candidates(seeds)
-      return rank(pool, profile, new Set([current.videoId, ...queueIds]), { limit: AUTOPLAY_LIMIT })
+      return rank(pool, profile, new Set([current.videoId, ...queueIds]), { limit: AUTOPLAY_LIMIT, excludeTitles: [current.title] })
     } catch {
       return []
     }

@@ -1,4 +1,8 @@
-:root { --ease: cubic-bezier(0.22, 1, 0.36, 1); }
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* A spring with a small overshoot, like the Dynamic Island's. */
+  --spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+}
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; background: transparent; overflow: hidden; }
 body {
@@ -28,9 +32,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   overflow: hidden;
   color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--line);
-  transition: width 0.4s var(--ease), height 0.4s var(--ease), border-radius 0.4s var(--ease), box-shadow 0.4s var(--ease);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: width 0.5s var(--spring), height 0.5s var(--spring), border-radius 0.5s var(--spring), box-shadow 0.4s var(--ease);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 .pill.light {
   --surface: rgba(255, 255, 255, 0.96);
@@ -39,12 +42,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   --line: rgba(0, 0, 0, 0.08);
   --track: rgba(0, 0, 0, 0.14);
 }
-/* Merges with the camera notch: no top border, square top, round bottom. */
-.pill.attached { border-top-color: transparent; border-radius: 0 0 20px 20px; box-shadow: none; }
-.pill.attached.open { border-radius: 0 0 32px 32px; box-shadow: 0 18px 40px -8px rgba(0, 0, 0, 0.55); }
-/* Windows, or a Mac without a notch: a floating pill. */
-.pill.floating { border-radius: 999px; }
-.pill.floating.open { border-radius: 30px; box-shadow: 0 18px 44px -8px rgba(0, 0, 0, 0.55), 0 0 36px -14px var(--accent); }
+/* Hangs from the top edge (or the camera notch): square top, round bottom. */
+.pill.attached { border-radius: 0 0 20px 20px; box-shadow: none; }
+.pill.attached.peek { border-radius: 0 0 26px 26px; box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6); }
+.pill.attached.open { border-radius: 0 0 40px 40px; box-shadow: 0 18px 40px -8px rgba(0, 0, 0, 0.6); }
+/* Windows, or a Mac without a notch: same shape, hanging from the screen's top edge. */
+.pill.floating { border-radius: 0 0 22px 22px; }
+.pill.floating.peek { border-radius: 0 0 28px 28px; }
+.pill.floating.open { border-radius: 0 0 40px 40px; box-shadow: 0 18px 44px -8px rgba(0, 0, 0, 0.6); }
 
 /* Same look as the app's Dynamic theme: the cover, blurred, tinted by its colour. */
 .ambient {
@@ -58,10 +63,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pill.light .tint { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 0.6; } }
 
-/* ---------- idle ---------- */
-.compact, .full { position: absolute; top: 0; left: 50%; transform: translateX(-50%); transition: opacity 0.22s ease; }
+
+/* ---------- the three faces: compact, peek, open ----------
+   Each fades with a little blur and scale, so the content seems to morph with the island. */
+.compact, .full, .peek-view {
+  position: absolute; top: 0; left: 50%;
+  transform: translateX(-50%) scale(1);
+  transform-origin: top center;
+  transition: opacity 0.25s ease, filter 0.3s ease, transform 0.45s var(--spring);
+}
 .compact { width: 100%; height: var(--bar); display: flex; align-items: center; opacity: 1; }
-.pill.open .compact { opacity: 0; pointer-events: none; }
+.pill.open .compact, .pill.peek .compact { opacity: 0; filter: blur(6px); transform: translateX(-50%) scale(1.08); pointer-events: none; }
+
+.peek-view { display: flex; align-items: center; padding: 0 18px; opacity: 0; filter: blur(6px); transform: translateX(-50%) scale(0.92); pointer-events: none; }
+.pill.peek .peek-view { opacity: 1; filter: none; transform: translateX(-50%) scale(1); transition-delay: 0.08s; }
+.peek-row { display: flex; align-items: center; gap: 12px; width: 100%; animation: lyric-in 0.4s var(--ease) both; }
+.cover.mid { width: 34px; height: 34px; border-radius: 9px; }
 .side { flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 14px; gap: 9px; }
 .side.right { flex: 0 0 auto; justify-content: flex-end; }
 .pill.attached .side { flex: 1; padding: 0 16px; }
@@ -74,8 +91,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent);
 }
 .marquee span { display: inline-block; }
-.marquee .scroll { padding-right: 28px; animation: scroll 11s linear infinite; }
-@keyframes scroll { 0%, 14% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+.marquee .loop { animation: loop 12s linear infinite; }
+.marquee .loop > span { padding-right: 36px; }
+@keyframes loop { 0%, 12% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 .lyric-in { animation: lyric-in 0.35s var(--ease) both; }
 @keyframes lyric-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
@@ -94,9 +112,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ---------- open ---------- */
 .full {
   height: 100%; padding: 18px 26px 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
-  opacity: 0; pointer-events: none;
+  opacity: 0; filter: blur(8px); transform: translateX(-50%) scale(0.94); pointer-events: none;
 }
-.pill.open .full { opacity: 1; pointer-events: auto; transition: opacity 0.28s ease 0.12s; }
+.pill.open .full { opacity: 1; filter: none; transform: translateX(-50%) scale(1); pointer-events: auto; transition-delay: 0.1s; }
 .info { display: flex; align-items: center; gap: 14px; }
 .meta { flex: 1; min-width: 0; }
 .title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -104,7 +122,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 .lyrics { height: 46px; display: flex; flex-direction: column; justify-content: center; gap: 3px; text-align: center; overflow: hidden; }
 .lyrics .now { font-size: 14px; font-weight: 700; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pill.light .lyrics .now { color: var(--accent-text); }
 .lyrics .next { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 15px; }
 .lyrics .none { font-size: 11px; color: var(--muted); }
 

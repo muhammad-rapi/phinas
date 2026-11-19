@@ -1,4 +1,4 @@
-import type { FavoriteArtist, ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { ArtistDetail, FavoriteArtist, GenrePage, UpdateStatus, ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
 import type { SyncMessage } from './sync/protocol'
 
 export interface PhinasApi {
@@ -8,6 +8,20 @@ export interface PhinasApi {
   searchPlaylists(query: string): Promise<PublicPlaylist[]>
   /** One public playlist with its songs (the first page, about 100). */
   getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
+  /** The app update status (current version, newer version if any). */
+  getUpdateStatus(): Promise<UpdateStatus>
+  /** Checks GitHub for a newer version now. */
+  checkForUpdate(): Promise<UpdateStatus>
+  /** Windows: restart and install the downloaded update. Mac: open the new installer's download. */
+  installUpdate(): Promise<void>
+  /** An artist's page, found by name. */
+  getArtist(name: string): Promise<ArtistDetail>
+  /** All of an artist's songs (up to 100). Slower: the artist page loads first. */
+  getArtistSongs(id: string): Promise<Track[]>
+  /** An album or single (browse id from an artist page). */
+  getAlbum(id: string): Promise<PublicPlaylistDetail>
+  /** A mood or genre page (params from the home feed). */
+  getGenre(params: string): Promise<GenrePage>
   streamUrl(videoId: string): Promise<string>
   /** Lyrics from LRCLIB, or null when the song has none. Rejects on network errors. */
   getLyrics(track: Track): Promise<Lyrics | null>
@@ -81,6 +95,10 @@ export interface PhinasEvents {
   onListenMessage(cb: (raw: unknown) => void): () => void
   onListenPresence(cb: (here: boolean) => void): () => void
   onListenConnection(cb: (up: boolean) => void): () => void
+  /** The update status changed (found, downloading, ready). Returns an unsubscribe. */
+  onUpdateStatus(cb: (status: UpdateStatus) => void): () => void
+  /** The partner invited us: the main process shows a system notification when the window is not focused. */
+  notifyListenInvite(partnerName: string): void
 }
 
 export interface NotchLayout {
@@ -102,6 +120,13 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   getHomeFeed: true,
   searchPlaylists: true,
   getPublicPlaylist: true,
+  getUpdateStatus: true,
+  checkForUpdate: true,
+  installUpdate: true,
+  getArtist: true,
+  getArtistSongs: true,
+  getAlbum: true,
+  getGenre: true,
   streamUrl: true,
   getLyrics: true,
   importSpotify: true,

@@ -3,6 +3,7 @@ import type { SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import { useNotchEnabled } from '../notch/useNotchEnabled'
 import type { ThemeName } from '../theme/useTheme'
+import { useUpdate } from '../update/useUpdate'
 
 const THEMES: { id: ThemeName; label: string; hint: string }[] = [
   { id: 'dynamic', label: 'Dynamic', hint: 'Warna mengikuti sampul lagu' },
@@ -103,6 +104,8 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
         <p className="muted">Pill kecil di tengah atas layar saat ada lagu. Arahkan kursor untuk membuka kontrolnya.</p>
       </section>
 
+      <UpdateSection />
+
       <section className="profile-section">
         <h3>Akun dan sync dengan pasangan</h3>
         {status && !status.configured && (
@@ -137,5 +140,41 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
         )}
       </section>
     </>
+  )
+}
+
+/** Version, and a manual "check for updates". */
+function UpdateSection(): React.JSX.Element {
+  const u = useUpdate()
+  const [checking, setChecking] = useState(false)
+  const [checked, setChecked] = useState(false)
+  const check = async (): Promise<void> => {
+    setChecking(true)
+    try {
+      await window.phinas.checkForUpdate()
+    } finally {
+      setChecking(false)
+      setChecked(true)
+    }
+  }
+  let line = u ? `Phinas ${u.current}` : 'Phinas'
+  if (u?.state === 'available' || u?.state === 'ready') line += ` · versi ${u.latest} tersedia`
+  else if (u?.state === 'downloading') line += ` · mengunduh ${u.latest} (${u.progress ?? 0}%)`
+  else if (checked) line += ' · sudah versi terbaru'
+  return (
+    <section className="profile-section">
+      <h3>Pembaruan</h3>
+      <p className="muted">{line}</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn secondary" onClick={() => void check()} disabled={checking || u?.state === 'downloading'}>
+          {checking ? 'Memeriksa...' : 'Cek pembaruan'}
+        </button>
+        {(u?.state === 'available' || u?.state === 'ready') && (
+          <button className="btn" onClick={() => void window.phinas.installUpdate()}>
+            {u.state === 'ready' ? 'Mulai ulang & perbarui' : 'Unduh versi baru'}
+          </button>
+        )}
+      </div>
+    </section>
   )
 }
