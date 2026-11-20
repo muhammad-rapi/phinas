@@ -41,6 +41,32 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
 
   return (
     <section className="player" aria-label="Pemutar">
+      {/* The song position runs along the top edge of the bar. */}
+      <input
+        className="slider player-progress"
+        type="range"
+        min={0}
+        max={Math.max(p.duration, 1)}
+        step={1}
+        value={Math.min(p.time, p.duration || 0)}
+        style={pct(p.time, p.duration)}
+        onChange={(e) => p.seek(Number(e.target.value))}
+        aria-label="Posisi lagu"
+        disabled={!p.track}
+      />
+
+      <div className="player-buttons">
+        <button className="icon-btn" onClick={p.prev} aria-label="Sebelumnya">
+          <SkipBack size={16} fill="currentColor" />
+        </button>
+        <button className="player-play" onClick={p.toggle} aria-label="Putar atau jeda">
+          {p.playing ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" style={{ marginLeft: 2 }} />}
+        </button>
+        <button className="icon-btn" onClick={p.next} aria-label="Berikutnya">
+          <SkipForward size={16} fill="currentColor" />
+        </button>
+      </div>
+
       <div className="player-track">
         {p.track && (
           <>
@@ -58,47 +84,24 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
         )}
       </div>
 
-      <div className="player-center">
-        <div className="player-buttons">
-          <button className={`icon-btn${p.shuffle ? ' on' : ''}`} onClick={p.toggleShuffle} aria-label="Acak" aria-pressed={p.shuffle}>
-            <Shuffle size={15} />
-          </button>
-          <button className="icon-btn" onClick={p.prev} aria-label="Sebelumnya">
-            <SkipBack size={16} fill="currentColor" />
-          </button>
-          <button className="player-play" onClick={p.toggle} aria-label="Putar atau jeda">
-            {p.playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" style={{ marginLeft: 2 }} />}
-          </button>
-          <button className="icon-btn" onClick={p.next} aria-label="Berikutnya">
-            <SkipForward size={16} fill="currentColor" />
-          </button>
-          <button
-            className={`icon-btn${p.repeat !== 'off' ? ' on' : ''}`}
-            onClick={p.cycleRepeat}
-            aria-label={`Ulangi: ${p.repeat}`}
-            aria-pressed={p.repeat !== 'off'}
-          >
-            {p.repeat === 'one' ? <Repeat1 size={15} /> : <Repeat size={15} />}
-          </button>
-        </div>
-        <div className="player-seek">
-          <span className="player-time">{formatTime(p.time)}</span>
-          <input
-            className="slider"
-            type="range"
-            min={0}
-            max={Math.max(p.duration, 1)}
-            step={1}
-            value={Math.min(p.time, p.duration || 0)}
-            style={pct(p.time, p.duration)}
-            onChange={(e) => p.seek(Number(e.target.value))}
-            aria-label="Posisi lagu"
-          />
-          <span className="player-time">{formatTime(p.duration)}</span>
-        </div>
-      </div>
-
       <div className="player-side">
+        {p.track && (
+          <span className="player-time">
+            {formatTime(p.time)} <span className="player-time-total">/ {formatTime(p.duration)}</span>
+          </span>
+        )}
+        <button className={`icon-btn${p.shuffle ? ' on' : ''}`} onClick={p.toggleShuffle} aria-label="Acak" aria-pressed={p.shuffle}>
+          <Shuffle size={15} />
+        </button>
+        <button
+          className={`icon-btn${p.repeat !== 'off' ? ' on' : ''}`}
+          onClick={p.cycleRepeat}
+          aria-label={`Ulangi: ${p.repeat}`}
+          aria-pressed={p.repeat !== 'off'}
+        >
+          {p.repeat === 'one' ? <Repeat1 size={15} /> : <Repeat size={15} />}
+        </button>
+        <span className="player-divider" aria-hidden="true" />
         <ListenButton />
         {notch !== null && (
           <button

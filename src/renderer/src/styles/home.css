@@ -5,7 +5,7 @@
 .story { display: flex; align-items: flex-end; gap: 32px; min-height: 184px; margin-top: 16px; }
 .story-cover { width: 184px; height: 184px; flex: none; background: var(--line) center / cover; box-shadow: var(--cover-shadow); }
 .story-text { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
-.story-title { font-family: var(--sans); font-size: var(--fs-4xl); font-weight: 700; line-height: 1.08; letter-spacing: -0.025em; }
+.story-title { font-family: var(--sans); font-size: var(--fs-4xl); font-weight: 300; line-height: 1.05; letter-spacing: -0.035em; }
 .story-title em { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: 0.06em; color: var(--accent); }
 .story-text .muted { margin: 0; font-size: var(--fs-base); }
 .story-artist { font-size: var(--fs-md); color: var(--ink-soft); }
@@ -27,11 +27,10 @@
 .home-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; margin-top: 36px; }
 @container (max-width: 760px) { .home-lists { grid-template-columns: minmax(0, 1fr); } }
 .nl-rows { list-style: none; margin: 0; padding: 0; }
-.nl-row { justify-content: flex-start; align-items: center; gap: 14px; width: 100%; min-width: 0; padding: 6px 8px; margin: 0 -8px; width: calc(100% + 16px); border-radius: var(--radius); font-size: var(--fs-base); line-height: 1.4; transition: background 0.15s; text-align: left; color: var(--ink); }
+.nl-row { justify-content: flex-start; align-items: center; gap: 14px; width: 100%; min-width: 0; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-base); line-height: 1.4; transition: background 0.15s; text-align: left; color: var(--ink); }
 .nl-cover { flex: none; width: 40px; height: 40px; border-radius: 3px; background: var(--line) center / cover no-repeat; box-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.4); }
-.nl-row:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
 .nl-row:hover .nl-text, .nl-row.playing .nl-text, .nl-row.playing .nl-num { color: var(--accent); }
-.nl-num { flex: none; width: 24px; font-family: var(--sans); font-size: var(--fs-base); font-weight: 500; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.nl-num { flex: none; width: 24px; font-family: var(--sans); font-size: 15px; font-weight: 300; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .nl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nl-artist { color: var(--ink-soft); }
 .nl-skel { display: flex; align-items: center; gap: 14px; padding: 6px 0; }
