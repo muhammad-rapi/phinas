@@ -21,7 +21,7 @@ export function maybeCaptureAndQuit(win: BrowserWindow): void {
         if (result !== undefined) console.log('[dev-shot] script result:', JSON.stringify(result))
         await sleep(settle)
         const probe = await win.webContents.executeJavaScript(
-          `JSON.stringify({accent: document.documentElement.style.getPropertyValue('--accent'), gradTop: document.documentElement.style.getPropertyValue('--grad-top'), mode: document.documentElement.dataset.mode, titleColor: (document.querySelector('.row.playing .title')||{}).style ? getComputedStyle(document.querySelector('.row.playing .title')).color : null})`
+          `(() => { const r = document.documentElement; return JSON.stringify({ theme: r.dataset.theme, accent: r.style.getPropertyValue('--accent'), onAccent: r.style.getPropertyValue('--on-accent'), wash: r.style.getPropertyValue('--wash') }) })()`
         )
         console.log('[dev-shot] page state:', probe)
       }
