@@ -4,8 +4,8 @@
 -- Short random codes without look-alike characters (no I, O, 0, 1).
 create function public.gen_code(prefix text, len int) returns text
 language sql volatile set search_path = public as $$
-  select prefix || string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + floor(random() * 32)::int, 1), '')
-  from generate_series(1, len)
+  select prefix || string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + (get_byte(b, i - 1) % 32), 1), '' order by i)
+  from (select extensions.gen_random_bytes(len) as b) r, generate_series(1, len) as i
 $$;
 
 alter table public.profiles
@@ -16,6 +16,8 @@ alter table public.profiles
   add column invited_by uuid references public.profiles(id) on delete set null,
   add column listen_scope text not null default 'friends' check (listen_scope in ('friends', 'partner', 'off')),
   add column created_at timestamptz not null default now();
+
+create index profiles_invited_by on public.profiles(invited_by);
 
 create function public.new_friend_code() returns text
 language plpgsql volatile set search_path = public as $$
@@ -29,7 +31,10 @@ begin
 end $$;
 
 -- The existing accounts accepted the terms by using the app before they existed.
-update public.profiles set friend_code = public.new_friend_code(), accepted_terms_at = now();
+update public.profiles set
+  friend_code = public.new_friend_code(),
+  accepted_terms_at = now(),
+  created_at = coalesce((select u.created_at from auth.users u where u.id = profiles.id), now());
 alter table public.profiles alter column friend_code set not null;
 
 create table public.friendships (
@@ -47,13 +52,15 @@ create table public.friendships (
   unique (user_a, user_b)
 );
 create index friendships_user_b on public.friendships(user_b);
+create index friendships_requested_by on public.friendships(requested_by);
+create index friendships_partner_requested_by on public.friendships(partner_requested_by);
 
 -- A user can sit in either column, so "one partner per user" cannot be a unique index.
 create function public.check_one_partner() returns trigger
-language plpgsql set search_path = public as $$
+language plpgsql security definer set search_path = public as $$
 begin
   if new.is_partner then
-    perform 1 from profiles where id in (new.user_a, new.user_b) order by id for update;
+    perform 1 from profiles where id in (new.user_a, new.user_b) order by id for no key update;
     if exists (
       select 1 from friendships f
       where f.is_partner and f.id <> new.id
@@ -66,7 +73,7 @@ begin
 end $$;
 
 create trigger friendships_one_partner
-  before insert or update of is_partner on public.friendships
+  before insert or update on public.friendships
   for each row execute function public.check_one_partner();
 
 create table public.invite_codes (
@@ -79,6 +86,7 @@ create table public.invite_codes (
   revoked boolean not null default false
 );
 create index invite_codes_created_by on public.invite_codes(created_by);
+create index invite_codes_used_by on public.invite_codes(used_by);
 
 create table public.app_config (
   key text primary key,
@@ -88,6 +96,13 @@ insert into public.app_config (key, value) values
   ('listen_together_enabled', 'true'),
   ('registration_open', 'true'),
   ('invite_quota', '3');
+
+-- Locked by default. Later migrations add select policies; RLS with no policy returns nothing.
+alter table public.friendships enable row level security;
+alter table public.invite_codes enable row level security;
+alter table public.app_config enable row level security;
+revoke all on public.friendships, public.invite_codes, public.app_config from anon, authenticated;
+grant select on public.friendships, public.invite_codes, public.app_config to authenticated;
 
 alter table public.playlists
   add column visibility text not null default 'friends' check (visibility in ('private', 'friends', 'public'));
@@ -131,6 +146,7 @@ language sql stable security definer set search_path = public as $$
     when not coalesce((config('registration_open'))::boolean, false) then 'registration_closed'
     when i.code is null then 'invite_invalid'
     when i.revoked then 'invite_revoked'
+    when not is_active(i.created_by) then 'invite_revoked'
     when i.used_at is not null then 'invite_used'
     when i.expires_at <= now() then 'invite_expired'
     else 'ok'
@@ -154,9 +170,10 @@ begin
   end if;
 
   -- Bootstrap: the very first account needs no invite and becomes the admin.
+  perform pg_advisory_xact_lock(hashtext('phinas:bootstrap'));
   if not exists (select 1 from profiles) then
     insert into profiles (id, display_name, role, friend_code, accepted_terms_at)
-    values (new.id, coalesce(v_name, split_part(new.email, '@', 1)), 'admin', new_friend_code(), now());
+    values (new.id, coalesce(v_name, nullif(left(split_part(coalesce(new.email, ''), '@', 1), 30), ''), 'Phinas'), 'admin', new_friend_code(), now());
     return new;
   end if;
 
@@ -168,7 +185,7 @@ begin
   select created_by into v_inviter from invite_codes where code = v_code;
 
   insert into profiles (id, display_name, friend_code, accepted_terms_at, invited_by)
-  values (new.id, coalesce(v_name, split_part(new.email, '@', 1)), new_friend_code(), now(), v_inviter);
+  values (new.id, coalesce(v_name, nullif(left(split_part(coalesce(new.email, ''), '@', 1), 30), ''), 'Phinas'), new_friend_code(), now(), v_inviter);
   update invite_codes set used_by = new.id, used_at = now() where code = v_code;
   insert into friendships (user_a, user_b, status, requested_by)
   values (least(new.id, v_inviter), greatest(new.id, v_inviter), 'accepted', v_inviter);

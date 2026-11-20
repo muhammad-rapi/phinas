@@ -61,6 +61,8 @@ grant execute on all functions in schema tests to anon, authenticated;
 
 select * from no_plan();
 
+select is((select count(*)::int from public.profiles), 0, 'starts from an empty database');
+
 select tests.new_user('admin');
 select is((select role from public.profiles where id = tests.id('admin')), 'admin',
   'first user becomes admin without an invite');
@@ -114,12 +116,34 @@ select is((select value from public.app_config where key = 'listen_together_enab
   'listen together on by default');
 select has_column('public', 'playlists', 'visibility', 'playlists have visibility');
 
+-- Trigger normalises the code; a failed sign-up leaves the code unused.
+select tests.invite('admin', 'c6');
+select lives_ok($$ select tests.new_user('ika', ' ' || lower(tests.code('c6')) || ' ') $$,
+  'the trigger accepts a lower-case, padded code');
+select tests.invite('admin', 'c7');
+select throws_ok($$ select tests.new_user('joko', tests.code('c7'), false) $$, 'P0001', 'phinas:terms_required',
+  'terms missing');
+select is((select used_at from public.invite_codes where code = tests.code('c7')), null,
+  'a failed sign-up leaves the code unused');
+
 -- One partner per user.
 select tests.invite('admin', 'c5');
 select tests.new_user('hana', tests.code('c5'));
 update public.friendships set is_partner = true where id = tests.fid('admin', 'budi');
 select throws_ok($$ update public.friendships set is_partner = true where id = tests.fid('admin', 'hana') $$,
   'P0001', 'phinas:partner_taken', 'a user cannot have two partners');
+select throws_ok($$ insert into public.friendships (user_a, user_b, status, requested_by, is_partner)
+  select least(tests.id('budi'), tests.id('ika')), greatest(tests.id('budi'), tests.id('ika')), 'accepted', tests.id('budi'), true $$,
+  'P0001', 'phinas:partner_taken', 'the one-partner rule also applies on insert');
+
+select tests.invite('hana', 'c8');
+update public.profiles set disabled = true where id = tests.id('hana');
+select is(public.check_invite(tests.code('c8')), 'invite_revoked', 'codes of a disabled inviter do not work');
+update public.profiles set disabled = false where id = tests.id('hana');
+
+select ok((select bool_and(relrowsecurity) from pg_class
+  where oid in ('public.friendships'::regclass, 'public.invite_codes'::regclass, 'public.app_config'::regclass)),
+  'new tables have RLS enabled');
 
 select * from finish();
 rollback;
