@@ -8,7 +8,7 @@ begin
 end $$;
 
 create function public.admin_list_users() returns jsonb
-language plpgsql stable security definer set search_path = private, public, auth as $$
+language plpgsql stable security definer set search_path = private, public as $$
 begin
   perform require_admin();
   return coalesce((
@@ -20,6 +20,7 @@ begin
       'disabled', p.disabled,
       'createdAt', u.created_at,
       'lastSignInAt', u.last_sign_in_at,
+      'invitedById', p.invited_by,
       'invitedByName', inv.display_name,
       'friendCount', (
         select count(*)::int from public.friendships f
@@ -55,14 +56,32 @@ create function public.admin_set_disabled(p_user uuid, p_disabled boolean) retur
 language plpgsql security definer set search_path = private, public as $$
 declare me uuid := require_admin();
 begin
+  if p_user is null or p_disabled is null then raise exception 'phinas:invalid_args'; end if;
   if p_user = me then raise exception 'phinas:self_disable'; end if;
+  -- Same key as delete_my_account: two admins disabling each other at once would leave none.
+  perform pg_advisory_xact_lock(hashtext('phinas:last_admin'));
+  -- Re-check after the lock: another admin may have just disabled us.
+  if not is_admin() then raise exception 'phinas:not_admin'; end if;
   update profiles set disabled = p_disabled where id = p_user;
+  if not found then raise exception 'phinas:user_not_found'; end if;
 end $$;
 
 create function public.admin_set_config(p_key text, p_value jsonb) returns void
 language plpgsql security definer set search_path = private, public as $$
 begin
   perform require_admin();
+  if p_value is null then raise exception 'phinas:config_invalid'; end if;
+  -- Separate statements so the numeric casts only run on JSON numbers.
+  if p_key in ('listen_together_enabled', 'registration_open')
+     and jsonb_typeof(p_value) <> 'boolean' then
+    raise exception 'phinas:config_invalid';
+  end if;
+  if p_key = 'invite_quota' then
+    if jsonb_typeof(p_value) <> 'number' then raise exception 'phinas:config_invalid'; end if;
+    if p_value::numeric <> trunc(p_value::numeric) or p_value::numeric not between 0 and 1000 then
+      raise exception 'phinas:config_invalid';
+    end if;
+  end if;
   update app_config set value = p_value where key = p_key;
   if not found then raise exception 'phinas:config_unknown'; end if;
 end $$;

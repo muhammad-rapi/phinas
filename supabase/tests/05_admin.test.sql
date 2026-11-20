@@ -113,5 +113,90 @@ select is((select count(*)::int from auth.users where id = tests.id('budi')), 0,
 select is((select count(*)::int from public.profiles where id = tests.id('budi')), 0, 'profile gone');
 select is((select count(*)::int from public.friendships), 0, 'friendships gone');
 
+-- A disabled admin is no admin.
+select tests.new_user('admin2', tests.invite('admin', 'a2'));
+select tests.new_user('cara', tests.invite('admin', 'c'));
+update public.profiles set role = 'admin', disabled = true where id = tests.id('admin2');
+select tests.login('admin2');
+set local role authenticated;
+select throws_ok($$ select public.admin_list_users() $$, 'P0001', 'phinas:not_admin', 'disabled admin: list users');
+select throws_ok($$ select public.admin_list_invites() $$, 'P0001', 'phinas:not_admin', 'disabled admin: list invites');
+select throws_ok($$ select public.admin_set_disabled(tests.id('cara'), true) $$, 'P0001', 'phinas:not_admin',
+  'disabled admin: disable');
+select throws_ok($$ select public.admin_set_config('registration_open', 'false') $$, 'P0001', 'phinas:not_admin',
+  'disabled admin: config');
+reset role;
+
+-- No JWT at all.
+select set_config('request.jwt.claims', '', true);
+set local role authenticated;
+select throws_ok($$ select public.admin_list_users() $$, 'P0001', 'phinas:not_admin', 'no jwt: list users');
+reset role;
+
+-- A pending request does not count as a friend.
+insert into public.friendships (user_a, user_b, status, requested_by)
+values (least(tests.id('cara'), tests.id('admin2')), greatest(tests.id('cara'), tests.id('admin2')),
+        'pending', tests.id('cara'));
+
+select tests.login('admin');
+set local role authenticated;
+select is((select (u->>'friendCount')::int from jsonb_array_elements(public.admin_list_users()) u where u->>'displayName' = 'cara'),
+  1, 'friend count skips pending');
+select is((select (u->>'disabled')::boolean from jsonb_array_elements(public.admin_list_users()) u where u->>'displayName' = 'admin2'),
+  true, 'disabled flag listed');
+select is((select u->>'invitedById' from jsonb_array_elements(public.admin_list_users()) u where u->>'displayName' = 'cara'),
+  tests.id('admin')::text, 'inviter id listed');
+
+-- Config values are type-checked.
+select throws_ok($$ select public.admin_set_config('invite_quota', '"abc"') $$, 'P0001', 'phinas:config_invalid',
+  'quota: string');
+select throws_ok($$ select public.admin_set_config('invite_quota', 'null'::jsonb) $$, 'P0001', 'phinas:config_invalid',
+  'quota: json null');
+select throws_ok($$ select public.admin_set_config('invite_quota', '3000000000') $$, 'P0001', 'phinas:config_invalid',
+  'quota: too big');
+select throws_ok($$ select public.admin_set_config('invite_quota', '2.5') $$, 'P0001', 'phinas:config_invalid',
+  'quota: fraction');
+select throws_ok($$ select public.admin_set_config('invite_quota', '-1') $$, 'P0001', 'phinas:config_invalid',
+  'quota: negative');
+select throws_ok($$ select public.admin_set_config('listen_together_enabled', '"yes"') $$, 'P0001', 'phinas:config_invalid',
+  'switch: string');
+select throws_ok($$ select public.admin_set_config('listen_together_enabled', '"true"') $$, 'P0001', 'phinas:config_invalid',
+  'switch: quoted true');
+select throws_ok($$ select public.admin_set_config('registration_open', '{}') $$, 'P0001', 'phinas:config_invalid',
+  'registration: object');
+select throws_ok($$ select public.admin_set_config('invite_quota', null) $$, 'P0001', 'phinas:config_invalid',
+  'quota: sql null');
+select lives_ok($$ select public.admin_set_config('invite_quota', '5') $$, 'quota set to 5');
+select lives_ok($$ select public.admin_set_config('listen_together_enabled', 'false') $$, 'switch set off');
+
+-- admin_set_disabled argument checks.
+select throws_ok($$ select public.admin_set_disabled(gen_random_uuid(), true) $$, 'P0001', 'phinas:user_not_found',
+  'disable: unknown user');
+select throws_ok($$ select public.admin_set_disabled(tests.id('cara'), null) $$, 'P0001', 'phinas:invalid_args',
+  'disable: null flag');
+select throws_ok($$ select public.admin_set_disabled(null, true) $$, 'P0001', 'phinas:invalid_args',
+  'disable: null user');
+select lives_ok($$ select public.admin_set_disabled(tests.id('admin2'), false) $$, 're-enable admin2');
+reset role;
+select is((select disabled from public.profiles where id = tests.id('admin2')), false, 'admin2 enabled again');
+
+select tests.login('cara');
+set local role authenticated;
+select is(public.get_config()->>'inviteQuota', '5', 'quota visible in get_config');
+select is(public.get_config()->>'listenTogetherEnabled', 'false', 'switch visible in get_config');
+reset role;
+
+-- The table itself rejects a wrongly typed value.
+select throws_ok($$ update public.app_config set value = '"abc"' where key = 'invite_quota' $$, '23514', null,
+  'check constraint on config values');
+
+-- Admins ignore the invite quota.
+update public.app_config set value = '0' where key = 'invite_quota';
+select tests.login('admin');
+set local role authenticated;
+select lives_ok($$ select public.create_invite() $$, 'admin invite 1 with quota 0');
+select lives_ok($$ select public.create_invite() $$, 'admin invite 2 with quota 0');
+reset role;
+
 select * from finish();
 rollback;

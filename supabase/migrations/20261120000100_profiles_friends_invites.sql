@@ -96,6 +96,14 @@ create table public.app_config (
   key text primary key,
   value jsonb not null
 );
+-- Backstop for admin_set_config: known keys must hold the type the RPCs read.
+alter table public.app_config add constraint app_config_value_type check (
+  case key
+    when 'listen_together_enabled' then jsonb_typeof(value) = 'boolean'
+    when 'registration_open' then jsonb_typeof(value) = 'boolean'
+    when 'invite_quota' then jsonb_typeof(value) = 'number'
+    else true end
+);
 insert into public.app_config (key, value) values
   ('listen_together_enabled', 'true'),
   ('registration_open', 'true'),
