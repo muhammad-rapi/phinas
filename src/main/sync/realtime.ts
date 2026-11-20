@@ -5,14 +5,15 @@ import type { ListenStatus } from '../../shared/types'
 type Emit = (channel: string, value: unknown) => void
 
 /**
- * One Realtime channel shared by the two accounts. Only state is sent (see the spec),
- * never audio. The channel name comes from the two user ids, so no table is needed.
+ * One private Realtime channel per pair of friends. Only state is sent, never audio.
+ * The name comes from the two sorted user ids; the server checks can_join_topic().
  */
 export class PairChannel {
   private channel: RealtimeChannel | null = null
   private name: string | null = null
   private connected = false
   private partnerHere = false
+  private notAllowed = false
 
   constructor(
     private readonly sb: SupabaseClient,
@@ -20,23 +21,32 @@ export class PairChannel {
   ) {}
 
   status(): ListenStatus {
-    return { connected: this.connected, partnerHere: this.partnerHere }
+    return { connected: this.connected, partnerHere: this.partnerHere, notAllowed: this.notAllowed }
   }
 
   async open(me: string, partnerId: string): Promise<void> {
-    const name = `phinas:pair:${[me, partnerId].sort().join(':')}`
+    const name = `pair:${[me, partnerId].sort().join(':')}`
     if (this.channel && this.name === name) return
     await this.close()
-    const ch = this.sb.channel(name, { config: { broadcast: { self: false }, presence: { key: me } } })
+    this.notAllowed = false
+    await this.sb.realtime.setAuth()
+    const ch = this.sb.channel(name, {
+      config: { private: true, broadcast: { self: false }, presence: { key: me } }
+    })
     ch.on('broadcast', { event: 'msg' }, ({ payload }) => this.emit('listen:message', payload))
     ch.on('presence', { event: 'sync' }, () => this.setHere(partnerId in ch.presenceState()))
-    ch.subscribe((status) => {
+    ch.subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         void ch.track({ at: Date.now() })
         this.setConnected(true)
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         this.setConnected(false)
         this.setHere(false) // cannot know while we are offline; the next presence sync fixes it
+        // A refusal from the authorization policy will not change by retrying.
+        if (status === 'CHANNEL_ERROR' && err && /unauthori[sz]ed|not allowed|permission/i.test(err.message)) {
+          this.notAllowed = true
+          void this.close()
+        }
       }
     })
     this.channel = ch
