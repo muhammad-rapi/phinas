@@ -7,7 +7,7 @@ import { readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 const root = new URL('../', import.meta.url)
 const read = (p) => readFileSync(new URL(p, root))
 const REPO = 'muhammad-rapi/phinas'
-const VERSION = '0.4.0'
+const VERSION = '0.4.1'
 const files = {
   mac: { name: `Phinas-${VERSION}-arm64.dmg`, path: `dist/Phinas-${VERSION}-arm64.dmg` },
   win: { name: `Phinas-Setup-${VERSION}.exe`, path: `dist/Phinas-Setup-${VERSION}.exe` }
