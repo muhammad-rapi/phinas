@@ -75,6 +75,18 @@ if (process.env['PHINAS_SHOT'] && process.env['PHINAS_SHOT_PROFILE']) {
   app.setPath('userData', process.env['PHINAS_SHOT_PROFILE'])
 }
 
+// Dev only: `PHINAS_PROFILE=b npm run dev` runs a copy of the app with its own library, login,
+// settings and localStorage in `userData/b`, so two accounts can be tried side by side.
+const devProfile = process.env['PHINAS_PROFILE']
+if (devProfile && !app.isPackaged && !process.env['PHINAS_SHOT']) {
+  if (/^[A-Za-z0-9_-]+$/.test(devProfile)) {
+    app.setPath('userData', join(app.getPath('userData'), devProfile))
+    console.log('[dev] user data:', app.getPath('userData'))
+  } else {
+    console.error('[dev] PHINAS_PROFILE may only hold letters, digits, - and _; ignored:', devProfile)
+  }
+}
+
 app.whenReady().then(async () => {
   app.setName('Phinas')
   app.dock?.setIcon(icon)
