@@ -1,8 +1,10 @@
+import { Mic } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { PublicPlaylist, Track } from '../../../shared/types'
 import { CoverGrid } from '../components/CoverGrid'
 import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { usePlayer } from '../player/PlayerProvider'
+import { searchArtists } from '../search/artists'
 import type { Nav } from '../views'
 
 const DEBOUNCE_MS = 350
@@ -61,6 +63,7 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
   }, [query, submitNonce])
 
   const q = query.trim()
+  const artists = searchArtists(results)
 
   return (
     <>
@@ -73,6 +76,33 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
           </h1>
           {loading && results.length === 0 && <p className="muted">Mencari...</p>}
           {!loading && !error && results.length === 0 && <p className="muted">Tidak ada hasil.</p>}
+          {artists.length > 0 && (
+            <section className="sec">
+              <h2 className="section-title">Artis</h2>
+              <div className="ex-pills">
+                {artists.map((a) => (
+                  <button key={a} className="ex-pill" onClick={() => nav({ name: 'artist', id: a })}>
+                    <Mic size={14} aria-hidden="true" />
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          {playlists.length > 0 && (
+            <section className="sec">
+              <h2 className="section-title">Playlist</h2>
+              <CoverGrid
+                items={playlists.map((p) => ({
+                  key: p.id,
+                  art: p.coverUrl,
+                  title: p.title,
+                  meta: p.author,
+                  onOpen: () => nav({ name: 'public', id: p.id, author: p.author })
+                }))}
+              />
+            </section>
+          )}
           {results.length > 0 && (
             <section className="sec">
               <h2 className="section-title">Lagu</h2>
@@ -90,20 +120,6 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
                   }}
                 />
               ))}
-            </section>
-          )}
-          {playlists.length > 0 && (
-            <section className="sec">
-              <h2 className="section-title">Playlist</h2>
-              <CoverGrid
-                items={playlists.map((p) => ({
-                  key: p.id,
-                  art: p.coverUrl,
-                  title: p.title,
-                  meta: p.author,
-                  onOpen: () => nav({ name: 'public', id: p.id, author: p.author })
-                }))}
-              />
             </section>
           )}
         </>
