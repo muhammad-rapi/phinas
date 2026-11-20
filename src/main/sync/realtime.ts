@@ -1,10 +1,7 @@
 import type { SyncMessage } from '../../shared/sync/protocol'
-import type { ListenStatus } from '../../shared/types'
+import type { ListenStatus, PairClosedReason } from '../../shared/types'
 
 type Emit = (channel: string, value: unknown) => void
-
-/** Why an open pair channel was closed (sent to the renderer as `listen:closed`). */
-export type PairClosedReason = 'closed' | 'not-allowed'
 
 interface PairChannelLike {
   on(type: 'broadcast', filter: { event: string }, cb: (msg: { payload: unknown }) => void): PairChannelLike
@@ -56,8 +53,9 @@ export class PairChannel {
     return this.run(() => this.doOpen(me, partnerId))
   }
 
-  close(): Promise<void> {
-    return this.run(() => this.doClose('closed'))
+  /** Leaves the channel. `not-allowed` tells the renderer this friend may no longer listen with us. */
+  close(reason: PairClosedReason = 'closed'): Promise<void> {
+    return this.run(() => this.doClose(reason))
   }
 
   send(msg: SyncMessage): void {

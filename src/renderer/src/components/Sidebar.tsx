@@ -66,7 +66,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
           label="Berdua"
           icon={Users}
           active={view.name === 'together'}
-          online={listen.available && listen.state.partnerHere}
+          online={listen.invitable.some((f) => f.isPartner)}
           onClick={() => nav({ name: 'together' })}
         />
         <NavItem label="Disukai" icon={Heart} active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />

@@ -3,6 +3,7 @@ import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHANNELS } from '../shared/ipc'
+import { parseMessage } from '../shared/sync/protocol'
 import { createHandlers, type LibraryServices } from './ipc'
 import { LibraryHost } from './library/host'
 import { maybeCaptureAndQuit } from './dev-shot'
@@ -13,7 +14,7 @@ import { createSystemVolume } from './system-volume'
 import { YoutubeMusicSource } from './music/source'
 import { SyncEngine } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
-import { PairChannel } from './sync/realtime'
+import { PairHub } from './sync/pair-hub'
 import { CacheStore } from './sync/cache'
 import { PresenceHub } from './sync/presence'
 import { createNotch } from './notch/window'
@@ -114,11 +115,17 @@ app.whenReady().then(async () => {
   const lastError: { value?: string } = {}
 
   let mainWindow: BrowserWindow | null = null
-  const pair = remote
-    ? new PairChannel(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
+  const pairs = remote
+    ? new PairHub(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
     : null
   const presence = remote
-    ? new PresenceHub(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
+    ? new PresenceHub(remote.client, (channel, value) => {
+        mainWindow?.webContents.send(channel, value)
+        // Who is online decides which pair channels stay open.
+        if (channel === 'friends:online') {
+          void pairs?.setOnline(value as string[]).catch((e) => console.warn('[listen] reconcile failed:', e))
+        }
+      })
     : null
   const cache = new CacheStore(join(userData, 'social-cache.json'))
 
@@ -172,7 +179,7 @@ app.whenReady().then(async () => {
     systemVolume: createSystemVolume(),
     proxyPort: () => proxyPort,
     remote,
-    pair,
+    pairs,
     presence,
     cache,
     openExternal: (url) => void shell.openExternal(url).catch((e) => console.warn('[openExternal]', e)),
@@ -198,15 +205,14 @@ app.whenReady().then(async () => {
         const engine = host.services.engine
         if (engine) lastError.value = (await engine.flush()).error
         if (n % PULL_EVERY_TICKS === PULL_EVERY_TICKS - 1) await pullLibrary()
-        // Every minute: refresh friends (keeps presence in step) and leave a pair that is no longer allowed.
+        // Every minute: refresh friends. listFriends hands them to presence and to the pair hub,
+        // which closes the channel of any friend who may no longer listen with us.
         if (n % 4 === 0) {
           const friends = await handlers.listFriends().catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))))
           if (friends instanceof Error && friends.message.includes('phinas:account_disabled')) {
             // A disabled account may not listen together or show as online.
-            await pair?.close()
+            await pairs?.close()
             await presence?.close()
-          } else if (!(friends instanceof Error) && !friends.some((f) => f.isPartner && f.canListen)) {
-            await pair?.close()
           }
         }
       } catch (e) {
@@ -214,14 +220,17 @@ app.whenReady().then(async () => {
       }
     }, SYNC_INTERVAL_MS)
   }
-  ipcMain.on('listen:send', (_e, msg) => pair?.send(msg))
-  // An invite only shows inside the app, so without this a partner in another app never sees it.
+  ipcMain.on('listen:send', (_e, friendId: unknown, msg: unknown) => {
+    const m = parseMessage(msg)
+    if (typeof friendId === 'string' && m) pairs?.send(friendId, m)
+  })
+  // An invite only shows inside the app, so without this a friend in another app never sees it.
   ipcMain.on('listen:invited', (_e, name: unknown) => {
     const win = mainWindow
     if (!win || win.isFocused()) return
-    const who = typeof name === 'string' && name.trim() ? name.trim() : 'Pasangan'
+    const who = typeof name === 'string' && name.trim() ? name.trim() : 'Teman'
     if (Notification.isSupported()) {
-      const n = new Notification({ title: 'Dengarkan bareng', body: `${who} mengajak kamu dengarkan bareng.` })
+      const n = new Notification({ title: 'Dengar bareng', body: `${who} mengajak kamu dengar bareng.` })
       n.on('click', () => {
         mainWindow?.show()
         mainWindow?.focus()

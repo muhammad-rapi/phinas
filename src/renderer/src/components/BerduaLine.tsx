@@ -8,15 +8,19 @@ import { berduaView, type BerduaAction } from './berduaView'
  */
 export function BerduaLine({ onOpen }: { onOpen: () => void }): React.JSX.Element | null {
   const l = useListen()
-  if (!l.available) return null
-  const name = l.partnerName ?? 'Pasangan'
-  const view = berduaView(l.state, name)
+  const partner = l.partner
+  if (!partner) return null
+  const name = partner.name
+  // The session may be with another friend; then this line only shows whether the partner is reachable.
+  const mine = l.activeFriend === partner.userId
+  const ready = l.canInvite(partner.userId)
+  const view = berduaView(mine ? l.state : { status: 'idle', connected: true, partnerHere: ready, partnerError: false }, name)
   const run: Record<BerduaAction, () => void> = {
     end: l.end,
     cancel: l.end,
     accept: l.accept,
     decline: l.decline,
-    invite: l.invite
+    invite: () => l.invite(partner.userId)
   }
 
   return (

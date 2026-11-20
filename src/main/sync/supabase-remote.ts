@@ -5,7 +5,6 @@ import type {
   FriendRequest,
   InviteCode,
   LikeEntry,
-  ListenInfo,
   ListenScope,
   MyProfile,
   PartnerPlaylist,
@@ -229,17 +228,6 @@ export class SupabaseRemote implements Remote {
   /** The raw client, for the realtime channel. */
   get client(): SupabaseClient {
     return this.sb;
-  }
-
-  /** The partner, when Listen Together is allowed with them; otherwise null. */
-  async pairInfo(): Promise<ListenInfo | null> {
-    const me = await this.userId();
-    const partner = (await this.listFriends()).find(
-      (f) => f.isPartner && f.canListen,
-    );
-    return partner
-      ? { me, partnerId: partner.userId, partnerName: partner.name }
-      : null;
   }
 
   async upsertPlaylist(p: PlaylistWithTracks): Promise<void> {

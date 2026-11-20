@@ -7,7 +7,7 @@ import { fetchLyrics } from './music/lyrics'
 import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
 import type { SupabaseRemote } from './sync/supabase-remote'
-import type { PairChannel } from './sync/realtime'
+import type { PairHub } from './sync/pair-hub'
 import type { SystemVolume } from './system-volume'
 import type { Recommender } from './recommend/service'
 import type { SettingsStore } from './settings'
@@ -30,8 +30,8 @@ export interface Deps {
   systemVolume: SystemVolume
   proxyPort: () => number
   remote: SupabaseRemote | null
-  /** Realtime channel for listen together; null when Supabase is not configured. */
-  pair: PairChannel | null
+  /** One Listen Together channel per online friend who allows it; null when Supabase is not configured. */
+  pairs: PairHub | null
   /** Friends' online state; null when Supabase is not configured. */
   presence: PresenceHub | null
   cache: CacheStore
@@ -63,7 +63,7 @@ export function createHandlers(d: Deps): PhinasApi {
 
   /** Leaves every realtime channel and forgets cached social data. */
   const leaveAll = async (): Promise<void> => {
-    await d.pair?.close()
+    await d.pairs?.close()
     await d.presence?.close()
     d.cache.clear()
   }
@@ -161,6 +161,8 @@ export function createHandlers(d: Deps): PhinasApi {
       void d.presence
         ?.sync(s.uid, friends.map((f) => f.userId))
         .catch((e) => console.warn('[presence] sync failed:', e))
+      // canListen may have changed: the hub opens and closes pair channels to match.
+      void d.pairs?.setFriends(s.uid, friends).catch((e) => console.warn('[listen] reconcile failed:', e))
       return friends
     },
     listFriendRequests: () => requireRemote().listFriendRequests(),
@@ -218,20 +220,7 @@ export function createHandlers(d: Deps): PhinasApi {
       d.settings.set('notch', enabled)
       d.setNotchEnabled(enabled)
     },
-    listenOpen: async () => {
-      if (!d.remote || !d.pair) return null
-      try {
-        const info = await d.remote.pairInfo()
-        if (!info) return null
-        await d.pair.open(info.me, info.partnerId)
-        return info
-      } catch (e) {
-        console.warn('[listen] could not open the channel:', e)
-        return null
-      }
-    },
-    listenClose: async () => d.pair?.close(),
-    listenStatus: async () => d.pair?.status() ?? { connected: false, partnerHere: false, notAllowed: false },
+    listenStatus: async () => d.pairs?.status() ?? {},
     copyPartnerPlaylist: async (p) => {
       const lib = d.host.library
       const copy = lib.createPlaylist(`${p.name} (dari ${p.ownerName})`)

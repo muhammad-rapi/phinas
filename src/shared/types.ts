@@ -224,19 +224,38 @@ export interface NotchState {
   onAccent: string
 }
 
-/** Who we listen together with by default: the partner, when Listen Together is allowed with them. */
-export interface ListenInfo {
-  me: string
-  partnerId: string
-  partnerName: string
-}
-
-/** Live state of the realtime channel, so the renderer can catch up on events it missed. */
+/** Live state of one friend's pair channel, so the renderer can catch up on events it missed. */
 export interface ListenStatus {
   connected: boolean
+  /** The friend is on the channel. */
   partnerHere: boolean
   /** The server refused the channel (switch off, scope, not friends). No retry until reopened. */
   notAllowed: boolean
+}
+
+/** Why a pair channel closed: we left it (or the friend went offline), or the friend is no longer allowed. */
+export type PairClosedReason = 'closed' | 'not-allowed'
+
+/** Listen Together events from the main process; each names the friend whose channel it is about. */
+export interface ListenMessageEvent {
+  friendId: string
+  /** Unvalidated: check it with `parseMessage`. */
+  msg: unknown
+}
+
+export interface ListenPresenceEvent {
+  friendId: string
+  here: boolean
+}
+
+export interface ListenConnectionEvent {
+  friendId: string
+  up: boolean
+}
+
+export interface ListenClosedEvent {
+  friendId: string
+  reason: PairClosedReason
 }
 
 /** The app update, as the updater sees it. */

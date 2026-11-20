@@ -11,8 +11,8 @@ type Tab = 'lyrics' | 'queue'
 /** Shown at the top of the panel while a listen-together session is active. */
 function SessionBlock(): React.JSX.Element | null {
   const l = useListen()
-  if (!l.available || l.state.status !== 'active') return null
-  const name = l.partnerName ?? 'pasangan'
+  if (l.state.status !== 'active') return null
+  const name = l.activeName
   return (
     <div className="panel-session">
       <span>

@@ -1,4 +1,4 @@
-import type { AppConfig, ArtistDetail, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenInfo, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
+import type { AppConfig, ArtistDetail, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenClosedEvent, ListenConnectionEvent, ListenMessageEvent, ListenPresenceEvent, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
 import type { LegalPage } from './links'
 import type { SyncMessage } from './sync/protocol'
 
@@ -93,11 +93,8 @@ export interface PhinasApi {
   getAutoplay(current: Track, queueIds: string[]): Promise<Track[]>
   getNotchEnabled(): Promise<boolean>
   setNotchEnabled(enabled: boolean): Promise<void>
-  /** Joins the pair channel. Null when not signed in, Supabase is not configured, or there is no partner yet. */
-  listenOpen(): Promise<ListenInfo | null>
-  listenClose(): Promise<void>
-  /** Current connection and partner presence, for catching up on events fired before we subscribed. */
-  listenStatus(): Promise<ListenStatus>
+  /** Every open pair channel's state by friend id, for catching up on events fired before we subscribed. */
+  listenStatus(): Promise<Record<string, ListenStatus>>
 }
 
 /** Event channels (not request/response). Implemented in the preload script. */
@@ -124,22 +121,24 @@ export interface PhinasEvents {
   onNotchLayout(cb: (layout: NotchLayout) => void): () => void
   /** Main window: the notch was shown or hidden (from Profil, the player bar or the notch itself). Returns an unsubscribe. */
   onNotchEnabled(cb: (enabled: boolean) => void): () => void
-  /** Sends a listen-together message to the partner. */
-  listenSend(msg: SyncMessage): void
-  /** A raw message from the partner (validate it with `parseMessage`). Returns an unsubscribe. */
-  onListenMessage(cb: (raw: unknown) => void): () => void
-  onListenPresence(cb: (here: boolean) => void): () => void
-  onListenConnection(cb: (up: boolean) => void): () => void
-  /** The pair channel was closed (by us, or refused by the server). Returns an unsubscribe. */
-  onListenClosed(cb: (reason: 'closed' | 'not-allowed') => void): () => void
+  /** Sends a listen-together message on one friend's pair channel. */
+  listenSend(friendId: string, msg: SyncMessage): void
+  /** A raw message from a friend (validate `msg` with `parseMessage`). Returns an unsubscribe. */
+  onListenMessage(cb: (e: ListenMessageEvent) => void): () => void
+  /** Whether a friend is on their pair channel. Returns an unsubscribe. */
+  onListenPresence(cb: (e: ListenPresenceEvent) => void): () => void
+  /** Whether our own connection to a friend's pair channel is up. Returns an unsubscribe. */
+  onListenConnection(cb: (e: ListenConnectionEvent) => void): () => void
+  /** A friend's pair channel closed (offline, or no longer allowed). Returns an unsubscribe. */
+  onListenClosed(cb: (e: ListenClosedEvent) => void): () => void
   /** Signed in, signed up, signed out or the account was deleted. Returns an unsubscribe. */
   onAccountChanged(cb: () => void): () => void
   /** The set of online friends changed. Returns an unsubscribe. */
   onFriendsOnline(cb: (ids: string[]) => void): () => void
   /** The update status changed (found, downloading, ready). Returns an unsubscribe. */
   onUpdateStatus(cb: (status: UpdateStatus) => void): () => void
-  /** The partner invited us: the main process shows a system notification when the window is not focused. */
-  notifyListenInvite(partnerName: string): void
+  /** A friend invited us: the main process shows a system notification when the window is not focused. */
+  notifyListenInvite(friendName: string): void
 }
 
 export interface NotchLayout {
@@ -217,8 +216,6 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   getAutoplay: true,
   getNotchEnabled: true,
   setNotchEnabled: true,
-  listenOpen: true,
-  listenClose: true,
   listenStatus: true
 }
 

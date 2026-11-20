@@ -5,9 +5,12 @@ import { AccentTitle } from './CollectionHeader'
 /** Berdua's listen-together block: invite, waiting, live status. Hidden when not signed in. */
 export function ListenCard(): React.JSX.Element | null {
   const l = useListen()
-  if (!l.available) return null
-  const { status, connected, partnerHere } = l.state
-  const name = l.partnerName ?? 'pasangan'
+  const partner = l.partner
+  if (!partner) return null
+  const status = l.activeFriend === partner.userId ? l.state.status : 'idle'
+  const connected = true
+  const partnerHere = l.canInvite(partner.userId)
+  const name = partner.name
 
   let line: string
   let title = 'Dengarkan bareng'
@@ -43,7 +46,7 @@ export function ListenCard(): React.JSX.Element | null {
   } else {
     line = !connected ? 'Tidak bisa terhubung' : partnerHere ? `${name} online` : `${name} sedang offline`
     actions = (
-      <button className="btn" onClick={l.invite} disabled={!connected || !partnerHere}>
+      <button className="btn" onClick={() => l.invite(partner.userId)} disabled={!connected || !partnerHere}>
         Ajak
       </button>
     )

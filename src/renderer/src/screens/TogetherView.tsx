@@ -13,7 +13,7 @@ export function TogetherView({ nav }: { nav: Nav }): React.JSX.Element {
       <h1 className="page-title">
         <em>Berdua</em>
       </h1>
-      {listen.available ? <ListenCard /> : <p className="muted">Masuk di Profil untuk dengarkan bareng dan melihat playlist pasangan.</p>}
+      {listen.partner ? <ListenCard /> : <p className="muted">Masuk di Profil untuk dengarkan bareng dan melihat playlist pasangan.</p>}
       {lib.partner.length > 0 && (
         <section className="sec" aria-label="Playlist pasangan">
           <h2 className="section-title">Playlist pasangan</h2>
@@ -28,7 +28,7 @@ export function TogetherView({ nav }: { nav: Nav }): React.JSX.Element {
           />
         </section>
       )}
-      {listen.available && lib.partner.length === 0 && <p className="muted">Pasangan belum membagikan playlist.</p>}
+      {listen.partner && lib.partner.length === 0 && <p className="muted">Pasangan belum membagikan playlist.</p>}
     </>
   )
 }
