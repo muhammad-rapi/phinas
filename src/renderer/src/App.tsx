@@ -5,6 +5,7 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { LyricsFull } from './components/LyricsFull'
 import { NowPlaying } from './components/NowPlaying'
 import { PlayerBar } from './components/PlayerBar'
+import { SearchBox } from './components/SearchBox'
 import { Sidebar } from './components/Sidebar'
 import { LibraryProvider, useLibrary } from './library/LibraryProvider'
 import { keyToCommand } from './player/keymap'
@@ -240,49 +241,53 @@ function Shell(): React.JSX.Element {
       {/* The cover, blurred, behind everything; the paper on top is translucent so its colours show. */}
       {cover && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
       <div className="drag-strip" />
-      <Sidebar
-        view={view}
-        nav={nav}
-        query={query}
-        onQuery={onQuery}
-        onSubmit={() => {
-          if (!query.trim()) return
-          recents.rememberQuery(query)
-          if (view.name !== 'search') setHistory((h) => [...h, view].slice(-50))
-          setView({ name: 'search' })
-          setSubmitNonce((n) => n + 1)
-        }}
-        recent={recents.recent}
-        onForget={recents.forget}
-        onPlayTrack={(t) => {
-          recents.rememberTrack(t, '')
-          player.play([t], 0)
-        }}
-        name={shownName}
-        initial={shownInitial}
-      />
+      <Sidebar view={view} nav={nav} name={shownName} initial={shownInitial} />
       <main ref={mainRef} className="main">
-        {history.length > 0 && (
-          <button className="icon-btn back-btn" onClick={back} aria-label="Kembali" title="Kembali">
-            <ChevronLeft size={22} />
-          </button>
-        )}
-        {mood && (
-          <div className="mood-badge" role="status">
-            <span>Mood: {mood.title}</span>
-            <button
-              className="icon-btn"
-              onClick={() => {
-                setMood(null)
-                setMoodViews([])
-              }}
-              aria-label="Kembali ke tema biasa"
-              title="Kembali ke tema biasa"
-            >
-              <X size={14} />
-            </button>
+        {/* Back on the left, search in the middle, the mood on the right; stays on top while scrolling. */}
+        <div className="topbar">
+          <div className="topbar-side">
+            {history.length > 0 && (
+              <button className="icon-btn back-btn" onClick={back} aria-label="Kembali" title="Kembali">
+                <ChevronLeft size={20} />
+              </button>
+            )}
           </div>
-        )}
+          <SearchBox
+            query={query}
+            onQuery={onQuery}
+            onSubmit={() => {
+              if (!query.trim()) return
+              recents.rememberQuery(query)
+              if (view.name !== 'search') setHistory((h) => [...h, view].slice(-50))
+              setView({ name: 'search' })
+              setSubmitNonce((n) => n + 1)
+            }}
+            recent={recents.recent}
+            onForget={recents.forget}
+            onPlayTrack={(t) => {
+              recents.rememberTrack(t, '')
+              player.play([t], 0)
+            }}
+          />
+          <div className="topbar-side end">
+            {mood && (
+              <div className="mood-badge" role="status">
+                <span>Mood: {mood.title}</span>
+                <button
+                  className="icon-btn"
+                  onClick={() => {
+                    setMood(null)
+                    setMoodViews([])
+                  }}
+                  aria-label="Kembali ke tema biasa"
+                  title="Kembali ke tema biasa"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         <ListenBanner />
         <UpdateBanner />
         {player.notice && (

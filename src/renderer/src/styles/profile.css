@@ -1,6 +1,6 @@
 /* Profil. */
 
-.pf-head { display: flex; align-items: center; gap: 28px; padding: 40px 0 28px; }
+.pf-head { display: flex; align-items: center; gap: 28px; padding: 20px 0 28px; }
 .pf-avatar { display: grid; place-items: center; flex: none; width: 96px; height: 96px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--sans); font-size: 44px; }
 .pf-who { flex: 1; min-width: 0; }
 .pf-name { width: 100%; margin: 4px 0 6px; padding: 0; border: 0; background: none; outline: 0; color: var(--ink); font-family: var(--sans); font-size: var(--fs-3xl); font-weight: 300; line-height: 1.08; letter-spacing: -0.03em; }

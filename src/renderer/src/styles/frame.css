@@ -24,8 +24,13 @@
   z-index: 1;
   background: linear-gradient(180deg, color-mix(in srgb, var(--wash) 55%, transparent) 0%, transparent 45%) 0 0 / 100% 100vh no-repeat local, var(--veil);
 }
-.back-btn { position: sticky; top: 14px; z-index: 21; margin-top: 14px; width: 32px; height: 32px; border: 1px solid var(--line); background: var(--paper); }
-.mood-badge { position: sticky; top: 14px; z-index: 21; float: right; display: inline-flex; align-items: center; gap: 4px; margin-top: 14px; height: 30px; padding: 0 4px 0 14px; border: 1px solid var(--accent); border-radius: 999px; background: var(--paper); color: var(--accent); font-family: var(--brand); font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.back-btn { width: 34px; height: 34px; border: 1px solid var(--line); background: var(--paper); }
+/* Top bar of the page: back, search in the middle, mood. Sticky, over a blurred veil. */
+.topbar { position: sticky; top: 0; z-index: 25; display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 480px) minmax(0, 1fr); align-items: center; gap: 16px; margin: 0 calc(-1 * clamp(24px, 3.4vw, 48px)); padding: 14px clamp(24px, 3.4vw, 48px) 12px; -webkit-app-region: drag; background: color-mix(in srgb, var(--paper) 55%, transparent); backdrop-filter: blur(18px) saturate(1.2); }
+.topbar > * { -webkit-app-region: no-drag; }
+.topbar-side { display: flex; align-items: center; min-width: 0; }
+.topbar-side.end { justify-content: flex-end; }
+.mood-badge { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 4px 0 14px; border: 1px solid var(--accent); border-radius: 999px; background: var(--paper); color: var(--accent); font-family: var(--brand); font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
 .mood-badge .icon-btn { width: 22px; height: 22px; padding: 4px; color: var(--accent); }
 
 /* ---------- sidebar ---------- */
@@ -34,7 +39,7 @@
 .nav-brand { -webkit-app-region: drag; flex: none; height: 24px; }
 /* Room under the macOS traffic lights (placed at y 24 by the main process). */
 :root[data-platform='mac'] .nav-brand { height: 56px; }
-.nav { display: flex; flex-direction: column; gap: 2px; margin-top: 16px; }
+.nav { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
 .nav-item { justify-content: flex-start; gap: 12px; width: 100%; height: 34px; padding: 0 10px; border-radius: var(--radius); font-size: var(--fs-base); font-weight: 500; color: var(--ink-soft); transition: background 0.15s, color 0.15s; }
 .nav-icon { flex: none; color: var(--ink-faint); transition: color 0.3s; }
 .nav-item:hover, .nav-item:hover .nav-icon { color: var(--ink); }
@@ -64,20 +69,31 @@
 /* ---------- search box ---------- */
 .search { position: relative; }
 /* .searchpill input is also how Cmd+K finds the box (PlayerProvider's focusSearch). */
-.searchpill { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 6px 0 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-faint); transition: border-color 0.2s; }
-.searchpill:focus-within { border-color: var(--accent); color: var(--ink); }
-.searchpill input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--ink); font: inherit; font-size: var(--fs-base); }
+/* A quiet filled field: easy to find, no outline until it is in use. */
+.searchpill { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 12px; border: 1px solid transparent; border-radius: 10px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink-soft); transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.searchpill:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.searchpill:focus-within { background: var(--paper); border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); color: var(--ink); }
+.search-icon { flex: none; }
+.searchpill input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--ink); font: inherit; font-size: var(--fs-base); }
 .searchpill input:focus-visible { outline: 0; }
-.searchpill input::placeholder { color: var(--ink-faint); }
-.searchpill .icon-btn { padding: 3px; }
-.search-drop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; width: 320px; max-height: 60vh; overflow-y: auto; padding: 12px 16px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 16px 32px -16px rgba(0, 0, 0, 0.35); }
-.search-drop .label { display: block; padding-bottom: 6px; }
-.search-empty { margin: 0; padding: 8px 0; font-size: var(--fs-base); color: var(--ink-soft); }
-.search-row { display: flex; align-items: center; border-top: 1px solid var(--line); }
-.search-pick { flex: 1; min-width: 0; justify-content: flex-start; gap: 10px; padding: 8px 0; text-align: left; color: var(--ink-soft); }
-.search-pick:hover, .search-pick:hover strong { color: var(--accent); }
-.search-pick strong { color: var(--ink); font-weight: 600; }
-.search-text { display: flex; flex-direction: column; min-width: 0; }
+.searchpill input::placeholder { color: var(--ink-soft); opacity: 0.85; }
+.searchpill .icon-btn { padding: 4px; }
+.search-kbd { flex: none; margin-right: 4px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font-family: var(--sans); font-size: var(--fs-xs); color: var(--ink-soft); background: var(--paper); }
+.searchpill:focus-within .search-kbd { display: none; }
+.search-drop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; width: 100%; max-height: 60vh; overflow-y: auto; padding: 12px 8px 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.4); }
+.search-drop .label { display: block; padding: 0 8px 8px; }
+.search-empty { margin: 0; padding: 6px 8px 8px; font-size: var(--fs-base); color: var(--ink-soft); }
+.search-row { display: flex; align-items: center; border-radius: var(--radius); transition: background 0.12s; }
+.search-row:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.search-pick { flex: 1; min-width: 0; justify-content: flex-start; gap: 12px; padding: 7px 8px; text-align: left; color: var(--ink); }
+.search-pick strong { font-weight: 600; }
+.search-row:hover .search-pick strong { color: var(--accent); }
+.search-thumb { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 4px; background: var(--line) center / cover no-repeat; color: var(--ink-soft); }
+.search-thumb.icon { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.search-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: var(--fs-base); }
+.search-text .small { color: var(--ink-soft); }
+.search-forget { margin-right: 4px; opacity: 0; }
+.search-row:hover .search-forget, .search-forget:focus-visible { opacity: 1; }
 .search-text > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- bottom player ---------- */

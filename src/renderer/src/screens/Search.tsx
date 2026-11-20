@@ -1,8 +1,9 @@
-import { Mic } from 'lucide-react'
+import { Mic, Play } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { PublicPlaylist, Track } from '../../../shared/types'
 import { CoverGrid } from '../components/CoverGrid'
-import { TrackListHead, TrackRow } from '../components/TrackRow'
+import { TrackRow } from '../components/TrackRow'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import { searchArtists } from '../search/artists'
 import type { Nav } from '../views'
@@ -64,6 +65,18 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
 
   const q = query.trim()
   const artists = searchArtists(results)
+  const [top, ...rest] = results
+  const firstFour = rest.slice(0, 4)
+  const more = rest.slice(4)
+  // Playlists with a cover first: a row of blank squares says nothing.
+  const shownPlaylists = [...playlists].sort((x, y) => Number(Boolean(y.coverUrl)) - Number(Boolean(x.coverUrl)))
+
+  const playTrack = (t: Track): void => {
+    onPick(t, q)
+    // Only the picked song: the other results are mostly versions of the same one.
+    // Autoplay fills in what comes next from recommendations.
+    player.play([t], 0)
+  }
 
   return (
     <>
@@ -76,6 +89,33 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
           </h1>
           {loading && results.length === 0 && <p className="muted">Mencari...</p>}
           {!loading && !error && results.length === 0 && <p className="muted">Tidak ada hasil.</p>}
+
+          {top && (
+            <section className="search-top">
+              <div className="search-best">
+                <h2 className="section-title">Hasil teratas</h2>
+                <div className="best-card press" {...pressable(() => playTrack(top))} aria-label={`Putar ${top.title}`}>
+                  <span className="best-cover" style={{ backgroundImage: `url("${top.coverUrl}")` }} />
+                  <span className="best-title">{top.title}</span>
+                  <span className="best-meta">
+                    Lagu · <ArtistLinks artist={top.artist} />
+                  </span>
+                  <span className="btn best-play" aria-hidden="true">
+                    <Play size={14} fill="currentColor" /> Putar
+                  </span>
+                </div>
+              </div>
+              {firstFour.length > 0 && (
+                <div className="search-songs">
+                  <h2 className="section-title">Lagu</h2>
+                  {firstFour.map((t, i) => (
+                    <TrackRow key={t.videoId} track={t} index={i} onPlay={() => playTrack(t)} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {artists.length > 0 && (
             <section className="sec">
               <h2 className="section-title">Artis</h2>
@@ -89,11 +129,13 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
               </div>
             </section>
           )}
-          {playlists.length > 0 && (
+          {shownPlaylists.length > 0 && (
             <section className="sec">
               <h2 className="section-title">Playlist</h2>
               <CoverGrid
-                items={playlists.map((p) => ({
+                strip
+                count={6}
+                items={shownPlaylists.map((p) => ({
                   key: p.id,
                   art: p.coverUrl,
                   title: p.title,
@@ -103,22 +145,11 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
               />
             </section>
           )}
-          {results.length > 0 && (
+          {more.length > 0 && (
             <section className="sec">
-              <h2 className="section-title">Lagu</h2>
-              <TrackListHead />
-              {results.map((t, i) => (
-                <TrackRow
-                  key={t.videoId}
-                  track={t}
-                  index={i}
-                  onPlay={() => {
-                    onPick(t, q)
-                    // Only the picked song: the other results are mostly versions of the same one.
-                    // Autoplay fills in what comes next from recommendations.
-                    player.play([t], 0)
-                  }}
-                />
+              <h2 className="section-title">Lagu lainnya</h2>
+              {more.map((t, i) => (
+                <TrackRow key={t.videoId} track={t} index={i + 4} onPlay={() => playTrack(t)} />
               ))}
             </section>
           )}

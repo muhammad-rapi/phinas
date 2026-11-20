@@ -91,7 +91,7 @@ function PlayAgain({ recent, nav }: { recent: Track[] | null; nav: Nav }): React
         items={tracks.map((t, i) => ({
           key: `${t.videoId}-${i}`,
           title: t.title,
-          meta: t.artist,
+          artist: t.artist,
           art: t.coverUrl,
           onOpen: () => player.play(tracks, i)
         }))}

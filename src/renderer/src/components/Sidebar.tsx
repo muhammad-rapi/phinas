@@ -1,26 +1,18 @@
 import { Compass, Download, Globe, Heart, History, Home, Lock, Plus, Users, type LucideIcon } from 'lucide-react'
 import { Fragment } from 'react'
-import type { Friend, Track, Visibility } from '../../../shared/types'
+import type { Friend, Visibility } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
-import type { RecentEntry } from '../search/recent'
 import { groupByOwner, onlineFriends } from '../social/lists'
 import { useSocial } from '../social/SocialProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
 import { PlaylistCover } from './PlaylistCover'
-import { SearchBox } from './SearchBox'
 import { useMenu } from './useMenu'
 import { sidebarIcon } from './visibility'
 
 interface Props {
   view: View
   nav: Nav
-  query: string
-  onQuery: (q: string) => void
-  onSubmit: () => void
-  recent: RecentEntry[]
-  onForget: (entry: RecentEntry) => void
-  onPlayTrack: (track: Track) => void
   /** The profile name, shown next to the avatar. */
   name: string
   /** First letter of the profile name, shown in the avatar. */
@@ -124,7 +116,7 @@ function OnlinePerson({ friend: f, nav }: { friend: Friend; nav: Nav }): React.J
   )
 }
 
-export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget, onPlayTrack, name, initial }: Props): React.JSX.Element {
+export function Sidebar({ view, nav, name, initial }: Props): React.JSX.Element {
   const lib = useLibrary()
   const social = useSocial()
 
@@ -140,7 +132,6 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
     <aside className="sidebar" aria-label="Navigasi">
       {/* An empty strip: the window's drag handle, and room for the macOS window buttons. */}
       <div className="nav-brand" aria-hidden="true" />
-      <SearchBox query={query} onQuery={onQuery} onSubmit={onSubmit} recent={recent} onForget={onForget} onPlayTrack={onPlayTrack} />
 
       <nav className="nav">
         <NavItem label="Beranda" icon={Home} active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
