@@ -137,11 +137,11 @@
 .panel-empty { align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--ink-soft); }
 .panel-session { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: var(--fs-base); color: var(--ink-soft); }
 .panel-session em { font-family: var(--sans); font-size: 15px; color: var(--ink); }
-.panel-tabs { display: flex; align-items: center; gap: 18px; }
-/* Bigger and darker than the generic label: these are the panel's only controls. */
-.panel-tab { padding: 6px 0; border-bottom: 2px solid transparent; font-family: var(--brand); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: var(--ink-soft); }
+.panel-tabs { display: flex; align-items: center; gap: 2px; }
+/* A segmented control: the open tab sits on a soft pill. */
+.panel-tab { height: 30px; padding: 0 14px; border-radius: 999px; font-family: var(--sans); font-size: var(--fs-base); font-weight: 600; letter-spacing: 0; color: var(--ink-soft); transition: background 0.15s, color 0.15s; }
 .panel-tab:hover { color: var(--ink); }
-.panel-tab[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel-tab[aria-selected='true'] { color: var(--ink); background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .panel-tabs .icon-btn { margin-left: auto; padding: 4px; }
 .panel-now { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .panel-thumb { width: 48px; height: 48px; border-radius: 4px; flex: none; background: var(--line) center / cover; }
