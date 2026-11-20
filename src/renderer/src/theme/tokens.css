@@ -53,16 +53,3 @@
     color-scheme: dark;
   }
 }
-
-/* Old names still read by styles/legacy.css while areas are rebuilt. Removed with it (Task 14). */
-:root {
-  --bg: var(--paper);
-  --text: var(--ink);
-  --muted: var(--ink-soft);
-  --hover: color-mix(in srgb, var(--ink) 6%, transparent);
-  --glass: transparent;
-  --glass-strong: var(--paper);
-  --accent-text: var(--accent);
-  --grad-top: var(--wash);
-  --radius: 0px;
-}

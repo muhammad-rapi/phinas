@@ -29,7 +29,7 @@ import { ListenTogetherProvider, useListen } from './sync/ListenTogetherProvider
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
 import { sameView, type Nav, type View } from './views'
-import { moodColors, type MoodColors } from './screens/home/genreIcon'
+import { moodColors, type MoodColors } from './theme/moodColors'
 
 function Shell(): React.JSX.Element {
   const player = usePlayer()

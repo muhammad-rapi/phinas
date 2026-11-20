@@ -3,7 +3,7 @@ import type { Track } from '../../../shared/types'
 
 /**
  * Cover art of a track as a same-origin data URL (fetched by the main process).
- * Used for the ambient background and for reading the Dynamic theme colors.
+ * Used to read the cover's colour for the accent and the page wash.
  */
 export function useCover(track: Track | null): string | null {
   const [data, setData] = useState<string | null>(null)

@@ -9,8 +9,6 @@ import '@fontsource/newsreader/600.css'
 import '@fontsource/newsreader/400-italic.css'
 import { App } from './App'
 import './theme/tokens.css'
-// Old rules go first so the new files win wherever both still match.
-import './styles/legacy.css'
 import './styles/base.css'
 import './styles/frame.css'
 import './styles/lists.css'
