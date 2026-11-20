@@ -61,7 +61,7 @@ Bootstrap: when `profiles` is empty, the first sign-up needs no invite and becom
 RPC errors are raised as `phinas:<code>` and mapped to Indonesian text in the app.
 
 ## Access rules
-Helpers (SQL, `stable`, `security definer` where needed): `is_active(uid)`, `is_admin()`, `are_friends(a, b)`, `is_partner(a, b)`, `config(key)`.
+Helpers live in a `private` schema that PostgREST does not expose, so signed-in users cannot call them to probe who is friends with whom: `is_active(uid)`, `is_admin()`, `are_friends(a, b)`, `is_partner(a, b)`, `friend_ids()`, `config(key)`, `can_listen(a, b)`, `can_join_topic(topic)`. Policies evaluate caller-only checks once per query (`(select auth.uid())`). A disabled account is hidden everywhere, including its `friends` playlists and likes.
 
 Every policy also requires the caller to be active. A disabled account can read and write nothing; the app shows "Akun dinonaktifkan".
 

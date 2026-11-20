@@ -87,7 +87,7 @@ create function tests.invite(p_by text, p_label text) returns text language plpg
 declare c text;
 begin
   insert into public.invite_codes (code, created_by)
-  values (public.gen_code('', 8), tests.id(p_by)) returning code into c;
+  values (private.gen_code('', 8), tests.id(p_by)) returning code into c;
   insert into tests.codes values (p_label, c);
   return c;
 end $$;
@@ -701,7 +701,7 @@ select throws_ok($$ select public.send_friend_request(tests.fcode('budi')) $$, '
 select lives_ok($$ select public.send_friend_request(lower(tests.fcode('sari'))) $$, 'request sent (case-insensitive)');
 select is(jsonb_array_length(public.list_friend_requests()), 1, 'the sender sees the request');
 select is((public.list_friend_requests()->0->>'incoming')::boolean, false, 'it is outgoing for the sender');
-select ok(not public.are_friends(tests.id('budi'), tests.id('sari')), 'pending is not friends yet');
+select ok(not private.are_friends(tests.id('budi'), tests.id('sari')), 'pending is not friends yet');
 select lives_ok($$ select public.send_friend_request(tests.fcode('sari')) $$, 'sending twice is harmless');
 reset role;
 
@@ -712,7 +712,7 @@ select is(public.list_friend_requests()->0->>'name', 'budi', 'request shows the 
 select throws_ok($$ select public.respond_friend_request(gen_random_uuid(), true) $$, 'P0001', 'phinas:request_not_found',
   'unknown request');
 select lives_ok($$ select public.respond_friend_request(tests.fid('budi', 'sari'), true) $$, 'accept');
-select ok(public.are_friends(tests.id('budi'), tests.id('sari')), 'now friends');
+select ok(private.are_friends(tests.id('budi'), tests.id('sari')), 'now friends');
 select throws_ok($$ select public.send_friend_request(tests.fcode('budi')) $$, 'P0001', 'phinas:already_friends',
   'already friends');
 select is(jsonb_array_length(public.list_friends()), 2, 'sari has two friends');
@@ -730,7 +730,7 @@ set local role authenticated;
 select is((select f->>'partnerRequest' from jsonb_array_elements(public.list_friends()) f where f->>'name' = 'sari'),
   'incoming', 'incoming partner request');
 select lives_ok($$ select public.respond_partner(tests.fid('budi', 'sari'), true) $$, 'partner accepted');
-select ok(public.is_partner(tests.id('budi'), tests.id('sari')), 'now partners');
+select ok(private.is_partner(tests.id('budi'), tests.id('sari')), 'now partners');
 select is(public.list_friends()->0->>'name', 'sari', 'the partner is listed first');
 select is((public.list_friends()->0->>'isPartner')::boolean, true, 'isPartner flag');
 reset role;
@@ -746,8 +746,8 @@ reset role;
 select tests.login('budi');
 set local role authenticated;
 select lives_ok($$ select public.end_partner(tests.fid('budi', 'sari')) $$, 'end partner');
-select ok(not public.is_partner(tests.id('budi'), tests.id('sari')), 'no longer partners');
-select ok(public.are_friends(tests.id('budi'), tests.id('sari')), 'still friends');
+select ok(not private.is_partner(tests.id('budi'), tests.id('sari')), 'no longer partners');
+select ok(private.are_friends(tests.id('budi'), tests.id('sari')), 'still friends');
 
 -- Decline a partner request.
 select lives_ok($$ select public.request_partner(tests.fid('budi', 'sari')) $$, 'ask again');
@@ -763,7 +763,7 @@ reset role;
 select tests.login('budi');
 set local role authenticated;
 select lives_ok($$ select public.remove_friend(tests.fid('budi', 'sari')) $$, 'remove friend');
-select ok(not public.are_friends(tests.id('budi'), tests.id('sari')), 'not friends anymore');
+select ok(not private.are_friends(tests.id('budi'), tests.id('sari')), 'not friends anymore');
 
 -- Profile.
 select is(public.my_profile()->>'friendCode', tests.fcode('budi'), 'my_profile shows the friend code');
@@ -858,15 +858,15 @@ Expected: `03_friends` and `04_invites` FAIL with `function public.send_friend_r
 ```sql
 -- RPCs for signed-in users. All raise 'phinas:<code>' on refusal.
 
-create function public.require_signed_in() returns uuid
-language plpgsql stable security definer set search_path = public as $$
+create function private.require_signed_in() returns uuid
+language plpgsql stable security definer set search_path = public, private as $$
 begin
   if auth.uid() is null then raise exception 'phinas:not_signed_in'; end if;
   return auth.uid();
 end $$;
 
-create function public.require_active() returns uuid
-language plpgsql stable security definer set search_path = public as $$
+create function private.require_active() returns uuid
+language plpgsql stable security definer set search_path = public, private as $$
 declare u uuid := require_signed_in();
 begin
   if not is_active(u) then raise exception 'phinas:account_disabled'; end if;
@@ -874,8 +874,8 @@ begin
 end $$;
 
 -- Listen Together permission, from one side: does `owner` allow `other`?
-create function public.scope_allows(owner uuid, other uuid) returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.scope_allows(owner uuid, other uuid) returns boolean
+language sql stable security definer set search_path = public, private as $$
   select case (select listen_scope from profiles where id = owner)
     when 'friends' then are_friends(owner, other)
     when 'partner' then is_partner(owner, other)
@@ -883,16 +883,16 @@ language sql stable security definer set search_path = public as $$
   end
 $$;
 
-create function public.can_listen(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.can_listen(a uuid, b uuid) returns boolean
+language sql stable security definer set search_path = public, private as $$
   select a <> b
     and coalesce((config('listen_together_enabled'))::boolean, false)
     and is_active(a) and is_active(b)
     and scope_allows(a, b) and scope_allows(b, a)
 $$;
 
-create function public.invites_left(u uuid) returns int
-language sql stable security definer set search_path = public as $$
+create function private.invites_left(u uuid) returns int
+language sql stable security definer set search_path = public, private as $$
   select case
     when (select role from profiles where id = u) = 'admin' then null
     else greatest(0, coalesce((config('invite_quota'))::int, 0) - (
@@ -904,7 +904,7 @@ $$;
 
 -- Readable even when disabled, so the app can say so.
 create function public.my_profile() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 declare u uuid := require_signed_in();
 begin
   return (
@@ -916,7 +916,7 @@ begin
 end $$;
 
 create function public.update_my_profile(p_display_name text, p_listen_scope text) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare
   u uuid := require_active();
   v_name text := trim(p_display_name);
@@ -934,7 +934,7 @@ begin
 end $$;
 
 create function public.get_config() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 begin
   perform require_active();
   return jsonb_build_object(
@@ -945,7 +945,7 @@ end $$;
 
 -- Accepted friends, partner first. canListen already applies both scopes and the global switch.
 create function public.list_friends() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   return coalesce((
@@ -967,7 +967,7 @@ begin
 end $$;
 
 create function public.list_friend_requests() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   return coalesce((
@@ -981,7 +981,7 @@ begin
 end $$;
 
 create function public.send_friend_request(p_friend_code text) returns uuid
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare
   u uuid := require_active();
   v_other uuid;
@@ -1009,7 +1009,7 @@ begin
 end $$;
 
 create function public.respond_friend_request(p_id uuid, p_accept boolean) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   perform 1 from friendships
@@ -1025,7 +1025,7 @@ end $$;
 
 -- Also cancels an outgoing request.
 create function public.remove_friend(p_id uuid) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   delete from friendships where id = p_id and u in (user_a, user_b);
@@ -1033,7 +1033,7 @@ begin
 end $$;
 
 create function public.request_partner(p_id uuid) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare
   u uuid := require_active();
   f friendships;
@@ -1057,7 +1057,7 @@ begin
 end $$;
 
 create function public.respond_partner(p_id uuid, p_accept boolean) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   perform 1 from friendships
@@ -1072,7 +1072,7 @@ begin
 end $$;
 
 create function public.end_partner(p_id uuid) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   update friendships set is_partner = false, partner_requested_by = null
@@ -1081,7 +1081,7 @@ begin
 end $$;
 
 create function public.create_invite() returns text
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare
   u uuid := require_active();
   v_code text;
@@ -1097,7 +1097,7 @@ begin
 end $$;
 
 create function public.revoke_invite(p_code text) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   update invite_codes set revoked = true
@@ -1106,7 +1106,7 @@ begin
 end $$;
 
 create function public.list_my_invites() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 declare u uuid := require_active();
 begin
   return coalesce((
@@ -1121,7 +1121,7 @@ end $$;
 
 -- Deletes the auth user; profiles, friendships, playlists, likes and invites cascade.
 create function public.delete_my_account() returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare u uuid := require_signed_in();
 begin
   delete from auth.users where id = u;
@@ -1222,15 +1222,15 @@ Expected: `05_admin` FAILS with `function public.admin_list_users() does not exi
 ```sql
 -- Admin panel RPCs. Each checks is_admin(); none needs the service-role key.
 
-create function public.require_admin() returns uuid
-language plpgsql stable security definer set search_path = public as $$
+create function private.require_admin() returns uuid
+language plpgsql stable security definer set search_path = public, private as $$
 begin
   if not is_admin() then raise exception 'phinas:not_admin'; end if;
   return auth.uid();
 end $$;
 
 create function public.admin_list_users() returns jsonb
-language plpgsql stable security definer set search_path = public, auth as $$
+language plpgsql stable security definer set search_path = public, private, auth as $$
 begin
   perform require_admin();
   return coalesce((
@@ -1254,7 +1254,7 @@ begin
 end $$;
 
 create function public.admin_list_invites() returns jsonb
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql stable security definer set search_path = public, private as $$
 begin
   perform require_admin();
   return coalesce((
@@ -1274,7 +1274,7 @@ begin
 end $$;
 
 create function public.admin_set_disabled(p_user uuid, p_disabled boolean) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare me uuid := require_admin();
 begin
   if p_user = me then raise exception 'phinas:self_disable'; end if;
@@ -1282,7 +1282,7 @@ begin
 end $$;
 
 create function public.admin_set_config(p_key text, p_value jsonb) returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 begin
   perform require_admin();
   update app_config set value = p_value where key = p_key;
@@ -1327,39 +1327,39 @@ select tests.new_user('tono', tests.invite('sari', 't'));
 
 select tests.login('budi');
 set local role authenticated;
-select ok(public.can_join_topic(tests.pair('budi', 'sari')), 'partners can join their pair');
-select ok(public.can_join_topic(tests.pair('budi', 'admin')), 'friends can join with scope friends');
-select ok(not public.can_join_topic(tests.pair('sari', 'admin')), 'cannot join a pair you are not in');
-select ok(not public.can_join_topic('pair:' || greatest(tests.id('budi'), tests.id('sari')) || ':'
+select ok(private.can_join_topic(tests.pair('budi', 'sari')), 'partners can join their pair');
+select ok(private.can_join_topic(tests.pair('budi', 'admin')), 'friends can join with scope friends');
+select ok(not private.can_join_topic(tests.pair('sari', 'admin')), 'cannot join a pair you are not in');
+select ok(not private.can_join_topic('pair:' || greatest(tests.id('budi'), tests.id('sari')) || ':'
   || least(tests.id('budi'), tests.id('sari'))), 'unsorted pair topic is rejected');
-select ok(not public.can_join_topic('pair:garbage:x'), 'malformed topic is rejected');
-select ok(not public.can_join_topic('something-else'), 'unknown topic is rejected');
-select ok(public.can_join_topic('presence:' || tests.id('budi')), 'own presence channel');
-select ok(public.can_join_topic('presence:' || tests.id('sari')), 'a friend''s presence channel');
+select ok(not private.can_join_topic('pair:garbage:x'), 'malformed topic is rejected');
+select ok(not private.can_join_topic('something-else'), 'unknown topic is rejected');
+select ok(private.can_join_topic('presence:' || tests.id('budi')), 'own presence channel');
+select ok(private.can_join_topic('presence:' || tests.id('sari')), 'a friend''s presence channel');
 reset role;
 
 select tests.login('tono');
 set local role authenticated;
-select ok(not public.can_join_topic('presence:' || tests.id('budi')), 'strangers cannot watch presence');
-select ok(not public.can_join_topic(tests.pair('tono', 'budi')), 'strangers cannot pair');
+select ok(not private.can_join_topic('presence:' || tests.id('budi')), 'strangers cannot watch presence');
+select ok(not private.can_join_topic(tests.pair('tono', 'budi')), 'strangers cannot pair');
 reset role;
 
 -- Scope 'partner' blocks other friends but not the partner.
 update public.profiles set listen_scope = 'partner' where id = tests.id('budi');
 select tests.login('admin');
 set local role authenticated;
-select ok(not public.can_join_topic(tests.pair('admin', 'budi')), 'partner-only scope blocks a friend');
+select ok(not private.can_join_topic(tests.pair('admin', 'budi')), 'partner-only scope blocks a friend');
 reset role;
 select tests.login('sari');
 set local role authenticated;
-select ok(public.can_join_topic(tests.pair('budi', 'sari')), 'partner-only scope allows the partner');
+select ok(private.can_join_topic(tests.pair('budi', 'sari')), 'partner-only scope allows the partner');
 reset role;
 
 -- Scope 'off' on either side blocks.
 update public.profiles set listen_scope = 'off' where id = tests.id('sari');
 select tests.login('budi');
 set local role authenticated;
-select ok(not public.can_join_topic(tests.pair('budi', 'sari')), 'the other side being off blocks');
+select ok(not private.can_join_topic(tests.pair('budi', 'sari')), 'the other side being off blocks');
 reset role;
 update public.profiles set listen_scope = 'friends' where id in (tests.id('budi'), tests.id('sari'));
 
@@ -1367,8 +1367,8 @@ update public.profiles set listen_scope = 'friends' where id in (tests.id('budi'
 update public.app_config set value = 'false' where key = 'listen_together_enabled';
 select tests.login('budi');
 set local role authenticated;
-select ok(not public.can_join_topic(tests.pair('budi', 'sari')), 'global switch off blocks every pair');
-select ok(public.can_join_topic('presence:' || tests.id('sari')), 'presence still works');
+select ok(not private.can_join_topic(tests.pair('budi', 'sari')), 'global switch off blocks every pair');
+select ok(private.can_join_topic('presence:' || tests.id('sari')), 'presence still works');
 select is((select f->>'canListen' from jsonb_array_elements(public.list_friends()) f where f->>'name' = 'sari'),
   'false', 'list_friends reflects the switch');
 reset role;
@@ -1378,8 +1378,8 @@ update public.app_config set value = 'true' where key = 'listen_together_enabled
 update public.profiles set disabled = true where id = tests.id('sari');
 select tests.login('budi');
 set local role authenticated;
-select ok(not public.can_join_topic(tests.pair('budi', 'sari')), 'a disabled side blocks');
-select ok(not public.can_join_topic('presence:' || tests.id('sari')), 'no presence of a disabled user');
+select ok(not private.can_join_topic(tests.pair('budi', 'sari')), 'a disabled side blocks');
+select ok(not private.can_join_topic('presence:' || tests.id('sari')), 'no presence of a disabled user');
 reset role;
 
 select ok(
@@ -1394,7 +1394,7 @@ Then the footer.
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `supabase test db`
-Expected: `06_listen` FAILS with `function public.can_join_topic(text) does not exist`.
+Expected: `06_listen` FAILS with `function private.can_join_topic(text) does not exist`.
 
 - [ ] **Step 3: Write the migration**
 
@@ -1405,8 +1405,8 @@ Expected: `06_listen` FAILS with `function public.can_join_topic(text) does not 
 --   pair:<uuidA>:<uuidB>  (A < B)  one session between two friends
 --   presence:<uuid>                 the owner tracks presence; friends watch it
 
-create function public.can_join_topic(p_topic text) returns boolean
-language plpgsql stable security definer set search_path = public as $$
+create function private.can_join_topic(p_topic text) returns boolean
+language plpgsql stable security definer set search_path = public, private as $$
 declare
   u uuid := auth.uid();
   parts text[] := string_to_array(coalesce(p_topic, ''), ':');
@@ -1438,13 +1438,13 @@ begin
   end if;
   execute $p$
     create policy "phinas join" on realtime.messages for select to authenticated
-    using (public.can_join_topic(realtime.topic()))
+    using (private.can_join_topic(realtime.topic()))
   $p$;
   -- Anyone in a pair may send; on a presence channel only the owner tracks.
   execute $p$
     create policy "phinas send" on realtime.messages for insert to authenticated
     with check (
-      public.can_join_topic(realtime.topic())
+      private.can_join_topic(realtime.topic())
       and (realtime.topic() like 'pair:%' or realtime.topic() = 'presence:' || auth.uid()::text)
     )
   $p$;
@@ -1488,6 +1488,7 @@ select throws_ok($$ select public.create_invite() $$, '42501', null, 'anon canno
 select throws_ok($$ select public.admin_list_users() $$, '42501', null, 'anon cannot list users');
 select throws_ok($$ select public.my_profile() $$, '42501', null, 'anon cannot read profiles');
 select throws_ok($$ select public.delete_my_account() $$, '42501', null, 'anon cannot delete accounts');
+select ok(not has_function_privilege('anon', 'private.can_join_topic(text)', 'execute'), 'anon cannot run private helpers');
 reset role;
 
 select tests.login('admin');
@@ -1514,8 +1515,13 @@ revoke execute on all functions in schema public from public, anon;
 grant execute on all functions in schema public to authenticated, service_role;
 grant execute on function public.check_invite(text) to anon;
 
+-- Internal helpers live in the non-exposed private schema; policies still need them as authenticated.
+revoke execute on all functions in schema private from public, anon;
+grant execute on all functions in schema private to authenticated, service_role;
+
 -- Future functions created by postgres start closed to anon as well.
 alter default privileges for role postgres in schema public revoke execute on functions from public, anon;
+alter default privileges for role postgres in schema private revoke execute on functions from public, anon;
 ```
 
 - [ ] **Step 4: Apply and run the tests**
