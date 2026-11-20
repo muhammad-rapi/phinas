@@ -16,8 +16,8 @@ const FEATURES: [string, string][] = [
 ]
 
 const SHOTS: [string, string][] = [
-  ['home', 'Beranda dengan lagu yang sedang ramai dan playlist-mu'],
-  ['search', 'Pencarian lagu dan playlist publik'],
+  ['home', 'Beranda: lanjutkan lagu terakhir, pilihan untukmu, dan yang lagi ramai'],
+  ['search', 'Cari artis, playlist, dan lagu dalam satu tempat'],
   ['lyrics', 'Lirik layar penuh yang bergulir bersama lagu']
 ]
 
