@@ -162,6 +162,12 @@ export interface SyncStatus {
   email?: string
   pending: number
   lastError?: string
+  /** The welcome screen was answered on this computer. */
+  welcomeDone: boolean
+  /** An account took this computer's pre-account library, so signed out shows an empty one. */
+  libraryClaimed: boolean
+  /** Why the last library switch failed; the previous library stayed open. */
+  libraryError?: string
 }
 
 /** One finished listen of a track, as stored in the local history. */

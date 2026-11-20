@@ -76,6 +76,8 @@ export interface PhinasApi {
   listPublicPlaylists(): Promise<PartnerPlaylist[]>
   /** Opens the terms or privacy page in the browser. */
   openLegal(page: LegalPage): Promise<void>
+  /** The welcome screen was answered with "Pakai tanpa akun". */
+  finishWelcome(): Promise<void>
   /** The partner's playlists (Berdua tab). Renamed in the redesign. */
   listPartnerPlaylists(): Promise<PartnerPlaylist[]>
   copyPartnerPlaylist(playlist: PartnerPlaylist): Promise<Playlist>
@@ -205,6 +207,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   listFriendPlaylists: true,
   listPublicPlaylists: true,
   openLegal: true,
+  finishWelcome: true,
   listPartnerPlaylists: true,
   copyPartnerPlaylist: true,
   recordPlay: true,

@@ -2,9 +2,13 @@ import { readFileSync, writeFileSync } from 'node:fs'
 
 export interface Settings {
   notch: boolean
+  /** The account that took the pre-account library (`phinas.db`), or null while none has. */
+  claimedBy: string | null
+  /** The welcome screen was answered: signed in once, or chose "Pakai tanpa akun". */
+  welcomeDone: boolean
 }
 
-const DEFAULTS: Settings = { notch: true }
+const DEFAULTS: Settings = { notch: true, claimedBy: null, welcomeDone: false }
 
 /** Tiny JSON file in the user data folder. A missing or broken file means defaults. */
 export class SettingsStore {

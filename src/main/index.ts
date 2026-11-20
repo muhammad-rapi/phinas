@@ -3,9 +3,8 @@ import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHANNELS } from '../shared/ipc'
-import { createHandlers } from './ipc'
-import { openDb } from './library/db'
-import { Library } from './library/library'
+import { createHandlers, type LibraryServices } from './ipc'
+import { LibraryHost } from './library/host'
 import { maybeCaptureAndQuit } from './dev-shot'
 import { createUpdater, electronAutoInstaller, fetchLatestRelease } from './updater'
 import { createCoverFetcher } from './music/cover'
@@ -25,6 +24,8 @@ import { createTray, type TrayController } from './tray'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const SYNC_INTERVAL_MS = 15_000
+/** The account's library is pulled from the server every 20 sync ticks (5 minutes). */
+const PULL_EVERY_TICKS = 20
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -79,7 +80,7 @@ app.whenReady().then(async () => {
   app.dock?.setIcon(icon)
   applyCsp()
   const userData = app.getPath('userData')
-  const library = new Library(openDb(join(userData, 'phinas.db')))
+  const settings = new SettingsStore(join(userData, 'settings.json'))
   const source = new YoutubeMusicSource(app.getLocaleCountryCode() || undefined)
 
   const proxy = createStreamProxy((id, fresh) => source.getStreamUrl(id, fresh))
@@ -88,11 +89,18 @@ app.whenReady().then(async () => {
   const url = import.meta.env.MAIN_VITE_SUPABASE_URL as string | undefined
   const key = import.meta.env.MAIN_VITE_SUPABASE_ANON_KEY as string | undefined
   const remote = url && key ? new SupabaseRemote(url, key, join(userData, 'session.json')) : null
-  const engine = remote ? new SyncEngine(library, remote) : null
+  // From the stored session (no network), so the right library opens offline too.
+  const signedInAs = remote ? await remote.session().catch(() => null) : null
+  // Someone already signed in on this computer has answered the welcome screen.
+  if (signedInAs && !settings.get('welcomeDone')) settings.set('welcomeDone', true)
+  const host = new LibraryHost<LibraryServices>({
+    dir: userData,
+    settings,
+    userId: signedInAs?.userId ?? null,
+    build: (lib) => ({ engine: remote ? new SyncEngine(lib, remote) : null, recommender: new Recommender(lib, source) })
+  })
   const lastError: { value?: string } = {}
 
-  const settings = new SettingsStore(join(userData, 'settings.json'))
-  const recommender = new Recommender(library, source)
   let mainWindow: BrowserWindow | null = null
   const pair = remote
     ? new PairChannel(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
@@ -101,6 +109,17 @@ app.whenReady().then(async () => {
     ? new PresenceHub(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
     : null
   const cache = new CacheStore(join(userData, 'social-cache.json'))
+
+  /** Pushes, then pulls the account's library; a change reloads the renderer's copy. Never throws. */
+  const pullLibrary = async (): Promise<void> => {
+    const engine = host.services.engine
+    if (!engine || !remote || !(await remote.session())) return
+    try {
+      if (await engine.pull()) mainWindow?.webContents.send('library:changed')
+    } catch (e) {
+      console.warn('[sync] pull failed, will retry:', e)
+    }
+  }
   const shot = Boolean(process.env['PHINAS_SHOT'])
   const notch = shot
     ? null
@@ -135,7 +154,7 @@ app.whenReady().then(async () => {
   })
 
   const handlers = createHandlers({
-    library,
+    host,
     source,
     coverData: createCoverFetcher(),
     systemVolume: createSystemVolume(),
@@ -146,9 +165,8 @@ app.whenReady().then(async () => {
     cache,
     openExternal: (url) => void shell.openExternal(url).catch((e) => console.warn('[openExternal]', e)),
     notifyAccountChanged: () => mainWindow?.webContents.send('account:changed'),
-    engine,
+    pullLibrary,
     lastError,
-    recommender,
     settings,
     setNotchEnabled: showNotch,
     updater
@@ -158,22 +176,29 @@ app.whenReady().then(async () => {
       (handlers[name] as (...a: unknown[]) => unknown)(...args)
     )
   }
-  if (engine && remote) {
+  if (remote) {
     let tick = 0
     setInterval(async () => {
-      if (!(await remote.session())) return
-      const r = await engine.flush()
-      lastError.value = r.error
-      // Every minute: refresh friends (keeps presence in step) and leave a pair that is no longer allowed.
-      if (tick++ % 4 === 0) {
-        const friends = await handlers.listFriends().catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))))
-        if (friends instanceof Error && friends.message.includes('phinas:account_disabled')) {
-          // A disabled account may not listen together or show as online.
-          await pair?.close()
-          await presence?.close()
-        } else if (!(friends instanceof Error) && !friends.some((f) => f.isPartner && f.canListen)) {
-          await pair?.close()
+      try {
+        if (!(await remote.session())) return
+        const n = tick++
+        // Read the engine each time: the host rebuilds it when another account's library opens.
+        const engine = host.services.engine
+        if (engine) lastError.value = (await engine.flush()).error
+        if (n % PULL_EVERY_TICKS === PULL_EVERY_TICKS - 1) await pullLibrary()
+        // Every minute: refresh friends (keeps presence in step) and leave a pair that is no longer allowed.
+        if (n % 4 === 0) {
+          const friends = await handlers.listFriends().catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))))
+          if (friends instanceof Error && friends.message.includes('phinas:account_disabled')) {
+            // A disabled account may not listen together or show as online.
+            await pair?.close()
+            await presence?.close()
+          } else if (!(friends instanceof Error) && !friends.some((f) => f.isPartner && f.canListen)) {
+            await pair?.close()
+          }
         }
+      } catch (e) {
+        console.warn('[sync] tick failed:', e)
       }
     }, SYNC_INTERVAL_MS)
   }
@@ -197,6 +222,8 @@ app.whenReady().then(async () => {
   })
 
   mainWindow = createWindow()
+  // At start, signed in: bring in what changed on other computers.
+  void pullLibrary()
   // The notch sits on the display that shows Phinas, so it follows the window to another monitor.
   mainWindow.on('moved', () => notch?.reposition())
   mainWindow.on('closed', () => {

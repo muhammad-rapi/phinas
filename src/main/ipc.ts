@@ -1,8 +1,8 @@
 import type { PhinasApi } from '../shared/ipc'
-import type { Library } from './library/library'
 import type { Lyrics } from '../shared/types'
 import { matchSongs } from './import/match'
 import { fetchSpotifyList } from './import/spotify'
+import type { LibraryHost } from './library/host'
 import { fetchLyrics } from './music/lyrics'
 import type { MusicSource } from './music/source'
 import type { SyncEngine } from './sync/engine'
@@ -16,8 +16,15 @@ import { LEGAL_URLS } from '../shared/links'
 import { withCache, type CacheStore } from './sync/cache'
 import type { PresenceHub } from './sync/presence'
 
+/** What depends on the active library; the host rebuilds it whenever another library opens. */
+export interface LibraryServices {
+  engine: SyncEngine | null
+  recommender: Recommender
+}
+
 export interface Deps {
-  library: Library
+  /** The active local library (one per account) with its sync engine and recommender. */
+  host: LibraryHost<LibraryServices>
   source: MusicSource
   coverData: (url: string) => Promise<string>
   systemVolume: SystemVolume
@@ -31,9 +38,9 @@ export interface Deps {
   openExternal: (url: string) => void
   /** Tells the renderer the signed-in account changed (sign-in, sign-up, sign-out, deletion). */
   notifyAccountChanged: () => void
-  engine: SyncEngine | null
+  /** Pushes, then pulls the account's library from the server. Never throws. */
+  pullLibrary: () => Promise<void>
   lastError: { value?: string }
-  recommender: Recommender
   settings: SettingsStore
   /** Shows or hides the notch window right away. */
   setNotchEnabled: (enabled: boolean) => void
@@ -59,6 +66,23 @@ export function createHandlers(d: Deps): PhinasApi {
     await d.pair?.close()
     await d.presence?.close()
     d.cache.clear()
+  }
+
+  /** After sign-in or sign-up: open that account's library, pull it, then tell the renderer. */
+  const enterAccount = async (r: SupabaseRemote): Promise<void> => {
+    const s = await r.session()
+    if (s) d.host.useAccount(s.userId)
+    d.settings.set('welcomeDone', true)
+    d.lastError.value = undefined
+    await d.pullLibrary()
+    d.notifyAccountChanged()
+  }
+
+  /** After sign-out or account deletion: back to the signed-out library. */
+  const leaveAccount = (): void => {
+    d.host.useGuest()
+    d.lastError.value = undefined
+    d.notifyAccountChanged()
   }
 
   // Answers (including "no lyrics") are cached for the session; network failures are not.
@@ -91,35 +115,31 @@ export function createHandlers(d: Deps): PhinasApi {
     coverData: (url) => d.coverData(url),
     getSystemVolume: () => d.systemVolume.get(),
     setSystemVolume: (level) => d.systemVolume.set(level),
-    listPlaylists: async () => d.library.listPlaylists(),
-    getPlaylist: async (id) => d.library.getPlaylist(id),
-    createPlaylist: async (name) => d.library.createPlaylist(name),
-    renamePlaylist: async (id, name) => d.library.renamePlaylist(id, name),
-    deletePlaylist: async (id) => d.library.deletePlaylist(id),
-    addTrack: async (pid, t) => d.library.addTrack(pid, t),
-    removeTrack: async (pid, vid) => d.library.removeTrack(pid, vid),
-    listLikes: async () => d.library.listLikes(),
-    setLiked: async (t, liked) => d.library.setLiked(t, liked),
+    listPlaylists: async () => d.host.library.listPlaylists(),
+    getPlaylist: async (id) => d.host.library.getPlaylist(id),
+    createPlaylist: async (name) => d.host.library.createPlaylist(name),
+    renamePlaylist: async (id, name) => d.host.library.renamePlaylist(id, name),
+    deletePlaylist: async (id) => d.host.library.deletePlaylist(id),
+    addTrack: async (pid, t) => d.host.library.addTrack(pid, t),
+    removeTrack: async (pid, vid) => d.host.library.removeTrack(pid, vid),
+    listLikes: async () => d.host.library.listLikes(),
+    setLiked: async (t, liked) => d.host.library.setLiked(t, liked),
     syncSignIn: async (email, password) => {
       const r = requireRemote()
       d.cache.clear()
       await r.signIn(email, password)
-      d.lastError.value = undefined
-      void d.engine?.flush()
-      d.notifyAccountChanged()
+      await enterAccount(r)
     },
     syncSignOut: async () => {
       await leaveAll()
       await requireRemote().signOut()
-      d.notifyAccountChanged()
+      leaveAccount()
     },
     syncSignUp: async (input) => {
       const r = requireRemote()
       d.cache.clear()
       await r.signUp(input)
-      d.lastError.value = undefined
-      void d.engine?.flush()
-      d.notifyAccountChanged()
+      await enterAccount(r)
     },
     myProfile: async () => {
       const s = await signedIn()
@@ -156,39 +176,43 @@ export function createHandlers(d: Deps): PhinasApi {
     deleteAccount: async () => {
       await requireRemote().deleteAccount()
       await leaveAll()
-      d.notifyAccountChanged()
+      leaveAccount()
     },
     onlineFriends: async () => d.presence?.onlineIds() ?? [],
-    setPlaylistVisibility: async (id, v) => d.library.setVisibility(id, v),
+    setPlaylistVisibility: async (id, v) => d.host.library.setVisibility(id, v),
     listFriendPlaylists: (friendId) => requireRemote().listFriendPlaylists(friendId),
     listPublicPlaylists: () => requireRemote().listPublicPlaylists(),
     openLegal: async (page) => {
       if (!Object.hasOwn(LEGAL_URLS, page)) return
       d.openExternal(LEGAL_URLS[page])
     },
+    finishWelcome: async () => d.settings.set('welcomeDone', true),
     syncStatus: async () => {
       const session = d.remote ? await d.remote.session() : null
       return {
         configured: d.remote !== null,
         signedIn: session !== null,
         email: session?.email,
-        pending: d.library.pendingKeys().length,
-        lastError: d.lastError.value
+        pending: d.host.library.pendingKeys().length,
+        lastError: d.lastError.value,
+        welcomeDone: d.settings.get('welcomeDone'),
+        libraryClaimed: d.settings.get('claimedBy') !== null,
+        libraryError: d.host.error ?? undefined
       }
     },
     listPartnerPlaylists: async () => requireRemote().listPartnerPlaylists(),
     recordPlay: async (rec) => {
       // History must never break playback.
       try {
-        d.library.recordPlay(rec)
+        d.host.library.recordPlay(rec)
       } catch (e) {
         console.error('could not record play:', e)
       }
     },
-    listRecentPlays: async (limit = 50) => d.library.recentPlays(Math.min(limit, 50)),
-    listFavoriteArtists: async (limit = 8) => d.library.favoriteArtists(Math.min(limit, 12)),
-    getRecommendations: () => d.recommender.forHome(),
-    getAutoplay: (current, queueIds) => d.recommender.autoplay(current, queueIds),
+    listRecentPlays: async (limit = 50) => d.host.library.recentPlays(Math.min(limit, 50)),
+    listFavoriteArtists: async (limit = 8) => d.host.library.favoriteArtists(Math.min(limit, 12)),
+    getRecommendations: () => d.host.services.recommender.forHome(),
+    getAutoplay: (current, queueIds) => d.host.services.recommender.autoplay(current, queueIds),
     getNotchEnabled: async () => d.settings.get('notch'),
     setNotchEnabled: async (enabled) => {
       d.settings.set('notch', enabled)
@@ -209,9 +233,10 @@ export function createHandlers(d: Deps): PhinasApi {
     listenClose: async () => d.pair?.close(),
     listenStatus: async () => d.pair?.status() ?? { connected: false, partnerHere: false, notAllowed: false },
     copyPartnerPlaylist: async (p) => {
-      const copy = d.library.createPlaylist(`${p.name} (dari ${p.ownerName})`)
-      for (const t of p.tracks) d.library.addTrack(copy.id, t)
-      return d.library.getPlaylist(copy.id)!
+      const lib = d.host.library
+      const copy = lib.createPlaylist(`${p.name} (dari ${p.ownerName})`)
+      for (const t of p.tracks) lib.addTrack(copy.id, t)
+      return lib.getPlaylist(copy.id)!
     }
   }
 }
