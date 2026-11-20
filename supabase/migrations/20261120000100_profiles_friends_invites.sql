@@ -1,9 +1,13 @@
 -- Multi-user: profile fields, friends, invites, global switches, playlist visibility, registration.
 -- RPCs raise 'phinas:<code>' so the app can show a precise message.
 
+-- Internal helpers live in `private`, which PostgREST does not expose (only `public` is).
+create schema if not exists private;
+grant usage on schema private to authenticated, service_role;
+
 -- Short random codes without look-alike characters (no I, O, 0, 1).
-create function public.gen_code(prefix text, len int) returns text
-language sql volatile set search_path = public as $$
+create function private.gen_code(prefix text, len int) returns text
+language sql volatile set search_path = public, private as $$
   select prefix || string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + (get_byte(b, i - 1) % 32), 1), '' order by i)
   from (select extensions.gen_random_bytes(len) as b) r, generate_series(1, len) as i
 $$;
@@ -19,8 +23,8 @@ alter table public.profiles
 
 create index profiles_invited_by on public.profiles(invited_by);
 
-create function public.new_friend_code() returns text
-language plpgsql volatile set search_path = public as $$
+create function private.new_friend_code() returns text
+language plpgsql volatile set search_path = public, private as $$
 declare c text;
 begin
   loop
@@ -32,7 +36,7 @@ end $$;
 
 -- The existing accounts accepted the terms by using the app before they existed.
 update public.profiles set
-  friend_code = public.new_friend_code(),
+  friend_code = private.new_friend_code(),
   accepted_terms_at = now(),
   created_at = coalesce((select u.created_at from auth.users u where u.id = profiles.id), now());
 alter table public.profiles alter column friend_code set not null;
@@ -56,8 +60,8 @@ create index friendships_requested_by on public.friendships(requested_by);
 create index friendships_partner_requested_by on public.friendships(partner_requested_by);
 
 -- A user can sit in either column, so "one partner per user" cannot be a unique index.
-create function public.check_one_partner() returns trigger
-language plpgsql security definer set search_path = public as $$
+create function private.check_one_partner() returns trigger
+language plpgsql security definer set search_path = public, private as $$
 begin
   if new.is_partner then
     perform 1 from profiles where id in (new.user_a, new.user_b) order by id for no key update;
@@ -74,7 +78,7 @@ end $$;
 
 create trigger friendships_one_partner
   before insert or update on public.friendships
-  for each row execute function public.check_one_partner();
+  for each row execute function private.check_one_partner();
 
 create table public.invite_codes (
   code text primary key,
@@ -108,40 +112,49 @@ alter table public.playlists
   add column visibility text not null default 'friends' check (visibility in ('private', 'friends', 'public'));
 
 -- Helpers. security definer so policies can call them without recursing through RLS.
-create function public.is_active(uid uuid) returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.is_active(uid uuid) returns boolean
+language sql stable security definer set search_path = public, private as $$
   select exists (select 1 from profiles where id = uid and not disabled)
 $$;
 
-create function public.is_admin() returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.is_admin() returns boolean
+language sql stable security definer set search_path = public, private as $$
   select exists (select 1 from profiles where id = auth.uid() and role = 'admin' and not disabled)
 $$;
 
-create function public.are_friends(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.are_friends(a uuid, b uuid) returns boolean
+language sql stable security definer set search_path = public, private as $$
   select exists (
     select 1 from friendships
     where user_a = least(a, b) and user_b = greatest(a, b) and status = 'accepted'
   )
 $$;
 
-create function public.is_partner(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public as $$
+create function private.is_partner(a uuid, b uuid) returns boolean
+language sql stable security definer set search_path = public, private as $$
   select exists (
     select 1 from friendships
     where user_a = least(a, b) and user_b = greatest(a, b) and status = 'accepted' and is_partner
   )
 $$;
 
-create function public.config(k text) returns jsonb
-language sql stable security definer set search_path = public as $$
+create function private.config(k text) returns jsonb
+language sql stable security definer set search_path = public, private as $$
   select value from app_config where key = k
+$$;
+
+-- The caller's accepted friends whose accounts are active.
+create function private.friend_ids() returns setof uuid
+language sql stable security definer set search_path = public, private as $$
+  select case when f.user_a = auth.uid() then f.user_b else f.user_a end
+  from friendships f
+  where f.status = 'accepted' and auth.uid() in (f.user_a, f.user_b)
+    and is_active(case when f.user_a = auth.uid() then f.user_b else f.user_a end)
 $$;
 
 -- 'ok' or the reason a code cannot be used. Callable before sign-up (granted to anon later).
 create function public.check_invite(p_code text) returns text
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public, private as $$
   select case
     when not coalesce((config('registration_open'))::boolean, false) then 'registration_closed'
     when i.code is null then 'invite_invalid'
@@ -157,7 +170,7 @@ $$;
 
 -- Registration gate. Any exception cancels the sign-up.
 create or replace function public.handle_new_user() returns trigger
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, private as $$
 declare
   meta jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
   v_code text := upper(trim(coalesce(meta->>'invite_code', '')));
@@ -202,3 +215,6 @@ begin
     values (ids[1], ids[2], 'accepted', ids[1], true);
   end if;
 end $$;
+
+revoke execute on all functions in schema private from public, anon;
+grant execute on all functions in schema private to authenticated, service_role;

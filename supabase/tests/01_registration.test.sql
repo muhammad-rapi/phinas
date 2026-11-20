@@ -26,7 +26,7 @@ create function tests.invite(p_by text, p_label text) returns text language plpg
 declare c text;
 begin
   insert into public.invite_codes (code, created_by)
-  values (public.gen_code('', 8), tests.id(p_by)) returning code into c;
+  values (private.gen_code('', 8), tests.id(p_by)) returning code into c;
   insert into tests.codes values (p_label, c);
   return c;
 end $$;
@@ -81,7 +81,7 @@ select lives_ok($$ select tests.new_user('budi', tests.code('c1')) $$, 'a valid 
 select is((select role from public.profiles where id = tests.id('budi')), 'user', 'invitee is a normal user');
 select is((select display_name from public.profiles where id = tests.id('budi')), 'budi', 'display name from metadata');
 select is((select invited_by from public.profiles where id = tests.id('budi')), tests.id('admin'), 'invited_by recorded');
-select ok(public.are_friends(tests.id('budi'), tests.id('admin')), 'invitee and inviter are friends');
+select ok(private.are_friends(tests.id('budi'), tests.id('admin')), 'invitee and inviter are friends');
 select isnt((select used_at from public.invite_codes where code = tests.code('c1')), null, 'code marked used');
 select throws_ok($$ select tests.new_user('cici', tests.code('c1')) $$, 'P0001', 'phinas:invite_used',
   'a code works once');
@@ -144,6 +144,13 @@ update public.profiles set disabled = false where id = tests.id('hana');
 select ok((select bool_and(relrowsecurity) from pg_class
   where oid in ('public.friendships'::regclass, 'public.invite_codes'::regclass, 'public.app_config'::regclass)),
   'new tables have RLS enabled');
+
+select ok(not has_function_privilege('anon', 'private.are_friends(uuid, uuid)', 'execute'),
+  'anon cannot run private helpers');
+select ok(not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname in ('are_friends', 'is_partner', 'is_active', 'is_admin', 'config', 'gen_code', 'new_friend_code')),
+  'helpers are not in the exposed public schema');
 
 select * from finish();
 rollback;

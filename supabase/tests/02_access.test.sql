@@ -26,7 +26,7 @@ create function tests.invite(p_by text, p_label text) returns text language plpg
 declare c text;
 begin
   insert into public.invite_codes (code, created_by)
-  values (public.gen_code('', 8), tests.id(p_by)) returning code into c;
+  values (private.gen_code('', 8), tests.id(p_by)) returning code into c;
   insert into tests.codes values (p_label, c);
   return c;
 end $$;
@@ -87,11 +87,16 @@ select is((select count(*)::int from public.liked_tracks), 1, 'a friend sees lik
 select is((select count(*)::int from public.app_config), 3, 'active users read config');
 reset role;
 
+insert into public.playlist_tracks (playlist_id, position, video_id, title, artist, cover_url, duration_sec)
+  values ('00000000-0000-0000-0000-0000000000a3', 0, 'v3', 't', 'a', '', 1);
+
 -- A stranger.
 select tests.login('sari');
 set local role authenticated;
 select results_eq($$ select name from public.playlists order by name $$, array['pub'],
   'a stranger sees public playlists only');
+select results_eq($$ select video_id from public.playlist_tracks $$, array['v3'],
+  'a stranger sees tracks of a public playlist');
 select is((select count(*)::int from public.liked_tracks), 0, 'a stranger sees no likes');
 select is((select display_name from public.profiles where id = tests.id('budi')), 'budi',
   'a stranger sees the name of a public playlist owner');
@@ -124,6 +129,51 @@ select lives_ok($$ update public.playlists set visibility = 'public' where id = 
   'the owner can change visibility');
 reset role;
 
+-- Writes cannot reach another user's rows.
+insert into public.playlists (id, owner_id, name, visibility)
+  values ('00000000-0000-0000-0000-0000000000c1', tests.id('sari'), 'sari fr', 'friends');
+select tests.login('budi');
+set local role authenticated;
+select throws_ok($$ insert into public.playlists (id, name) values ('00000000-0000-0000-0000-0000000000c1', 'hijack')
+                   on conflict (id) do update set name = excluded.name $$, '42501', null,
+  'cannot hijack another user''s playlist by upsert');
+select throws_ok($$ update public.playlists set owner_id = tests.id('sari')
+                   where id = '00000000-0000-0000-0000-0000000000a2' $$, '42501', null,
+  'cannot hand a playlist to someone else');
+select throws_ok($$ insert into public.playlist_tracks (playlist_id, position, video_id, title, artist, cover_url, duration_sec)
+                   values ('00000000-0000-0000-0000-0000000000c1', 0, 'x', 't', 'a', '', 1) $$, '42501', null,
+  'cannot add tracks to another user''s playlist');
+select throws_ok($$ insert into public.liked_tracks (owner_id, video_id, title, artist, cover_url, duration_sec)
+                   values (tests.id('sari'), 'x', 't', 'a', '', 1) $$, '42501', null,
+  'cannot like a track for someone else');
+reset role;
+
+-- A pending friendship grants nothing.
+insert into public.friendships (user_a, user_b, status, requested_by)
+  values (least(tests.id('budi'), tests.id('sari')), greatest(tests.id('budi'), tests.id('sari')), 'pending', tests.id('budi'));
+select tests.login('sari');
+set local role authenticated;
+select is((select count(*)::int from public.playlists where name = 'fr'), 0,
+  'a pending friend does not see friends playlists');
+reset role;
+delete from public.friendships where id = tests.fid('budi', 'sari');
+
+-- A disabled owner's content is hidden from everyone.
+update public.profiles set disabled = true where id = tests.id('budi');
+select tests.login('sari');
+set local role authenticated;
+select is((select count(*)::int from public.playlists where visibility = 'public'), 0,
+  'public playlists of a disabled owner are hidden');
+reset role;
+select tests.login('admin');
+set local role authenticated;
+select is((select count(*)::int from public.playlists where owner_id = tests.id('budi')), 0,
+  'a friend does not see playlists of a disabled owner');
+select is((select count(*)::int from public.liked_tracks where owner_id = tests.id('budi')), 0,
+  'a friend does not see likes of a disabled owner');
+reset role;
+update public.profiles set disabled = false where id = tests.id('budi');
+
 -- A disabled account reads nothing.
 update public.profiles set disabled = true where id = tests.id('admin');
 select tests.login('admin');
@@ -131,6 +181,18 @@ set local role authenticated;
 select is((select count(*)::int from public.playlists), 0, 'disabled: no playlists');
 select is((select count(*)::int from public.liked_tracks), 0, 'disabled: no likes');
 select is((select count(*)::int from public.app_config), 0, 'disabled: no config');
+select is((select count(*)::int from public.profiles), 0, 'disabled: no profiles, not even own');
+select is((select count(*)::int from public.friendships), 0, 'disabled: no friendships');
+select is((select count(*)::int from public.invite_codes), 0, 'disabled: no invite codes');
+reset role;
+
+-- Signed-out callers read nothing.
+select set_config('request.jwt.claims', '', true);
+set local role anon;
+select throws_ok($$ select id from public.profiles $$, '42501', null, 'anon cannot read profiles');
+select throws_ok($$ select id from public.playlists $$, '42501', null, 'anon cannot read playlists');
+select throws_ok($$ select key from public.app_config $$, '42501', null, 'anon cannot read config');
+select throws_ok($$ select id from public.friendships $$, '42501', null, 'anon cannot read friendships');
 reset role;
 
 select * from finish();
