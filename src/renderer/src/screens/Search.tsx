@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PublicPlaylist, Track } from '../../../shared/types'
-import { CoverArt, MediaCard } from '../components/MediaCard'
-import { Shelf } from '../components/Shelf'
-import { TrackRow } from '../components/TrackRow'
+import { CoverGrid } from '../components/CoverGrid'
+import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
 
@@ -69,35 +68,44 @@ export function Search({ query, submitNonce, onPick, nav }: Props): React.JSX.El
 
       {q && (
         <>
-          <h2 className="page-title">Hasil untuk &ldquo;{q}&rdquo;</h2>
+          <h1 className="page-title">
+            Hasil untuk <em>&ldquo;{q}&rdquo;</em>
+          </h1>
           {loading && results.length === 0 && <p className="muted">Mencari...</p>}
           {!loading && !error && results.length === 0 && <p className="muted">Tidak ada hasil.</p>}
-          {playlists.length > 0 && (
-            <Shelf title="Playlist">
-              {playlists.map((p) => (
-                <MediaCard
-                  key={p.id}
-                  art={<CoverArt url={p.coverUrl} />}
-                  title={p.title}
-                  subtitle={p.author}
-                  onOpen={() => nav({ name: 'public', id: p.id, author: p.author })}
+          {results.length > 0 && (
+            <section className="sec">
+              <h2 className="section-title">Lagu</h2>
+              <TrackListHead />
+              {results.map((t, i) => (
+                <TrackRow
+                  key={t.videoId}
+                  track={t}
+                  index={i}
+                  onPlay={() => {
+                    onPick(t, q)
+                    // Only the picked song: the other results are mostly versions of the same one.
+                    // Autoplay fills in what comes next from recommendations.
+                    player.play([t], 0)
+                  }}
                 />
               ))}
-            </Shelf>
+            </section>
           )}
-          {results.length > 0 && playlists.length > 0 && <h3 className="shelf-title" style={{ margin: '8px 0 8px' }}>Lagu</h3>}
-          {results.map((t) => (
-            <TrackRow
-              key={t.videoId}
-              track={t}
-              onPlay={() => {
-                onPick(t, q)
-                // Only the picked song: the other results are mostly versions of the same one.
-                // Autoplay fills in what comes next from recommendations.
-                player.play([t], 0)
-              }}
-            />
-          ))}
+          {playlists.length > 0 && (
+            <section className="sec">
+              <h2 className="section-title">Playlist</h2>
+              <CoverGrid
+                items={playlists.map((p) => ({
+                  key: p.id,
+                  art: p.coverUrl,
+                  title: p.title,
+                  meta: p.author,
+                  onOpen: () => nav({ name: 'public', id: p.id, author: p.author })
+                }))}
+              />
+            </section>
+          )}
         </>
       )}
     </>

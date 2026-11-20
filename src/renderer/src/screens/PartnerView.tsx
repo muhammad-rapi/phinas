@@ -1,7 +1,7 @@
 import { CopyPlus } from 'lucide-react'
 import { CollectionHeader } from '../components/CollectionHeader'
 import { PlaylistCover } from '../components/PlaylistCover'
-import { TrackRow } from '../components/TrackRow'
+import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
@@ -28,11 +28,11 @@ export function PartnerView({ id, nav }: { id: string; nav: Nav }): React.JSX.El
         meta={`${pl.tracks.length} lagu`}
         tracks={pl.tracks}
       >
-        <button className="pill-btn" onClick={copy}>
-          <CopyPlus size={18} />
-          <span>Salin ke library saya</span>
+        <button className="btn secondary" onClick={copy}>
+          <CopyPlus size={13} /> Salin ke library saya
         </button>
       </CollectionHeader>
+      {pl.tracks.length > 0 && <TrackListHead />}
       {pl.tracks.map((t, i) => (
         <TrackRow key={t.videoId} track={t} index={i} onPlay={() => player.play(pl.tracks, i)} />
       ))}

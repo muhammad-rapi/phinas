@@ -1,9 +1,9 @@
 import { Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { PlaylistWithTracks } from '../../../shared/types'
-import { CollectionHeader } from '../components/CollectionHeader'
+import { AccentTitle, CollectionHeader } from '../components/CollectionHeader'
 import { PlaylistCover } from '../components/PlaylistCover'
-import { TrackRow } from '../components/TrackRow'
+import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
@@ -75,7 +75,7 @@ export function PlaylistView({ id, nav }: { id: string; nav: Nav }): React.JSX.E
                 setEditing(true)
               }}
             >
-              {pl.name}
+              <AccentTitle text={pl.name} />
             </button>
           )
         }
@@ -83,11 +83,15 @@ export function PlaylistView({ id, nav }: { id: string; nav: Nav }): React.JSX.E
         tracks={pl.tracks}
       >
         <button className="icon-btn" onClick={remove} aria-label="Hapus playlist" title="Hapus playlist">
-          <Trash2 size={22} />
+          <Trash2 size={16} />
         </button>
       </CollectionHeader>
 
-      {pl.tracks.length === 0 && <p className="muted">Playlist ini masih kosong. Cari lagu lalu tambahkan dari menu di barisnya.</p>}
+      {pl.tracks.length === 0 ? (
+        <p className="muted">Playlist ini masih kosong. Cari lagu lalu tambahkan dari menu di barisnya.</p>
+      ) : (
+        <TrackListHead />
+      )}
       {pl.tracks.map((t, i) => (
         <TrackRow
           key={t.videoId}

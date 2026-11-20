@@ -2,8 +2,7 @@ import { CopyPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { PublicPlaylistDetail } from '../../../shared/types'
 import { CollectionHeader } from '../components/CollectionHeader'
-import { CoverArt } from '../components/MediaCard'
-import { TrackRow } from '../components/TrackRow'
+import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
@@ -56,17 +55,17 @@ export function PublicPlaylistView({ id, author, album = false, nav }: Props): R
   return (
     <>
       <CollectionHeader
-        cover={<CoverArt url={pl.coverUrl} />}
+        cover={<div className="pcover" style={{ backgroundImage: `url("${pl.coverUrl}")` }} />}
         kind={album ? `Album · ${pl.author}` : `Playlist dari ${author ?? pl.author}`}
         title={pl.title}
         meta={`${pl.tracks.length} lagu`}
         tracks={pl.tracks}
       >
-        <button className="pill-btn" onClick={() => void save()} disabled={saving || pl.tracks.length === 0}>
-          <CopyPlus size={18} />
-          <span>{saving ? 'Menyimpan...' : 'Simpan ke library saya'}</span>
+        <button className="btn secondary" onClick={() => void save()} disabled={saving || pl.tracks.length === 0}>
+          <CopyPlus size={13} /> {saving ? 'Menyimpan...' : 'Simpan ke library saya'}
         </button>
       </CollectionHeader>
+      {pl.tracks.length > 0 && <TrackListHead />}
       {pl.tracks.map((t, i) => (
         <TrackRow key={`${t.videoId}-${i}`} track={t} index={i} onPlay={() => player.play(pl.tracks, i)} />
       ))}
