@@ -28,7 +28,7 @@ import { Welcome } from './screens/Welcome'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
 import { ListenTogetherProvider, useListen } from './sync/ListenTogetherProvider'
-import { SocialProvider } from './social/SocialProvider'
+import { SocialProvider, useSocial } from './social/SocialProvider'
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
 import { sameView, type Nav, type View } from './views'
@@ -43,6 +43,10 @@ function Shell(): React.JSX.Element {
   const theme = useTheme(cover, mood?.colors.accent ?? null)
   const recents = useRecent()
   const profile = useProfile()
+  const social = useSocial()
+  // Signed in, the name lives on the server (friends see it); signed out it stays on this computer.
+  const shownName = social.me?.displayName || profile.name
+  const shownInitial = (shownName.trim()[0] ?? 'K').toUpperCase()
   const listen = useListen()
   const [panelOpen, setPanelOpen] = useState(false)
   // A session brings the side panel up; the user can still close it afterwards.
@@ -194,7 +198,7 @@ function Shell(): React.JSX.Element {
   const body = ((): React.JSX.Element => {
     switch (view.name) {
       case 'home':
-        return <Home nav={nav} name={profile.name} />
+        return <Home nav={nav} name={shownName} />
       case 'explore':
         return <Explore nav={nav} />
       case 'search':
@@ -222,7 +226,7 @@ function Shell(): React.JSX.Element {
       case 'import':
         return <ImportView nav={nav} />
       case 'profile':
-        return <Profile name={profile.name} onName={profile.setName} initial={profile.initial} theme={theme.mode} onTheme={theme.setMode} />
+        return <Profile nav={nav} name={profile.name} onName={profile.setName} theme={theme.mode} onTheme={theme.setMode} />
     }
   })()
 
@@ -250,8 +254,8 @@ function Shell(): React.JSX.Element {
           recents.rememberTrack(t, '')
           player.play([t], 0)
         }}
-        name={profile.name}
-        initial={profile.initial}
+        name={shownName}
+        initial={shownInitial}
       />
       <main ref={mainRef} className="main">
         {history.length > 0 && (

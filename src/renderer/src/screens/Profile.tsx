@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { friendlyError } from '../../../shared/errors'
-import type { MyProfile, SyncStatus } from '../../../shared/types'
+import type { ListenScope, SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import { useNotchEnabled } from '../notch/useNotchEnabled'
+import { useSocial } from '../social/SocialProvider'
 import type { ThemeMode } from '../theme/mode'
 import { useUpdate } from '../update/useUpdate'
+import type { Nav } from '../views'
 
 const THEMES: { id: ThemeMode; label: string; hint: string }[] = [
   { id: 'system', label: 'Ikuti sistem', hint: 'Siang atau malam mengikuti komputer' },
@@ -12,67 +14,91 @@ const THEMES: { id: ThemeMode; label: string; hint: string }[] = [
   { id: 'night', label: 'Malam', hint: 'Tinta gelap' }
 ]
 
-const PROFILE_REFRESH_MS = 60_000
+const SCOPES: { id: ListenScope; label: string; hint: string }[] = [
+  { id: 'friends', label: 'Semua teman', hint: 'Teman mana pun yang online' },
+  { id: 'partner', label: 'Pasangan saja', hint: 'Hanya pasanganmu' },
+  { id: 'off', label: 'Tidak ada', hint: 'Tidak ada yang bisa mengajak' }
+]
+
+/** Typing pauses this long before the name goes to the server. */
+const NAME_SAVE_MS = 800
+const STATUS_REFRESH_MS = 5000
 
 interface Props {
+  nav: Nav
+  /** The name kept on this computer (used while signed out). */
   name: string
   onName: (n: string) => void
-  initial: string
   theme: ThemeMode
   onTheme: (t: ThemeMode) => void
 }
 
-export function Profile({ name, onName, initial, theme, onTheme }: Props): React.JSX.Element {
+export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX.Element {
   const lib = useLibrary()
+  const social = useSocial()
   const [status, setStatus] = useState<SyncStatus | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [notch, setNotch] = useNotchEnabled()
-  const [mode, setMode] = useState<'in' | 'up'>('in')
-  const [displayName, setDisplayName] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
-  const [accepted, setAccepted] = useState(false)
-  const [profile, setProfile] = useState<MyProfile | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [scopeError, setScopeError] = useState<string | null>(null)
+  /** What is typed while signed in, until the server has it. */
+  const [draft, setDraft] = useState<string | null>(null)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const signedIn = social.signedIn
 
-  // The status is cheap and local; the profile is a server call, so it is fetched less often.
-  const profileAt = useRef(0)
-  const wasSignedIn = useRef(false)
-  const load = useCallback(async (forceProfile = false) => {
-    const s = await window.phinas.syncStatus()
-    setStatus(s)
-    const justSignedIn = s.signedIn && !wasSignedIn.current
-    wasSignedIn.current = s.signedIn
-    if (!s.signedIn) {
-      setProfile(null)
-      return
-    }
-    if (!forceProfile && !justSignedIn && Date.now() - profileAt.current < PROFILE_REFRESH_MS) return
-    profileAt.current = Date.now()
-    setProfile(await window.phinas.myProfile().catch(() => null))
-  }, [])
+  const load = async (): Promise<void> => {
+    setStatus(await window.phinas.syncStatus().catch(() => null))
+  }
 
+  // The status is local and cheap (pending changes, library errors); poll it while Profil is open.
   useEffect(() => {
     void load()
-    const t = setInterval(() => void load(), 5000)
+    const t = setInterval(() => void load(), STATUS_REFRESH_MS)
     return () => clearInterval(t)
-  }, [load])
+  }, [])
 
-  const submit = async (e: FormEvent): Promise<void> => {
-    e.preventDefault()
+  const shownName = signedIn ? (draft ?? social.me?.displayName ?? '') : name
+  const initial = (shownName.trim()[0] ?? 'K').toUpperCase()
+
+  const changeName = (value: string): void => {
+    if (!signedIn) {
+      onName(value)
+      return
+    }
+    setDraft(value)
+    setNameError(null)
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      const trimmed = value.trim()
+      if (!trimmed) {
+        setNameError(friendlyError(new Error('phinas:name_invalid')))
+        return
+      }
+      window.phinas
+        .updateMyProfile(trimmed, null)
+        .then(() => social.refresh())
+        .then(() => setDraft((d) => (d === value ? null : d)))
+        .catch((e: unknown) => setNameError(friendlyError(e)))
+    }, NAME_SAVE_MS)
+  }
+
+  const changeScope = async (scope: ListenScope): Promise<void> => {
+    setScopeError(null)
+    try {
+      await window.phinas.updateMyProfile(null, scope)
+      await social.refresh()
+    } catch (e) {
+      setScopeError(friendlyError(e))
+    }
+  }
+
+  const signOut = async (): Promise<void> => {
     setError(null)
     try {
-      if (mode === 'up') {
-        await window.phinas.syncSignUp({ email, password, displayName, inviteCode, acceptedTerms: accepted })
-      } else {
-        await window.phinas.syncSignIn(email, password)
-      }
-      setPassword('')
-      setInviteCode('')
-      await load(true)
-      await lib.refreshFriends()
-    } catch (err) {
-      setError(friendlyError(err))
+      await window.phinas.syncSignOut()
+      await load()
+    } catch (e) {
+      setError(friendlyError(e))
     }
   }
 
@@ -81,12 +107,12 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
       'Hapus akun Phinas? Playlist dan lagu yang disukai di server ikut terhapus, dan teman-temanmu tidak bisa melihatnya lagi. Data di komputer ini tetap ada.'
     )
     if (!ok) return
+    setError(null)
     try {
       await window.phinas.deleteAccount()
-      await load(true)
-      await lib.refreshFriends()
-    } catch (err) {
-      setError(friendlyError(err))
+      await load()
+    } catch (e) {
+      setError(friendlyError(e))
     }
   }
 
@@ -96,7 +122,12 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
         <div className="pf-avatar">{initial}</div>
         <div className="pf-who">
           <span className="label accent">Profil</span>
-          <input className="pf-name" value={name} maxLength={30} onChange={(e) => onName(e.target.value)} aria-label="Nama tampilan" />
+          <input className="pf-name" value={shownName} maxLength={30} onChange={(e) => changeName(e.target.value)} aria-label="Nama tampilan" />
+          {nameError && (
+            <div className="notice" role="alert">
+              {nameError}
+            </div>
+          )}
           <div className="pf-stats">
             <span>
               <strong>{lib.playlists.length}</strong> playlist
@@ -104,7 +135,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             <span>
               <strong>{lib.likes.length}</strong> lagu disukai
             </span>
-            {status?.signedIn && <span>{status.email}</span>}
+            {signedIn && social.email && <span>{social.email}</span>}
           </div>
         </div>
       </header>
@@ -127,6 +158,36 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
         </div>
       </section>
 
+      {signedIn && (
+        <section className="sec pf-sec">
+          <h2 className="section-title">Siapa yang boleh mengajak dengar bareng</h2>
+          <div className="pf-themes" role="radiogroup" aria-label="Siapa yang boleh mengajak dengar bareng">
+            {SCOPES.map((s) => {
+              const on = social.me?.listenScope === s.id
+              return (
+                <button
+                  key={s.id}
+                  role="radio"
+                  aria-checked={on}
+                  className={`pf-theme${on ? ' active' : ''}`}
+                  disabled={social.offline || !social.me}
+                  onClick={() => void changeScope(s.id)}
+                >
+                  <strong>{s.label}</strong>
+                  <span className="small">{s.hint}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="small pf-note">Teman tetap bisa melihat kamu sedang online.</p>
+          {scopeError && (
+            <div className="notice" role="alert">
+              {scopeError}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="sec pf-sec">
         <h2 className="section-title">Notch</h2>
         <label className="pf-check">
@@ -141,29 +202,27 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
       <section className="sec pf-sec">
         <h2 className="section-title">Akun</h2>
         {status && !status.configured && <div className="notice">Supabase belum dikonfigurasi. Isi file .env lalu jalankan ulang app.</div>}
+        {status?.libraryError && (
+          <div className="notice">
+            Library akun tidak bisa dibuka ({status.libraryError}). Library sebelumnya tetap dipakai; tidak ada yang dihapus.
+          </div>
+        )}
         {status?.configured && status.signedIn && (
           <>
-            {profile?.disabled && <div className="notice">{friendlyError(new Error('phinas:account_disabled'))}</div>}
+            {social.me?.disabled && <div className="notice">{friendlyError(new Error('phinas:account_disabled'))}</div>}
             <p>
               Masuk sebagai <strong>{status.email}</strong>.{' '}
               {status.pending === 0 ? 'Semua perubahan sudah tersinkron.' : `${status.pending} perubahan belum tersinkron.`}
             </p>
-            {profile && (
+            {social.me && (
               <p>
-                Kode temanmu: <strong className="pf-code">{profile.friendCode}</strong>
+                Kode temanmu: <strong className="pf-code">{social.me.friendCode}</strong>
               </p>
             )}
             {status.lastError && <div className="notice">Sync gagal: {status.lastError}. Akan dicoba lagi otomatis.</div>}
             {error && <div className="notice">{error}</div>}
             <div className="pf-row">
-              <button
-                className="btn secondary"
-                onClick={async () => {
-                  await window.phinas.syncSignOut()
-                  await load(true)
-                  await lib.refreshFriends()
-                }}
-              >
+              <button className="btn secondary" onClick={() => void signOut()}>
                 Keluar
               </button>
               <button className="btn secondary" onClick={() => void deleteAccount()}>
@@ -173,72 +232,12 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
           </>
         )}
         {status?.configured && !status.signedIn && (
-          <form className="pf-form" onSubmit={submit}>
-            {mode === 'up' && (
-              <input className="field" placeholder="Nama" value={displayName} maxLength={30} onChange={(e) => setDisplayName(e.target.value)} required />
-            )}
-            <input className="field" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input
-              className="field"
-              type="password"
-              placeholder="Password"
-              value={password}
-              minLength={mode === 'up' ? 6 : undefined}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {mode === 'up' && (
-              <>
-                <input
-                  className="field"
-                  placeholder="Kode undangan"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  required
-                />
-                <label className="pf-check">
-                  <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} required />
-                  <span>
-                    Saya setuju dengan{' '}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        void window.phinas.openLegal('terms')
-                      }}
-                    >
-                      Syarat &amp; Ketentuan
-                    </a>{' '}
-                    dan{' '}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        void window.phinas.openLegal('privacy')
-                      }}
-                    >
-                      Kebijakan Privasi
-                    </a>
-                    .
-                  </span>
-                </label>
-              </>
-            )}
-            {error && <div className="notice">{error}</div>}
-            <button className="btn" type="submit">
-              {mode === 'up' ? 'Daftar' : 'Masuk'}
+          <p>
+            Belum masuk. Playlist dan lagu yang kamu sukai tersimpan di komputer ini.{' '}
+            <button className="text-link" onClick={() => nav({ name: 'friends' })}>
+              Masuk atau daftar di halaman Teman
             </button>
-            <button
-              type="button"
-              className="btn secondary"
-              onClick={() => {
-                setMode(mode === 'up' ? 'in' : 'up')
-                setError(null)
-              }}
-            >
-              {mode === 'up' ? 'Sudah punya akun? Masuk' : 'Punya kode undangan? Daftar'}
-            </button>
-          </form>
+          </p>
         )}
       </section>
     </>

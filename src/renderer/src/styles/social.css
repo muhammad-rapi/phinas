@@ -80,3 +80,7 @@ button.fr-name:hover { color: var(--accent); }
 .vis-text strong { font-weight: 600; }
 .vis-text .small { color: var(--ink-soft); }
 .nav-vis { flex: none; margin-left: auto; color: var(--ink-faint); }
+
+/* ---------- Profil: listen scope ---------- */
+.pf-note { margin: 10px 0 0; color: var(--ink-soft); }
+.pf-theme:disabled { opacity: 0.5; }
