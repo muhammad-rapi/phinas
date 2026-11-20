@@ -23,6 +23,7 @@ import { ArtistView } from './screens/ArtistView'
 import { GenreView } from './screens/GenreView'
 import { NavProvider } from './nav/NavProvider'
 import { Profile } from './screens/Profile'
+import { Welcome } from './screens/Welcome'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
 import { ListenTogetherProvider, useListen } from './sync/ListenTogetherProvider'
@@ -54,6 +55,14 @@ function Shell(): React.JSX.Element {
   const [submitNonce, setSubmitNonce] = useState(0)
   const [lyricsFull, setLyricsFull] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
+  // First launch: the welcome screen until the user signs in or goes on without an account.
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => {
+    window.phinas
+      .syncStatus()
+      .then((s) => setWelcome(s.configured && !s.welcomeDone))
+      .catch(() => undefined)
+  }, [])
 
   // Screens that belong to the active mood: its page, and playlists/albums opened from there.
   const [moodViews, setMoodViews] = useState<View[]>([])
@@ -279,6 +288,7 @@ function Shell(): React.JSX.Element {
       )}
       <PlayerBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((o) => !o)} />
       {lyricsFull && <LyricsFull onClose={() => setLyricsFull(false)} />}
+      {welcome && <Welcome onDone={() => setWelcome(false)} />}
     </div>
     </NavProvider>
   )

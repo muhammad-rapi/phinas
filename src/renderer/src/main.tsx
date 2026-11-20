@@ -15,6 +15,7 @@ import './styles/lists.css'
 import './styles/home.css'
 import './styles/explore.css'
 import './styles/profile.css'
+import './styles/social.css'
 import { DARK_QUERY, browserStorage, readMode, resolveMode } from './theme/mode'
 
 if (navigator.userAgent.includes('Mac')) document.documentElement.dataset.platform = 'mac'
