@@ -1,8 +1,8 @@
 import { latestRelease, type Download } from '@/lib/release'
 import { RELEASES_URL } from '@/lib/site'
 
-/** Rebuilt at most once an hour, so a new GitHub release shows up without a deploy. */
-export const revalidate = 3600
+/** Rebuilt at most every 10 minutes, so a new GitHub release shows up without a deploy. */
+export const revalidate = 600
 
 const FEATURES: [string, string][] = [
   ['Dengar bareng', 'Ajak teman atau pasanganmu mendengarkan lagu yang sama di detik yang sama. Jeda, putar, dan geser berlaku untuk berdua.'],

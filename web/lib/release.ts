@@ -48,13 +48,14 @@ export function pickRelease(r: GhRelease): Release {
   }
 }
 
-/** The latest release, or null when GitHub cannot be reached. Cached for an hour. */
+/** The latest release, or null when GitHub cannot be reached. Cached for 10 minutes. */
 export async function latestRelease(): Promise<Release | null> {
   try {
     const token = process.env['GITHUB_TOKEN']
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    // The query only names the cache entry: bump it to drop a stale cached answer (it survives redeploys).
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest?cache=2`, {
       headers: { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      next: { revalidate: 3600 }
+      next: { revalidate: 600 }
     })
     if (!res.ok) return null
     return pickRelease((await res.json()) as GhRelease)
