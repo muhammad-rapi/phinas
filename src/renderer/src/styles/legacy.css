@@ -147,26 +147,6 @@
 .queue-artist { font-size: 12px; }
 
 /* ---------- player bar ---------- */
-.playerbar { position: absolute; z-index: 10; bottom: 32px; left: 248px; right: 0; width: min(920px, calc(100% - 248px - 48px)); margin: 0 auto; height: 76px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; align-items: center; gap: 14px; padding: 0 18px; background: var(--glass-strong); backdrop-filter: blur(28px) saturate(1.5); border: 1px solid var(--line); border-radius: 38px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); }
-.playerbar .listen-label { display: none; }
-.pb-open { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 4px; border-radius: 14px; text-align: left; }
-.pb-open:hover { background: var(--hover); }
-.pb-open[aria-pressed='true'] .pb-title { color: var(--accent-text); }
-.pb-open .pb-info { display: flex; flex-direction: column; min-width: 0; }
-.pb-track { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.pb-cover { width: 48px; height: 48px; flex: none; border-radius: 12px; background: var(--hover) center / cover; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4); }
-.pb-info { min-width: 0; }
-.pb-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pb-artist { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pb-controls { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.pb-buttons { display: flex; align-items: center; gap: 14px; }
-.play-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: #fff; transition: transform 0.15s, background 0.5s; }
-.play-btn:hover { transform: scale(1.07); }
-.pb-seek { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 560px; color: var(--muted); font-size: 12px; }
-.pb-time { width: 38px; font-variant-numeric: tabular-nums; }
-.pb-time:first-child { text-align: right; }
-.pb-volume { display: flex; justify-content: flex-end; align-items: center; gap: 10px; color: var(--muted); }
-.pb-volume .slider { width: 90px; flex: none; }
 
 
 /* ---------- lyrics ---------- */
@@ -213,12 +193,7 @@
 .lyrics-large.lyrics-plain { font-size: clamp(20px, 2.4vw, 30px); line-height: 1.8; }
 
 /* Listen together (kept minimal; the redesign will restyle it) */
-.listen-btn { display: inline-flex; align-items: center; gap: 6px; }
-.listen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.listen-label { font-size: 12px; white-space: nowrap; }
 /* Sticky so an invite is seen even when the page is scrolled down. */
-.listen-banner { position: sticky; top: 12px; z-index: 20; display: flex; align-items: center; gap: 12px; background: var(--glass-strong); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); cursor: default; }
-.listen-banner > span { flex: 1; }
 .listen-action {
   border: 0;
   border-radius: 999px;
@@ -343,6 +318,3 @@ button.tile-title:hover { text-decoration: underline; }
 .cover-row.wide { grid-auto-columns: 260px; }
 .cover-row.wide .cover-card-art { aspect-ratio: 16 / 9; }
 .cover-row .cover-card-art.skeleton { width: 168px; }
-.update-banner { display: flex; align-items: center; gap: 12px; cursor: default; }
-.update-banner > span { flex: 1; }
-.update-banner .listen-action { display: inline-flex; gap: 6px; }

@@ -24,6 +24,7 @@ import { ArtistLinks, pressable } from '../nav/NavProvider'
 const pct = (value: number, max: number): CSSProperties =>
   ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties
 
+/** The 56 px bar under the content: track, transport and progress, then the side controls. */
 export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTogglePanel: () => void }): React.JSX.Element {
   const p = usePlayer()
   const lib = useLibrary()
@@ -39,37 +40,37 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
   const VolumeIcon = p.volume === 0 ? VolumeX : p.volume < 0.5 ? Volume1 : Volume2
 
   return (
-    <div className="playerbar">
-      <div className="pb-track">
+    <footer className="player" aria-label="Pemutar">
+      <div className="player-track">
         {p.track && (
           <>
-            <div className="pb-open press" {...pressable(onTogglePanel)} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
-              <span className="pb-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
-              <span className="pb-info">
-                <span className="pb-title">{p.track.title}</span>
-                <ArtistLinks className="muted pb-artist" artist={p.track.artist} />
+            <div className="player-open press" {...pressable(onTogglePanel)} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
+              <span className="player-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+              <span className="player-info">
+                <span className="player-title">{p.track.title}</span>
+                <ArtistLinks className="player-artist" artist={p.track.artist} />
               </span>
             </div>
             <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
-              <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+              <Heart size={15} fill={liked ? 'currentColor' : 'none'} />
             </button>
           </>
         )}
       </div>
 
-      <div className="pb-controls">
-        <div className="pb-buttons">
+      <div className="player-center">
+        <div className="player-buttons">
           <button className={`icon-btn${p.shuffle ? ' on' : ''}`} onClick={p.toggleShuffle} aria-label="Acak" aria-pressed={p.shuffle}>
-            <Shuffle size={18} />
+            <Shuffle size={15} />
           </button>
           <button className="icon-btn" onClick={p.prev} aria-label="Sebelumnya">
-            <SkipBack size={22} fill="currentColor" />
+            <SkipBack size={16} fill="currentColor" />
           </button>
-          <button className="play-btn" onClick={p.toggle} aria-label="Putar atau jeda">
-            {p.playing ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+          <button className="player-play" onClick={p.toggle} aria-label="Putar atau jeda">
+            {p.playing ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" style={{ marginLeft: 2 }} />}
           </button>
           <button className="icon-btn" onClick={p.next} aria-label="Berikutnya">
-            <SkipForward size={22} fill="currentColor" />
+            <SkipForward size={16} fill="currentColor" />
           </button>
           <button
             className={`icon-btn${p.repeat !== 'off' ? ' on' : ''}`}
@@ -77,11 +78,11 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
             aria-label={`Ulangi: ${p.repeat}`}
             aria-pressed={p.repeat !== 'off'}
           >
-            {p.repeat === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
+            {p.repeat === 'one' ? <Repeat1 size={15} /> : <Repeat size={15} />}
           </button>
         </div>
-        <div className="pb-seek">
-          <span className="pb-time">{formatTime(p.time)}</span>
+        <div className="player-seek">
+          <span className="player-time">{formatTime(p.time)}</span>
           <input
             className="slider"
             type="range"
@@ -93,11 +94,11 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
             onChange={(e) => p.seek(Number(e.target.value))}
             aria-label="Posisi lagu"
           />
-          <span className="pb-time">{formatTime(p.duration)}</span>
+          <span className="player-time">{formatTime(p.duration)}</span>
         </div>
       </div>
 
-      <div className="pb-volume">
+      <div className="player-side">
         <ListenButton />
         {notch !== null && (
           <button
@@ -107,7 +108,7 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
             aria-label={notch ? 'Sembunyikan notch' : 'Tampilkan notch'}
             title={notch ? 'Sembunyikan notch' : 'Tampilkan notch'}
           >
-            <PanelTop size={18} />
+            <PanelTop size={15} />
           </button>
         )}
         <button
@@ -117,9 +118,9 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
           aria-label="Tampilkan panel sedang diputar"
           title="Sedang diputar"
         >
-          <PanelRight size={18} />
+          <PanelRight size={15} />
         </button>
-        <VolumeIcon size={18} />
+        <VolumeIcon size={15} />
         <input
           className="slider"
           type="range"
@@ -132,6 +133,6 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
           aria-label="Volume"
         />
       </div>
-    </div>
+    </footer>
   )
 }
