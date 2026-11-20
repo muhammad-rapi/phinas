@@ -197,6 +197,8 @@ app.whenReady().then(async () => {
   })
 
   mainWindow = createWindow()
+  // The notch sits on the display that shows Phinas, so it follows the window to another monitor.
+  mainWindow.on('moved', () => notch?.reposition())
   mainWindow.on('closed', () => {
     mainWindow = null
     // The notch is a window too: without this the app would never see window-all-closed.
