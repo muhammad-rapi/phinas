@@ -70,6 +70,15 @@ function Marquee({ text }: { text: string }): React.JSX.Element {
 export function Notch(): React.JSX.Element | null {
   const [state, setState] = useState<NotchState | null>(null)
   const [layout, setLayout] = useState<NotchLayout>(FALLBACK_LAYOUT)
+  // The main process pushes what is playing and where the pill sits. Without this the notch stays empty.
+  useEffect(() => {
+    const offState = window.phinas.onNotchState(setState)
+    const offLayout = window.phinas.onNotchLayout(setLayout)
+    return () => {
+      offState()
+      offLayout()
+    }
+  }, [])
   const [open, setOpen] = useState(false)
   const collapseTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const lyrics = useSyncedLyrics(state)
