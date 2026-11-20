@@ -155,8 +155,8 @@ export function Notch(): React.JSX.Element | null {
   }
   const size = open ? layout.expanded : peek ? peekSize : layout.compact
   const style = {
+    // Already made for a dark surface by the app (the Malam accent), so it works as text too.
     '--accent': state.accent,
-    '--accent-text': state.accent,
     '--on-accent': state.onAccent,
     '--w': `${size.w}px`,
     '--h': `${size.h}px`,

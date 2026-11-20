@@ -1,4 +1,5 @@
 :root {
+  --serif: 'Newsreader', Georgia, serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* A spring with a small overshoot, like the Dynamic Island's. */
   --spring: cubic-bezier(0.34, 1.32, 0.64, 1);
@@ -35,13 +36,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   transition: width 0.5s var(--spring), height 0.5s var(--spring), border-radius 0.5s var(--spring), box-shadow 0.4s var(--ease);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
-.pill.light {
-  --surface: rgba(255, 255, 255, 0.96);
-  --text: #111;
-  --muted: rgba(0, 0, 0, 0.58);
-  --line: rgba(0, 0, 0, 0.08);
-  --track: rgba(0, 0, 0, 0.14);
-}
 /* Hangs from the top edge (or the camera notch): square top, round bottom. */
 .pill.attached { border-radius: 0 0 20px 20px; box-shadow: none; }
 .pill.attached.peek { border-radius: 0 0 26px 26px; box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6); }
@@ -51,17 +45,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pill.floating.peek { border-radius: 0 0 28px 28px; }
 .pill.floating.open { border-radius: 0 0 40px 40px; box-shadow: 0 18px 44px -8px rgba(0, 0, 0, 0.6); }
 
-/* Same look as the app's Dynamic theme: the cover, blurred, tinted by its colour. */
-.ambient {
-  position: absolute; inset: -30%;
-  background-size: cover; background-position: center;
-  filter: blur(40px) saturate(1.6) brightness(0.55);
-  opacity: 0.6;
-  animation: fade-in 0.8s ease both;
-}
-.tint { position: absolute; inset: 0; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%); opacity: 0.9; pointer-events: none; }
-.pill.light .tint { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%); }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 0.6; } }
+/* A faint wash of the song's colour, like the app's pages. */
+.tint { position: absolute; inset: 0; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%); opacity: 0.9; pointer-events: none; }
 
 
 /* ---------- the three faces: compact, peek, open ----------
@@ -117,11 +102,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pill.open .full { opacity: 1; filter: none; transform: translateX(-50%) scale(1); pointer-events: auto; transition-delay: 0.1s; }
 .info { display: flex; align-items: center; gap: 14px; }
 .meta { flex: 1; min-width: 0; }
-.title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title { font-family: var(--serif); font-size: 17px; font-weight: 400; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .artist { margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .lyrics { height: 46px; display: flex; flex-direction: column; justify-content: center; gap: 3px; text-align: center; overflow: hidden; }
-.lyrics .now { font-size: 14px; font-weight: 700; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lyrics .now { font-family: var(--serif); font-size: 16px; font-style: italic; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lyrics .next { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 15px; }
 .lyrics .none { font-size: 11px; color: var(--muted); }
 
@@ -133,7 +118,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* a taller invisible hit area, so the thin bar is easy to grab */
 .bar::before { content: ''; position: absolute; inset: -10px 0; }
 .bar:hover, .bar.scrubbing { height: 6px; }
-.fill { position: relative; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-text)); transition: width 0.25s linear; }
+.fill { position: relative; height: 100%; border-radius: 4px; background: var(--accent); transition: width 0.25s linear; }
 .bar.scrubbing .fill { transition: none; }
 .fill::after {
   content: ''; position: absolute; right: -6px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%;
@@ -145,10 +130,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .ico { opacity: 0.8; transition: opacity 0.15s, transform 0.15s var(--ease); }
 .ico:hover { opacity: 1; transform: scale(1.12); }
 .ico:active { transform: scale(0.94); }
-.ico.main { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: #fff; opacity: 1; box-shadow: 0 6px 18px -4px var(--accent); }
-.ico.like.on { color: var(--accent-text); opacity: 1; }
+.ico.main { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: var(--on-accent); opacity: 1; box-shadow: 0 6px 18px -4px var(--accent); }
+.ico.like.on { color: var(--accent); opacity: 1; }
 
-.ico.on { color: var(--accent-text); opacity: 1; }
+.ico.on { color: var(--accent); opacity: 1; }
 .info { gap: 12px; }
 
 /* "Tambah ke playlist": covers the lower part of the open pill; the list scrolls. */
@@ -173,5 +158,5 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .picker-row:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 10%, transparent); }
 .picker-row:disabled { cursor: default; }
 .picker-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.picker-state { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--accent-text); flex-shrink: 0; }
+.picker-state { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
 .picker-empty { font-size: 12px; color: var(--muted); padding: 10px; }
