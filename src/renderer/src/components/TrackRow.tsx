@@ -2,15 +2,27 @@ import { Heart, ListPlus, Play, X } from 'lucide-react'
 import { useState } from 'react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
-import { ArtistLinks } from '../nav/NavProvider'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
 
 export const formatTime = (s: number): string =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
+/** The labels above a track list: NO · JUDUL · DURASI, over a 1 px ink rule. */
+export function TrackListHead(): React.JSX.Element {
+  return (
+    <div className="tl-head label" aria-hidden="true">
+      <span>No</span>
+      <span>Judul</span>
+      <span />
+      <span>Durasi</span>
+    </div>
+  )
+}
+
 interface Props {
   track: Track
-  /** Shown instead of the cover's play icon until hovered (e.g. the position in a playlist). */
+  /** Position in the list, shown as the row number. */
   index?: number
   onPlay: () => void
   /** Show a remove button (used inside a playlist). */
@@ -37,24 +49,19 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
 
   return (
     // Clicking anywhere on the row plays it; the action buttons stop the click from reaching here.
-    <div className={`row${isCurrent ? ' playing' : ''}`} onClick={onPlay}>
-      <button className="row-cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} aria-label={`Putar ${track.title}`}>
-        <span className="row-cover-overlay">
-          {index !== undefined && <span className="row-index">{index + 1}</span>}
-          <Play size={18} fill="currentColor" className="row-play" />
-        </span>
-      </button>
-      <div className="meta">
-        <div className="title">{track.title}</div>
-        <ArtistLinks className="muted row-artist" artist={track.artist} />
+    <div className={`tl-row${isCurrent ? ' playing' : ''}`} {...pressable(onPlay)} aria-label={`Putar ${track.title}`}>
+      <span className="tl-num">{isCurrent ? <Play size={12} fill="currentColor" aria-hidden="true" /> : index !== undefined ? index + 1 : ''}</span>
+      <div className="tl-meta">
+        <span className="tl-title">{track.title}</span>
+        <ArtistLinks className="tl-artist" artist={track.artist} />
       </div>
-      <div className="row-actions" onClick={(e) => e.stopPropagation()}>
+      <div className="tl-actions" onClick={(e) => e.stopPropagation()}>
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>
-          <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+          <Heart size={15} fill={liked ? 'currentColor' : 'none'} />
         </button>
         <div className="menu-wrap">
           <button className="icon-btn" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu lagu" aria-expanded={menuOpen}>
-            <ListPlus size={18} />
+            <ListPlus size={15} />
           </button>
           {menuOpen && (
             <>
@@ -80,7 +87,7 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
                 >
                   Tambah ke antrean
                 </button>
-                <div className="menu-title">Tambah ke playlist</div>
+                <div className="label menu-title">Tambah ke playlist</div>
                 {lib.playlists.length === 0 && <div className="menu-empty">Belum ada playlist</div>}
                 {lib.playlists.map((p) => (
                   <button key={p.id} role="menuitem" className="menu-item" onClick={() => addTo(p.id)}>
@@ -93,11 +100,11 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
         </div>
         {onRemove && (
           <button className="icon-btn" onClick={onRemove} aria-label="Hapus dari playlist">
-            <X size={18} />
+            <X size={15} />
           </button>
         )}
       </div>
-      <div className="row-time muted">{track.durationSec > 0 ? formatTime(track.durationSec) : ''}</div>
+      <div className="tl-time">{track.durationSec > 0 ? formatTime(track.durationSec) : ''}</div>
     </div>
   )
 }

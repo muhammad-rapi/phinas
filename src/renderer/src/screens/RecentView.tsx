@@ -18,8 +18,8 @@ export function RecentView(): React.JSX.Element {
     <>
       <CollectionHeader
         cover={
-          <div className="pcover pcover-liked">
-            <History size={64} />
+          <div className="pcover pcover-icon">
+            <History size={48} />
           </div>
         }
         kind="Riwayat"

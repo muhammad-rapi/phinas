@@ -64,11 +64,6 @@
 .mcard-play:hover { transform: scale(1.06); }
 
 /* ---------- playlist covers ---------- */
-.pcover { aspect-ratio: 1; border-radius: 8px; background: var(--hover) center / cover; flex: none; overflow: hidden; }
-.pcover-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); background: linear-gradient(135deg, var(--hover), var(--line)); }
-.pcover-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.pcover-grid div { background: center / cover; }
-.pcover-liked { display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #5b3df5, #b8a9ff); }
 
 /* ---------- collection header ---------- */
 .collection-head { display: flex; align-items: flex-end; gap: 24px; padding: 28px 0 20px; }
@@ -77,9 +72,6 @@
 .collection-info { min-width: 0; }
 .collection-kind { font-size: 13px; font-weight: 500; }
 .collection-title { font-size: clamp(28px, 4.2vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin: 6px 0 10px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.title-button { font: inherit; letter-spacing: inherit; text-align: left; display: block; border-radius: 8px; }
-.title-button:hover { background: var(--hover); }
-.title-input { font: inherit; font-weight: 800; letter-spacing: inherit; width: 100%; background: var(--hover); color: var(--text); border: 2px solid var(--accent); border-radius: 8px; padding: 0 8px; outline: 0; }
 .collection-actions { display: flex; align-items: center; gap: 18px; padding-bottom: 16px; }
 .big-play { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); transition: transform 0.15s, background 0.5s; }
 .big-play:hover { transform: scale(1.06); }
@@ -106,13 +98,6 @@
 .row:hover .row-actions, .row-actions:focus-within, .row.playing .row-actions { opacity: 1; }
 .row-time { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
 
-.menu-wrap { position: relative; }
-.menu-backdrop { position: fixed; inset: 0; z-index: 20; }
-.menu { position: absolute; right: 0; top: 100%; z-index: 21; min-width: 220px; max-height: 280px; overflow-y: auto; padding: 6px; border-radius: 12px; background: var(--glass-strong); border: 1px solid var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); backdrop-filter: blur(30px); }
-.menu-title { padding: 6px 10px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.menu-empty { padding: 8px 10px; color: var(--muted); }
-.menu-item { width: 100%; justify-content: flex-start; padding: 9px 10px; border-radius: 8px; text-align: left; }
-.menu-item:hover { background: var(--hover); }
 
 /* ---------- search ---------- */
 .recent-list { display: flex; flex-direction: column; gap: 2px; max-width: 560px; }
@@ -254,9 +239,7 @@ button.tile-title:hover { text-decoration: underline; }
 
 /* ---------- artist links and page ---------- */
 .row-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.artist-hero { width: 100%; height: 100%; border-radius: 50%; background: var(--hover) center / cover; }
 .artist-more { margin: 8px 0 24px; }
-.collection-cover:has(.artist-hero) { border-radius: 50%; }
 /* A div acting as a button (it holds artist links, which a <button> cannot). */
 /* Cards stack art, title and artist full width, so the title can truncate. */
 .cover-card.press { align-items: stretch; gap: 4px; }

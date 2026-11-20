@@ -11,8 +11,8 @@ export function LikedView(): React.JSX.Element {
     <>
       <CollectionHeader
         cover={
-          <div className="pcover pcover-liked">
-            <Heart size={64} fill="currentColor" />
+          <div className="pcover pcover-icon">
+            <Heart size={48} fill="currentColor" />
           </div>
         }
         kind="Playlist"
