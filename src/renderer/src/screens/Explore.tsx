@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { FavoriteArtist, HomeFeed, Track } from '../../../shared/types'
+import type { FavoriteArtist, HomeFeed, PartnerPlaylist, Track } from '../../../shared/types'
 import { CoverGrid, CoverGridSkeleton } from '../components/CoverGrid'
+import { PlaylistCover } from '../components/PlaylistCover'
 import { formatTime } from '../components/TrackRow'
 import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
+import { rememberPlaylist } from '../social/playlistCache'
+import { useSocial } from '../social/SocialProvider'
 import type { Nav } from '../views'
 
 const FEED_ERROR = 'Tidak bisa memuat bagian ini. Cek koneksi internetmu.'
@@ -69,11 +72,32 @@ export function Explore({ nav }: { nav: Nav }): React.JSX.Element {
   const [feed, setFeed] = useState<HomeFeed | null>(null)
   const [failed, setFailed] = useState(false)
   const [artists, setArtists] = useState<FavoriteArtist[]>([])
+  const social = useSocial()
+  const [publicLists, setPublicLists] = useState<PartnerPlaylist[] | null>(null)
+  const [publicFailed, setPublicFailed] = useState(false)
 
   useEffect(() => {
     window.phinas.getHomeFeed().then(setFeed).catch(() => setFailed(true))
     window.phinas.listFavoriteArtists(6).then(setArtists).catch(() => setArtists([]))
   }, [])
+
+  // Public playlists come from other Phinas users, so they need an account.
+  useEffect(() => {
+    if (!social.signedIn) return
+    let alive = true
+    setPublicFailed(false)
+    window.phinas
+      .listPublicPlaylists()
+      .then((p) => {
+        if (alive) setPublicLists(p.slice(0, 12))
+      })
+      .catch(() => {
+        if (alive) setPublicFailed(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [social.signedIn])
 
   /** A feed section shows while loading (placeholders) and on failure (the error line); hidden only when empty. */
   const shown = (count: number | undefined): boolean => !feed || (count ?? 0) > 0
@@ -143,6 +167,31 @@ export function Explore({ nav }: { nav: Nav }): React.JSX.Element {
             error
           ) : (
             <CoverGridSkeleton four count={4} />
+          )}
+        </section>
+      )}
+
+      {social.signedIn && (publicLists === null || publicLists.length > 0 || publicFailed) && (
+        <section className="sec">
+          <h2 className="section-title">Playlist publik</h2>
+          {publicFailed ? (
+            error
+          ) : publicLists === null ? (
+            <CoverGridSkeleton four count={4} />
+          ) : (
+            <CoverGrid
+              four
+              items={publicLists.map((p) => ({
+                key: p.id,
+                art: <PlaylistCover covers={p.coverUrls} />,
+                title: p.name,
+                meta: `oleh ${p.ownerName}`,
+                onOpen: () => {
+                  rememberPlaylist(p)
+                  nav({ name: 'friendPlaylist', id: p.id })
+                }
+              }))}
+            />
           )}
         </section>
       )}
