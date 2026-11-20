@@ -178,3 +178,11 @@ test('CLOSED marks the friend offline but keeps the channel', async () => {
   await tick()
   expect(client.removed).toEqual([])
 })
+
+test('a sync called before close does nothing, even when it runs after', async () => {
+  const pending = hub.sync('me', ['f1'])
+  const closing = hub.close()
+  await Promise.all([pending, closing])
+  expect(client.channels).toHaveLength(0)
+  expect(client.authed).toBe(0)
+})

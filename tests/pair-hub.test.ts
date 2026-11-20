@@ -163,6 +163,29 @@ describe('PairHub', () => {
     expect(of('listen:closed')).toEqual([{ friendId: 'a', reason: 'not-allowed' }])
   })
 
+  test('a channel that fails to open is tried again on the next reconcile, the others still open', async () => {
+    let fail = 1
+    client.realtime.setAuth = async (): Promise<void> => {
+      if (fail-- > 0) throw new Error('socket down')
+    }
+    await hub.setFriends('me', [friend('a'), friend('b')])
+    await hub.setOnline(['a', 'b'])
+    expect(Object.keys(hub.status())).toEqual(['b'])
+    await hub.setOnline(['a', 'b'])
+    expect(Object.keys(hub.status()).sort()).toEqual(['a', 'b'])
+    expect(hub.status().a.connected).toBe(true)
+  })
+
+  test('close during a pending setFriends opens nothing', async () => {
+    await hub.setOnline(['a'])
+    const pending = hub.setFriends('me', [friend('a')])
+    const online = hub.setOnline(['a'])
+    const closing = hub.close()
+    await Promise.all([pending, online, closing])
+    expect(client.channels).toHaveLength(0)
+    expect(hub.status()).toEqual({})
+  })
+
   describe('after a refusal', () => {
     afterEach(() => {
       vi.useRealTimers()

@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { openDb } from '../src/main/library/db'
 import { LibraryHost, planAccount, planGuest } from '../src/main/library/host'
 import { Library } from '../src/main/library/library'
@@ -57,6 +57,7 @@ describe('LibraryHost', () => {
         // already closed
       }
     }
+    if (existsSync(join(dir, 'libraries'))) chmodSync(join(dir, 'libraries'), 0o755)
     rmSync(dir, { recursive: true, force: true })
   })
 
@@ -143,5 +144,80 @@ describe('LibraryHost', () => {
     expect(h.services).toBe(2)
     h.useAccount('u1')
     expect(h.services).toBe(2)
+  })
+
+  test('the claim is recorded before phinas.db moves', () => {
+    seedLegacy('Lama')
+    const h = host(null)
+    const set = vi.spyOn(settings, 'set')
+    let legacyAtClaim: boolean | null = null
+    set.mockImplementation(function (this: SettingsStore, ...args: Parameters<SettingsStore['set']>) {
+      if (args[0] === 'claimedBy' && args[1] === 'u1') legacyAtClaim = existsSync(join(dir, 'phinas.db'))
+      return SettingsStore.prototype.set.apply(this, args)
+    })
+    expect(h.useAccount('u1')).toBe(true)
+    expect(legacyAtClaim).toBe(true)
+    expect(settings.get('claimedBy')).toBe('u1')
+    set.mockRestore()
+  })
+
+  test('a claim whose move fails is rolled back', () => {
+    seedLegacy('Lama')
+    const h = host(null)
+    mkdirSync(join(dir, 'libraries'))
+    chmodSync(join(dir, 'libraries'), 0o555)
+    expect(h.useAccount('u1')).toBe(false)
+    expect(settings.get('claimedBy')).toBeNull()
+    expect(existsSync(join(dir, 'phinas.db'))).toBe(true)
+    expect(h.userId).toBeNull()
+    expect(names(h)).toEqual(['Lama'])
+  })
+
+  test('a claim whose open fails is rolled back', () => {
+    seedLegacy('Lama')
+    const open = (path: string): Library => {
+      if (path.endsWith('u1.db')) throw new Error('corrupt')
+      return new Library(openDb(path))
+    }
+    const h = host(null, open)
+    expect(h.useAccount('u1')).toBe(false)
+    expect(settings.get('claimedBy')).toBeNull()
+    expect(names(h)).toEqual(['Lama'])
+  })
+
+  test('when the previous library cannot be reopened either, the signed-out one is used', () => {
+    let failU1 = false
+    const open = (path: string): Library => {
+      if (path.endsWith('u2.db') || (failU1 && path.endsWith('u1.db'))) throw new Error('disk gone')
+      return new Library(openDb(path))
+    }
+    const h = host('u1', open)
+    failU1 = true
+    expect(h.useAccount('u2')).toBe(false)
+    expect(h.userId).toBeNull()
+    expect(() => h.library.listPlaylists()).not.toThrow()
+  })
+
+  test('as a last resort an in-memory library keeps the handlers working', () => {
+    let failAll = false
+    const open = (path: string): Library => {
+      if (failAll) throw new Error('disk gone')
+      return new Library(openDb(path))
+    }
+    const h = host('u1', open)
+    failAll = true
+    expect(h.useAccount('u2')).toBe(false)
+    expect(h.userId).toBeNull()
+    h.library.createPlaylist('Sementara')
+    expect(names(h)).toEqual(['Sementara'])
+  })
+
+  test('the builder learns who owns the library', () => {
+    const owners: (string | null)[] = []
+    const h = new LibraryHost({ dir, settings, userId: null, build: (_lib, owner) => owners.push(owner) })
+    hosts.push(h as unknown as LibraryHost<number>)
+    h.useAccount('u1')
+    h.useGuest()
+    expect(owners).toEqual([null, 'u1', null])
   })
 })

@@ -1,14 +1,21 @@
-import { beforeEach, expect, test } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { openDb } from '../src/main/library/db'
 import { Library } from '../src/main/library/library'
 import type { LibrarySnapshot } from '../src/main/library/merge'
-import { SyncEngine, type Remote } from '../src/main/sync/engine'
+import { engineFor, SyncEngine, type Remote } from '../src/main/sync/engine'
 import type { LikeEntry, PlaylistWithTracks, Track } from '../src/shared/types'
 
 const track: Track = { videoId: 'video000001', title: 'S', artist: 'A', coverUrl: '', durationSec: 1 }
 
 /** Keeps a server copy like Supabase would: pushes land in it, pulls read it. */
 class FakeRemote implements Remote {
+  /** Who the stored session says is signed in. */
+  signedIn: string | null = 'u1'
+  /** Runs while pullLibrary's request is out. */
+  duringPull: (() => void) | null = null
+  async session(): Promise<{ userId: string } | null> {
+    return this.signedIn ? { userId: this.signedIn } : null
+  }
   upserts: PlaylistWithTracks[] = []
   deletes: string[] = []
   likes: LikeEntry[][] = []
@@ -37,6 +44,7 @@ class FakeRemote implements Remote {
   }
   async pullLibrary(): Promise<LibrarySnapshot> {
     this.maybeFail()
+    this.duringPull?.()
     return structuredClone(this.server)
   }
 }
@@ -134,4 +142,57 @@ test('a failed pull leaves the library as it was', async () => {
   remote.failNext = true
   await expect(engine.pull()).rejects.toThrow('offline')
   expect(lib.getPlaylist(p.id)).not.toBeNull()
+})
+
+describe('owner guard', () => {
+  const owned = (owner: string | null, active = (): boolean => true): SyncEngine | null =>
+    engineFor(lib, owner, remote, active)
+
+  test('a library no account owns gets no engine', () => {
+    expect(owned(null)).toBeNull()
+    expect(engineFor(lib, 'u1', null, () => true)).toBeNull()
+  })
+
+  test('nothing is pushed or pulled while another account is signed in', async () => {
+    const e = owned('u1')!
+    lib.createPlaylist('P')
+    remote.server.playlists.push({ id: 'srv', name: 'Server', updatedAt: 5, visibility: 'friends', coverUrls: [], tracks: [] })
+    remote.signedIn = 'u2'
+    expect(await e.flush()).toEqual({ pushed: 0, skipped: true })
+    expect(await e.pull()).toBe(false)
+    expect(remote.upserts).toEqual([])
+    expect(lib.getPlaylist('srv')).toBeNull()
+    expect(lib.pendingKeys()).toHaveLength(1)
+  })
+
+  test('nothing is synced when signed out', async () => {
+    const e = owned('u1')!
+    lib.createPlaylist('P')
+    remote.signedIn = null
+    expect((await e.flush()).skipped).toBe(true)
+    expect(remote.upserts).toEqual([])
+  })
+
+  test('the owner signed in syncs as usual', async () => {
+    const e = owned('u1')!
+    lib.createPlaylist('P')
+    expect(await e.flush()).toEqual({ pushed: 1 })
+  })
+
+  test('a pulled copy is discarded when the account changed while the request was out', async () => {
+    const e = owned('u1')!
+    remote.server.playlists.push({ id: 'srv', name: 'Server', updatedAt: 5, visibility: 'friends', coverUrls: [], tracks: [] })
+    remote.duringPull = () => {
+      remote.signedIn = 'u2'
+    }
+    expect(await e.pull()).toBe(false)
+    expect(lib.getPlaylist('srv')).toBeNull()
+  })
+
+  test('an engine that is no longer the active one does nothing', async () => {
+    const e = owned('u1', () => false)!
+    lib.createPlaylist('P')
+    expect((await e.flush()).skipped).toBe(true)
+    expect(remote.upserts).toEqual([])
+  })
 })

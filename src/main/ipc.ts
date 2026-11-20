@@ -68,12 +68,20 @@ export function createHandlers(d: Deps): PhinasApi {
     d.cache.clear()
   }
 
-  /** After sign-in or sign-up: open that account's library, pull it, then tell the renderer. */
-  const enterAccount = async (r: SupabaseRemote): Promise<void> => {
+  /**
+   * After sign-in or sign-up: open that account's library, pull it, then tell the renderer. When the
+   * library cannot be opened the previous one stays active and nothing is pulled or pushed: syncing
+   * it would mix another library into this account.
+   */
+  const enterAccount = async (r: Pick<SupabaseRemote, 'session'>): Promise<void> => {
     const s = await r.session()
-    if (s) d.host.useAccount(s.userId)
+    if (!s) throw new Error('phinas:not_signed_in')
     d.settings.set('welcomeDone', true)
     d.lastError.value = undefined
+    if (!d.host.useAccount(s.userId)) {
+      d.notifyAccountChanged()
+      throw new Error(`Perpustakaan akun ini tidak bisa dibuka: ${d.host.error ?? 'alasan tidak diketahui'}`)
+    }
     await d.pullLibrary()
     d.notifyAccountChanged()
   }
@@ -133,6 +141,8 @@ export function createHandlers(d: Deps): PhinasApi {
     syncSignOut: async () => {
       await leaveAll()
       await requireRemote().signOut()
+      // A friends refresh that started while the sign-out was out may have reopened channels.
+      await leaveAll()
       leaveAccount()
     },
     syncSignUp: async (input) => {
@@ -158,6 +168,8 @@ export function createHandlers(d: Deps): PhinasApi {
       const s = await signedIn()
       if (!s) return []
       const friends = await withCache(d.cache, s.uid, 'friends', () => s.r.listFriends())
+      // Signed out (or another account signed in) while the list was loading: open nothing for it.
+      if ((await s.r.session())?.userId !== s.uid) return []
       void d.presence
         ?.sync(s.uid, friends.map((f) => f.userId))
         .catch((e) => console.warn('[presence] sync failed:', e))

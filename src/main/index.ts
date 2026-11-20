@@ -12,7 +12,7 @@ import { createCoverFetcher } from './music/cover'
 import { createStreamProxy } from './music/proxy'
 import { createSystemVolume } from './system-volume'
 import { YoutubeMusicSource } from './music/source'
-import { SyncEngine } from './sync/engine'
+import { engineFor } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
 import { PairHub } from './sync/pair-hub'
 import { CacheStore } from './sync/cache'
@@ -106,12 +106,19 @@ app.whenReady().then(async () => {
   const signedInAs = remote ? await remote.session().catch(() => null) : null
   // Someone already signed in on this computer has answered the welcome screen.
   if (signedInAs && !settings.get('welcomeDone')) settings.set('welcomeDone', true)
-  const host = new LibraryHost<LibraryServices>({
+  const host: LibraryHost<LibraryServices> = new LibraryHost<LibraryServices>({
     dir: userData,
     settings,
     userId: signedInAs?.userId ?? null,
-    build: (lib) => ({ engine: remote ? new SyncEngine(lib, remote) : null, recommender: new Recommender(lib, source) })
+    // Only an account's own library is synced, and only while that account is the signed-in one.
+    build: (lib, owner) => ({
+      engine: engineFor(lib, owner, remote, (e) => host.services.engine === e && host.userId === owner),
+      recommender: new Recommender(lib, source)
+    })
   })
+  if (signedInAs && host.userId !== signedInAs.userId) {
+    console.error('[sync] the account library could not be opened; sync stays off for this run:', host.error)
+  }
   const lastError: { value?: string } = {}
 
   let mainWindow: BrowserWindow | null = null
@@ -132,7 +139,8 @@ app.whenReady().then(async () => {
   /** Pushes, then pulls the account's library; a change reloads the renderer's copy. Never throws. */
   const pullLibrary = async (): Promise<void> => {
     const engine = host.services.engine
-    if (!engine || !remote || !(await remote.session())) return
+    // The engine itself checks that its owner is still the signed-in account.
+    if (!engine) return
     try {
       if (await engine.pull()) mainWindow?.webContents.send('library:changed')
     } catch (e) {
@@ -203,7 +211,11 @@ app.whenReady().then(async () => {
         const n = tick++
         // Read the engine each time: the host rebuilds it when another account's library opens.
         const engine = host.services.engine
-        if (engine) lastError.value = (await engine.flush()).error
+        if (engine) {
+          const r = await engine.flush()
+          // A flush that ran against a library that has since closed says nothing about the open one.
+          if (host.services.engine === engine && !r.skipped) lastError.value = r.error
+        }
         if (n % PULL_EVERY_TICKS === PULL_EVERY_TICKS - 1) await pullLibrary()
         // Every minute: refresh friends. listFriends hands them to presence and to the pair hub,
         // which closes the channel of any friend who may no longer listen with us.

@@ -25,8 +25,25 @@ export function planGuest(claimedBy: string | null): 'legacy' | 'guest' {
 /** SQLite in WAL mode keeps two side files next to the database. */
 const DB_SUFFIXES = ['', '-wal', '-shm']
 
+/** Moves the database with its side files; on failure moves back what already moved, then throws. */
 function moveDb(from: string, to: string): void {
-  for (const s of DB_SUFFIXES) if (existsSync(from + s)) renameSync(from + s, to + s)
+  const moved: string[] = []
+  try {
+    for (const s of DB_SUFFIXES) {
+      if (!existsSync(from + s)) continue
+      renameSync(from + s, to + s)
+      moved.push(s)
+    }
+  } catch (e) {
+    for (const s of moved) {
+      try {
+        renameSync(to + s, from + s)
+      } catch (back) {
+        console.error('[library] could not move a file back:', back)
+      }
+    }
+    throw e
+  }
 }
 
 function removeDb(path: string): void {
@@ -45,8 +62,11 @@ export interface LibraryHostOptions<S> {
   settings: SettingsStore
   /** The signed-in user at start (from the stored session), or null. */
   userId: string | null
-  /** Builds what depends on the library (sync engine, recommender); called again after every switch. */
-  build: (lib: Library) => S
+  /**
+   * Builds what depends on the library (sync engine, recommender); called again after every switch.
+   * `owner` is the account the library belongs to, or null for a signed-out library (never synced).
+   */
+  build: (lib: Library, owner: string | null) => S
   /** Opens a library file. Tests pass one that fails on purpose. */
   open?: (path: string) => Library
 }
@@ -65,7 +85,7 @@ export class LibraryHost<S> {
   private svc: S
   private readonly dir: string
   private readonly settings: SettingsStore
-  private readonly build: (lib: Library) => S
+  private readonly build: (lib: Library, owner: string | null) => S
   private readonly open: (path: string) => Library
 
   constructor(o: LibraryHostOptions<S>) {
@@ -84,7 +104,7 @@ export class LibraryHost<S> {
     this.lib = first.lib
     this.path = first.path
     this.owner = first.owner
-    this.svc = this.build(this.lib)
+    this.svc = this.build(this.lib, this.owner)
   }
 
   get library(): Library {
@@ -124,23 +144,44 @@ export class LibraryHost<S> {
   }
 
   private switchTo(next: () => Opened): boolean {
-    const prevPath = this.path
+    const prev = { path: this.path, owner: this.owner }
     this.lib.close()
     let ok = true
     try {
-      const n = next()
-      this.lib = n.lib
-      this.path = n.path
-      this.owner = n.owner
+      this.use(next())
       this.error = null
     } catch (e) {
       ok = false
       this.error = e instanceof Error ? e.message : String(e)
       console.error('[library] switch failed, keeping the previous library:', e)
-      this.lib = this.open(prevPath)
+      this.use(this.reopen(prev))
     }
-    this.svc = this.build(this.lib)
+    this.svc = this.build(this.lib, this.owner)
     return ok
+  }
+
+  private use(o: Opened): void {
+    this.lib = o.lib
+    this.path = o.path
+    this.owner = o.owner
+  }
+
+  /**
+   * The previous library again after a failed switch. If even that fails, the signed-out library,
+   * and as a last resort an in-memory one, so the handlers keep working.
+   */
+  private reopen(prev: { path: string; owner: string | null }): Opened {
+    try {
+      return { lib: this.open(prev.path), path: prev.path, owner: prev.owner }
+    } catch (e) {
+      console.error('[library] could not reopen the previous library, using the signed-out one:', e)
+    }
+    try {
+      return this.openGuest(false)
+    } catch (e) {
+      console.error('[library] could not open the signed-out library, using an in-memory one:', e)
+    }
+    return { lib: new Library(openDb(':memory:')), path: ':memory:', owner: null }
   }
 
   private openAccount(uid: string): Opened {
@@ -154,15 +195,22 @@ export class LibraryHost<S> {
       claimedBy: this.settings.get('claimedBy')
     })
     if (plan !== 'claim') return { lib: this.open(path), path, owner: uid }
-    moveDb(this.legacyPath, path)
+    // Recorded before the move: a crash after the move must not leave phinas.db unclaimed (another
+    // account could then claim this account's library). Rolled back when the claim fails.
+    this.settings.set('claimedBy', uid)
     let lib: Library
     try {
-      lib = this.open(path)
+      moveDb(this.legacyPath, path)
+      try {
+        lib = this.open(path)
+      } catch (e) {
+        moveDb(path, this.legacyPath)
+        throw e
+      }
     } catch (e) {
-      moveDb(path, this.legacyPath)
+      this.settings.set('claimedBy', null)
       throw e
     }
-    this.settings.set('claimedBy', uid)
     return { lib, path, owner: uid }
   }
 

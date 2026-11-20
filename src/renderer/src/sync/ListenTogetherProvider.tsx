@@ -151,6 +151,12 @@ export function ListenTogetherProvider({ children }: { children: ReactNode }): R
 
     /** Another account (or none): forget every session and channel, then catch up on the new account's. */
     const reset = (): void => {
+      // Tell the friend first, so their side does not wait out the grace period.
+      const live = liveRef.current
+      if (live) {
+        if (live.session.getState().status === 'invited') live.session.decline()
+        else live.session.end()
+      }
       stop()
       linksRef.current = {}
       setLinks({})

@@ -29,7 +29,7 @@ export class PresenceHub {
   private online = new Set<string>()
   private me: string | null = null
   private queue: Promise<unknown> = Promise.resolve()
-  /** Bumped by close(); a sync that sees it change stops. */
+  /** Bumped by close(); a sync called before it does nothing, and one that sees it change stops. */
   private epoch = 0
 
   constructor(
@@ -42,7 +42,8 @@ export class PresenceHub {
   }
 
   sync(me: string, friendIds: string[]): Promise<void> {
-    return this.run(() => this.doSync(me, friendIds))
+    const epoch = this.epoch
+    return this.run(() => this.doSync(me, friendIds, epoch))
   }
 
   close(): Promise<void> {
@@ -57,8 +58,8 @@ export class PresenceHub {
     return p
   }
 
-  private async doSync(me: string, friendIds: string[]): Promise<void> {
-    const epoch = this.epoch
+  private async doSync(me: string, friendIds: string[], epoch: number): Promise<void> {
+    if (epoch !== this.epoch) return
     if (this.me !== me) await this.doClose()
     if (epoch !== this.epoch) return
     this.me = me

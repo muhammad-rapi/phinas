@@ -41,6 +41,8 @@ export class PairHub {
   /** When each refused channel was refused, by friend id. */
   private refusedAt = new Map<string, number>()
   private queue: Promise<unknown> = Promise.resolve()
+  /** Bumped by close(); a call made before it does nothing, even if it runs after. */
+  private generation = 0
 
   constructor(
     private readonly sb: PairRealtimeLike,
@@ -50,19 +52,23 @@ export class PairHub {
 
   /** The friends list was fetched again (it carries `canListen`). */
   setFriends(me: string, friends: Friend[]): Promise<void> {
+    const gen = this.generation
     return this.run(async () => {
+      if (gen !== this.generation) return
       if (this.me !== null && this.me !== me) await this.closeAll('closed')
       this.me = me
       this.friends = friends
-      await this.reconcile()
+      await this.reconcile(gen)
     })
   }
 
   /** The set of online friends changed (from PresenceHub). */
   setOnline(ids: string[]): Promise<void> {
+    const gen = this.generation
     return this.run(async () => {
+      if (gen !== this.generation) return
       this.online = new Set(ids)
-      await this.reconcile()
+      await this.reconcile(gen)
     })
   }
 
@@ -77,6 +83,7 @@ export class PairHub {
 
   /** Sign-out, deletion or a disabled account: leave everything and forget the lists. */
   close(): Promise<void> {
+    this.generation++
     return this.run(async () => {
       this.me = null
       this.friends = []
@@ -92,7 +99,7 @@ export class PairHub {
     return p
   }
 
-  private async reconcile(): Promise<void> {
+  private async reconcile(gen: number): Promise<void> {
     const me = this.me
     if (me === null) return
     // A refused channel stays in the map (so it is not reopened) until its cooldown has passed.
@@ -114,9 +121,17 @@ export class PairHub {
       this.refusedAt.delete(id)
     }
     for (const id of plan.open) {
+      if (gen !== this.generation) return
       const p = new PairChannel(this.sb, (channel, value) => this.forward(id, channel, value))
       this.pairs.set(id, p)
-      await p.open(me, id)
+      try {
+        await p.open(me, id)
+      } catch (e) {
+        // Forget it so the next reconcile tries again; the other friends still get their channel.
+        console.warn('[listen] could not open a pair channel:', e)
+        if (this.pairs.get(id) === p) this.pairs.delete(id)
+        await p.close('closed').catch(() => undefined)
+      }
     }
   }
 
