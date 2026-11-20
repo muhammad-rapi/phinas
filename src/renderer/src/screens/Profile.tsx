@@ -92,18 +92,12 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
 
   return (
     <>
-      <div className="profile-head">
-        <div className="avatar-lg">{initial}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="muted">Profil</span>
-          <input
-            className="profile-name"
-            value={name}
-            maxLength={30}
-            onChange={(e) => onName(e.target.value)}
-            aria-label="Nama tampilan"
-          />
-          <div className="profile-stats">
+      <header className="pf-head">
+        <div className="pf-avatar">{initial}</div>
+        <div className="pf-who">
+          <span className="label accent">Profil</span>
+          <input className="pf-name" value={name} maxLength={30} onChange={(e) => onName(e.target.value)} aria-label="Nama tampilan" />
+          <div className="pf-stats">
             <span>
               <strong>{lib.playlists.length}</strong> playlist
             </span>
@@ -113,46 +107,40 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             {status?.signedIn && <span>{status.email}</span>}
           </div>
         </div>
-      </div>
+      </header>
 
-      <section className="profile-section">
-        <h3>Tema</h3>
-        <div className="grid">
+      <section className="sec pf-sec">
+        <h2 className="section-title">Tema</h2>
+        <div className="pf-themes" role="radiogroup" aria-label="Tema">
           {THEMES.map((t) => (
             <button
               key={t.id}
-              className={`card${theme === t.id ? ' active' : ''}`}
-              style={theme === t.id ? { outline: '2px solid var(--accent)' } : undefined}
+              role="radio"
+              aria-checked={theme === t.id}
+              className={`pf-theme${theme === t.id ? ' active' : ''}`}
               onClick={() => onTheme(t.id)}
             >
               <strong>{t.label}</strong>
-              <span className="muted">{t.hint}</span>
+              <span className="small">{t.hint}</span>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="profile-section">
-        <h3>Notch</h3>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input
-            type="checkbox"
-            checked={notch ?? true}
-            disabled={notch === null}
-            onChange={(e) => setNotch(e.target.checked)}
-          />
+      <section className="sec pf-sec">
+        <h2 className="section-title">Notch</h2>
+        <label className="pf-check">
+          <input type="checkbox" checked={notch ?? true} disabled={notch === null} onChange={(e) => setNotch(e.target.checked)} />
           <span>Tampilkan notch</span>
         </label>
-        <p className="muted">Pill kecil di tengah atas layar saat ada lagu. Arahkan kursor untuk membuka kontrolnya.</p>
+        <p>Pill kecil di tengah atas layar saat ada lagu. Arahkan kursor untuk membuka kontrolnya.</p>
       </section>
 
       <UpdateSection />
 
-      <section className="profile-section">
-        <h3>Akun</h3>
-        {status && !status.configured && (
-          <div className="notice">Supabase belum dikonfigurasi. Isi file .env lalu jalankan ulang app.</div>
-        )}
+      <section className="sec pf-sec">
+        <h2 className="section-title">Akun</h2>
+        {status && !status.configured && <div className="notice">Supabase belum dikonfigurasi. Isi file .env lalu jalankan ulang app.</div>}
         {status?.configured && status.signedIn && (
           <>
             {profile?.disabled && <div className="notice">{friendlyError(new Error('phinas:account_disabled'))}</div>}
@@ -162,12 +150,12 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             </p>
             {profile && (
               <p>
-                Kode temanmu: <strong style={{ userSelect: 'text' }}>{profile.friendCode}</strong>
+                Kode temanmu: <strong className="pf-code">{profile.friendCode}</strong>
               </p>
             )}
             {status.lastError && <div className="notice">Sync gagal: {status.lastError}. Akan dicoba lagi otomatis.</div>}
             {error && <div className="notice">{error}</div>}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="pf-row">
               <button
                 className="btn secondary"
                 onClick={async () => {
@@ -185,18 +173,13 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
           </>
         )}
         {status?.configured && !status.signedIn && (
-          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+          <form className="pf-form" onSubmit={submit}>
             {mode === 'up' && (
-              <input
-                placeholder="Nama"
-                value={displayName}
-                maxLength={30}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-              />
+              <input className="field" placeholder="Nama" value={displayName} maxLength={30} onChange={(e) => setDisplayName(e.target.value)} required />
             )}
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="field" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <input
+              className="field"
               type="password"
               placeholder="Password"
               value={password}
@@ -207,12 +190,13 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
             {mode === 'up' && (
               <>
                 <input
+                  className="field"
                   placeholder="Kode undangan"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                   required
                 />
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <label className="pf-check">
                   <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} required />
                   <span>
                     Saya setuju dengan{' '}
@@ -280,10 +264,10 @@ function UpdateSection(): React.JSX.Element {
   else if (u?.state === 'downloading') line += ` · mengunduh ${u.latest} (${u.progress ?? 0}%)`
   else if (checked) line += ' · sudah versi terbaru'
   return (
-    <section className="profile-section">
-      <h3>Pembaruan</h3>
-      <p className="muted">{line}</p>
-      <div style={{ display: 'flex', gap: 8 }}>
+    <section className="sec pf-sec">
+      <h2 className="section-title">Pembaruan</h2>
+      <p>{line}</p>
+      <div className="pf-row">
         <button className="btn secondary" onClick={() => void check()} disabled={checking || u?.state === 'downloading'}>
           {checking ? 'Memeriksa...' : 'Cek pembaruan'}
         </button>
