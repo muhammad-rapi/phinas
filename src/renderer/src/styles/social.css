@@ -62,3 +62,7 @@ button.fr-name:hover { color: var(--accent); }
 /* ---------- Beranda: online line ---------- */
 .online-names { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
 .online-names .berdua-name { display: inline; }
+
+/* ---------- player bar: friend picker (opens upwards) ---------- */
+.listen-menu { top: auto; bottom: calc(100% + 10px); right: 0; min-width: 220px; }
+.listen-pick { gap: 8px; }

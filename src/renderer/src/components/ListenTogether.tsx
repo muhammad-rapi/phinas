@@ -1,12 +1,19 @@
-import { Headphones } from 'lucide-react'
+import { Headphones, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { EndReason } from '../../../shared/sync/session'
+import { useSocial } from '../social/SocialProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
 import { endedText, liveLabel } from '../sync/status'
 
-/** Player bar button: invite the partner, cancel or end a session, and show how it is going. */
+/**
+ * Player bar button. In a session: its status, click to end. Otherwise one click invites the
+ * partner when they can be invited; if not, it opens a list of online friends who allow it.
+ */
 export function ListenButton(): React.JSX.Element | null {
   const l = useListen()
+  const social = useSocial()
+  const [open, setOpen] = useState(false)
+  if (!social.signedIn) return null
   const { status } = l.state
   const name = l.activeName
 
@@ -29,14 +36,54 @@ export function ListenButton(): React.JSX.Element | null {
       </button>
     )
   }
+
   const partner = l.partner
-  if (!partner) return null
-  const ready = l.canInvite(partner.userId)
-  const reason = ready ? `Dengar bareng ${partner.name}` : `${partner.name} sedang offline`
+  const partnerReady = partner !== null && l.canInvite(partner.userId)
+  const title = partner && partnerReady ? `Dengar bareng ${partner.name}` : 'Dengar bareng teman'
+  const click = (): void => {
+    if (partner && partnerReady) l.invite(partner.userId)
+    else setOpen((o) => !o)
+  }
+
   return (
-    <button className="icon-btn listen-btn" onClick={() => l.invite(partner.userId)} disabled={!ready} title={reason} aria-label={reason}>
-      <Headphones size={18} />
-    </button>
+    <div className="menu-wrap">
+      <button
+        className="icon-btn listen-btn"
+        onClick={click}
+        disabled={status === 'invited'}
+        title={title}
+        aria-label={title}
+        aria-haspopup={partnerReady ? undefined : 'menu'}
+        aria-expanded={partnerReady ? undefined : open}
+      >
+        <Headphones size={18} />
+      </button>
+      {open && (
+        <>
+          <div className="menu-backdrop" onClick={() => setOpen(false)} />
+          <div className="menu listen-menu" role="menu">
+            <div className="label menu-title">Dengar bareng</div>
+            {l.invitable.length === 0 && <div className="menu-empty">Belum ada teman online yang bisa diajak.</div>}
+            {l.invitable.map((f) => (
+              <button
+                key={f.userId}
+                role="menuitem"
+                className="menu-item listen-pick"
+                disabled={!l.canInvite(f.userId)}
+                onClick={() => {
+                  setOpen(false)
+                  l.invite(f.userId)
+                }}
+              >
+                <span className="online-dot" aria-hidden="true" />
+                {f.isPartner && <Heart className="nav-heart" size={11} fill="currentColor" aria-label="Pasangan" />}
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
