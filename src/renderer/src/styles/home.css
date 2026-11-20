@@ -1,1 +1,29 @@
 /* Beranda: cover story, Berdua line, numbered lists. */
+
+.home { padding-top: 36px; }
+/* Cover story */
+.story { display: flex; align-items: flex-end; gap: 24px; min-height: 170px; margin-top: 14px; }
+.story-cover { width: 170px; height: 170px; flex: none; background: var(--line) center / cover; box-shadow: var(--cover-shadow); }
+.story-text { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.story-title { font-family: var(--serif); font-size: 44px; font-weight: 400; line-height: 0.95; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.story-title em { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; padding-bottom: 0.06em; font-style: italic; color: var(--accent); }
+.story-text .muted { margin: 0; font-size: 12px; }
+.story-artist { font-size: 12px; color: var(--ink-soft); }
+.story-actions { display: flex; gap: 8px; }
+/* Berdua line */
+.berdua-line { display: flex; align-items: center; gap: 8px; margin-top: 24px; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 12px; }
+.berdua-name { padding: 0; font-weight: 700; color: var(--ink); }
+.berdua-name:hover { color: var(--accent); }
+.berdua-spacer { flex: 1; }
+.berdua-actions { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-faint); }
+/* Untukmu and Lagi ramai, side by side; one column when the content is narrower than 760 px. */
+.home-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; margin-top: 22px; }
+@container (max-width: 760px) { .home-lists { grid-template-columns: minmax(0, 1fr); } }
+.nl-rows { list-style: none; margin: 0; padding: 0; }
+.nl-row { justify-content: flex-start; gap: 12px; width: 100%; min-width: 0; padding: 4px 0; font-size: 12px; line-height: 1.6; text-align: left; color: var(--ink); }
+.nl-row:hover .nl-text, .nl-row.playing .nl-text, .nl-row.playing .nl-num { color: var(--accent); }
+.nl-num { flex: none; width: 20px; font-family: var(--serif); font-size: 14px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.nl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nl-artist { color: var(--ink-soft); }
+.nl-skel { display: flex; align-items: center; }
+.nl-bar { flex: 1; max-width: 220px; height: 10px; }
