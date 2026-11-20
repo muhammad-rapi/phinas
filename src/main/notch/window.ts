@@ -8,6 +8,8 @@ import { computeBounds, detectNotch } from './detect'
 export interface NotchController {
   /** Shows or hides according to the settings toggle. */
   setEnabled(enabled: boolean): void
+  /** Moves the notch to the display of the main window (call after the main window moves). */
+  reposition(): void
   destroy(): void
 }
 
@@ -32,9 +34,15 @@ export function createNotch(opts: {
   let layout: NotchLayout = detectNotch(platform, { x: 0, y: 0, width: 1440, height: 900 }, { x: 0, y: 0, width: 1440, height: 900 })
   let win: BrowserWindow | null = null
 
+  /** The display showing the main window, so the notch follows Phinas across monitors. */
+  const targetDisplay = (): Electron.Display => {
+    const mw = opts.mainWindow()
+    return mw && !mw.isDestroyed() ? screen.getDisplayMatching(mw.getBounds()) : screen.getPrimaryDisplay()
+  }
+
   const place = (): void => {
     if (!win || win.isDestroyed()) return
-    const d = screen.getPrimaryDisplay()
+    const d = targetDisplay()
     layout = detectNotch(platform, d.bounds, d.workArea)
     win.setBounds(computeBounds(platform, d.bounds, d.workArea, layout, expanded))
     win.webContents.send('notch:layout', layout)
@@ -126,6 +134,9 @@ export function createNotch(opts: {
     setEnabled(value) {
       enabled = value
       sync()
+    },
+    reposition() {
+      if (win && !win.isDestroyed()) place()
     },
     destroy() {
       win?.destroy()
