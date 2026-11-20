@@ -114,3 +114,95 @@ export function accentVars(c: Rgb): { accent: string; accentText: string; gradTo
   const { h, s } = rgbToHsl(a)
   return { accent: css(a), accentText: css(accentText(c)), gradTop: css(hslToRgb(h, s, 0.28)) }
 }
+
+/** The two editorial modes: Siang (paper) and Malam (ink). */
+export type Tone = 'day' | 'night'
+
+const hex = (h: string): Rgb => ({
+  r: parseInt(h.slice(1, 3), 16),
+  g: parseInt(h.slice(3, 5), 16),
+  b: parseInt(h.slice(5, 7), 16)
+})
+
+/** Same values as --paper and --ink in theme/tokens.css. */
+export const PAPER: Record<Tone, Rgb> = { day: hex('#f4efe6'), night: hex('#1c1714') }
+export const INK: Record<Tone, Rgb> = { day: hex('#2a2420'), night: hex('#efe4d4') }
+/** The wash colour when nothing is playing and no mood is set. */
+export const TERRACOTTA: Rgb = hex('#e7a46c')
+/** The accent when nothing is playing and no mood is set. */
+export const FALLBACK_ACCENT: Record<Tone, Rgb> = { day: hex('#9c4526'), night: hex('#e7a46c') }
+/** WCAG AA for normal text. */
+export const MIN_CONTRAST = 4.5
+/** How much of the source colour goes into the page wash. */
+export const WASH_SHARE: Record<Tone, number> = { day: 0.25, night: 0.3 }
+const WHITE: Rgb = { r: 255, g: 255, b: 255 }
+
+/** `#rrggbb` to Rgb, or null for anything else. */
+export function parseHex(h: string): Rgb | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(h.trim())
+  return m ? hex(`#${m[1]}`) : null
+}
+
+export function toHex({ r, g, b }: Rgb): string {
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+}
+
+const linear = (v: number): number => {
+  const c = v / 255
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+}
+
+/** WCAG relative luminance, 0 (black) to 1 (white). */
+export function luminance({ r, g, b }: Rgb): number {
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+}
+
+/** WCAG contrast ratio, 1 to 21. */
+export function contrastRatio(a: Rgb, b: Rgb): number {
+  const la = luminance(a)
+  const lb = luminance(b)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
+/**
+ * The source colour made readable on the mode's paper (at least 4.5:1), keeping its hue and
+ * saturation: darkened step by step for Siang, lightened for Malam.
+ */
+export function accentFor(source: Rgb, tone: Tone): Rgb {
+  const paper = PAPER[tone]
+  if (contrastRatio(source, paper) >= MIN_CONTRAST) return source
+  const { h, s, l } = rgbToHsl(source)
+  for (let i = 1; i <= 100; i++) {
+    const x = tone === 'day' ? l - i / 100 : l + i / 100
+    if (x < 0 || x > 1) break
+    const c = hslToRgb(h, s, x)
+    if (contrastRatio(c, paper) >= MIN_CONTRAST) return c
+  }
+  return tone === 'day' ? { r: 0, g: 0, b: 0 } : WHITE
+}
+
+/** The source mixed into the paper: 25% for Siang, 30% for Malam. */
+export function washFor(source: Rgb, tone: Tone): Rgb {
+  const k = WASH_SHARE[tone]
+  const p = PAPER[tone]
+  const mix = (s: number, q: number): number => Math.round(q * (1 - k) + s * k)
+  return { r: mix(source.r, p.r), g: mix(source.g, p.g), b: mix(source.b, p.b) }
+}
+
+/** Text on a filled accent: white or the paper, whichever contrasts more. */
+export function onAccent(accent: Rgb, tone: Tone): Rgb {
+  return contrastRatio(WHITE, accent) >= contrastRatio(PAPER[tone], accent) ? WHITE : PAPER[tone]
+}
+
+export interface Palette {
+  accent: string
+  onAccent: string
+  wash: string
+}
+
+/** The dynamic tokens for a source colour (cover or mood), or the terracotta defaults without one. */
+export function paletteFor(source: Rgb | null, tone: Tone): Palette {
+  const accent = source ? accentFor(source, tone) : FALLBACK_ACCENT[tone]
+  const wash = washFor(source ?? TERRACOTTA, tone)
+  return { accent: toHex(accent), onAccent: toHex(onAccent(accent, tone)), wash: toHex(wash) }
+}
