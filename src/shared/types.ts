@@ -78,20 +78,82 @@ export interface GenrePage {
   shelves: { title: string; album: boolean; playlists: PublicPlaylist[] }[]
 }
 
+/** Who can see a playlist: only me, my friends, or every Phinas user. */
+export type Visibility = 'private' | 'friends' | 'public'
+
 export interface Playlist {
   id: string
   name: string
   updatedAt: number
   /** Cover art of the first (up to) 4 tracks, used for the playlist thumbnail. */
   coverUrls: string[]
+  visibility: Visibility
 }
 
 export interface PlaylistWithTracks extends Playlist {
   tracks: Track[]
 }
 
+/** Someone else's playlist (a friend's, the partner's, or a public one). */
 export interface PartnerPlaylist extends PlaylistWithTracks {
+  ownerId: string
   ownerName: string
+}
+
+/** Who may start Listen Together with me. */
+export type ListenScope = 'friends' | 'partner' | 'off'
+
+export interface MyProfile {
+  id: string
+  displayName: string
+  role: 'user' | 'admin'
+  disabled: boolean
+  /** Short code friends type to add me, e.g. PHN-7K2Q9M. */
+  friendCode: string
+  listenScope: ListenScope
+  /** Codes I can still create; null for admins (no limit). */
+  invitesLeft: number | null
+}
+
+export interface Friend {
+  friendshipId: string
+  userId: string
+  name: string
+  isPartner: boolean
+  /** A pending partner request on this friendship, from my point of view. */
+  partnerRequest: 'incoming' | 'outgoing' | null
+  /** Both scopes and the global switch allow Listen Together. */
+  canListen: boolean
+}
+
+export interface FriendRequest {
+  friendshipId: string
+  userId: string
+  name: string
+  incoming: boolean
+}
+
+export interface InviteCode {
+  code: string
+  createdAt: string
+  expiresAt: string
+  usedAt: string | null
+  usedByName: string | null
+  revoked: boolean
+}
+
+export interface AppConfig {
+  listenTogetherEnabled: boolean
+  registrationOpen: boolean
+  inviteQuota: number
+}
+
+export interface SignUpInput {
+  email: string
+  password: string
+  displayName: string
+  inviteCode: string
+  acceptedTerms: boolean
 }
 
 export interface SyncStatus {
@@ -156,7 +218,7 @@ export interface NotchState {
   gradTop: string
 }
 
-/** Who we can listen together with. There are only two accounts, so the partner is the other profile. */
+/** Who we listen together with by default: the partner, when Listen Together is allowed with them. */
 export interface ListenInfo {
   me: string
   partnerId: string
@@ -167,6 +229,8 @@ export interface ListenInfo {
 export interface ListenStatus {
   connected: boolean
   partnerHere: boolean
+  /** The server refused the channel (switch off, scope, not friends). No retry until reopened. */
+  notAllowed: boolean
 }
 
 /** The app update, as the updater sees it. */
