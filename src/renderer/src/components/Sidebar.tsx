@@ -1,10 +1,9 @@
-import { Download, Heart, History, Home, Plus, Users, type LucideIcon } from 'lucide-react'
+import { Download, Plus } from 'lucide-react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import type { RecentEntry } from '../search/recent'
 import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
-import { PlaylistCover } from './PlaylistCover'
 import { SearchBox } from './SearchBox'
 
 interface Props {
@@ -16,34 +15,31 @@ interface Props {
   recent: RecentEntry[]
   onForget: (entry: RecentEntry) => void
   onPlayTrack: (track: Track) => void
-  /** First letter of the profile name, shown on the profile button. */
+  /** The profile name, shown next to the avatar. */
+  name: string
+  /** First letter of the profile name, shown in the avatar. */
   initial: string
 }
 
-function NavItem(p: { icon: LucideIcon; label: string; active: boolean; online?: boolean; onClick: () => void }): React.JSX.Element {
-  const Icon = p.icon
+/** A text navigation item; the active one is bold with an accent dot before it. */
+function NavItem(p: { label: string; active: boolean; online?: boolean; onClick: () => void }): React.JSX.Element {
   return (
-    <button className={`sb-item${p.active ? ' active' : ''}`} onClick={p.onClick}>
-      <Icon size={20} />
+    <button className={`nav-item${p.active ? ' active' : ''}`} onClick={p.onClick} aria-current={p.active ? 'page' : undefined}>
       <span>{p.label}</span>
-      {p.online && <span className="sb-dot" role="img" aria-label="Pasangan online" />}
+      {p.online && <span className="online-dot" role="img" aria-label="Pasangan online" />}
     </button>
   )
 }
 
-function PlaylistRow(p: { covers: string[]; title: string; sub: string; active: boolean; onClick: () => void }): React.JSX.Element {
+function PlaylistItem(p: { name: string; active: boolean; onClick: () => void }): React.JSX.Element {
   return (
-    <button className={`lib-row${p.active ? ' active' : ''}`} onClick={p.onClick}>
-      <PlaylistCover covers={p.covers} size={40} />
-      <span className="lib-row-text">
-        <span className="lib-row-title">{p.title}</span>
-        <span className="muted lib-row-sub">{p.sub}</span>
-      </span>
+    <button className={`nav-pl${p.active ? ' active' : ''}`} onClick={p.onClick} title={p.name}>
+      <span>{p.name}</span>
     </button>
   )
 }
 
-export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget, onPlayTrack, initial }: Props): React.JSX.Element {
+export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget, onPlayTrack, name, initial }: Props): React.JSX.Element {
   const lib = useLibrary()
   const listen = useListen()
 
@@ -55,68 +51,59 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
 
   return (
     <aside className="sidebar" aria-label="Navigasi">
-      {/* Empty: the window's drag handle, with room for the macOS window buttons. */}
-      <div className="sb-brand" />
+      {/* The wordmark is also the window's drag handle, below the macOS window buttons. */}
+      <div className="nav-brand">phinas</div>
       <SearchBox query={query} onQuery={onQuery} onSubmit={onSubmit} recent={recent} onForget={onForget} onPlayTrack={onPlayTrack} />
 
-      <nav className="sb-nav">
-        <NavItem icon={Home} label="Beranda" active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
+      <nav className="nav">
+        <NavItem label="Beranda" active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
         <NavItem
-          icon={Users}
           label="Berdua"
           active={view.name === 'together'}
           online={listen.available && listen.state.partnerHere}
           onClick={() => nav({ name: 'together' })}
         />
-        <NavItem icon={Heart} label="Disukai" active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
-        <NavItem icon={History} label="Riwayat" active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
+        <NavItem label="Disukai" active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
+        <NavItem label="Riwayat" active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
       </nav>
 
-      <div className="sb-sep" />
-      <div className="sb-section">
-        <span>Playlist</span>
-        <div className="library-actions">
+      <div className="nav-section">
+        <span className="label">Playlist</span>
+        <div className="nav-actions">
           <button className="icon-btn" onClick={() => nav({ name: 'import' })} aria-label="Impor dari Spotify" title="Impor dari Spotify">
-            <Download size={18} />
+            <Download size={14} />
           </button>
           <button className="icon-btn" onClick={create} aria-label="Buat playlist" title="Buat playlist">
-            <Plus size={18} />
+            <Plus size={14} />
           </button>
         </div>
       </div>
 
-      <div className="sb-list">
+      <div className="nav-list">
         {lib.playlists.map((p) => (
-          <PlaylistRow
+          <PlaylistItem
             key={p.id}
-            covers={p.coverUrls}
-            title={p.name}
-            sub="Playlist"
+            name={p.name}
             active={sameView(view, { name: 'playlist', id: p.id })}
             onClick={() => nav({ name: 'playlist', id: p.id })}
           />
         ))}
-        {lib.playlists.length === 0 && <p className="muted library-empty">Buat playlist pertamamu dengan tombol +.</p>}
-        {lib.partner.length > 0 && <div className="sb-group">Dari {lib.partner[0].ownerName}</div>}
+        {lib.playlists.length === 0 && <p className="nav-empty">Buat playlist pertamamu dengan tombol +.</p>}
+        {lib.partner.length > 0 && <div className="label nav-group">Dari pasangan</div>}
         {lib.partner.map((p) => (
-          <PlaylistRow
+          <PlaylistItem
             key={p.id}
-            covers={p.coverUrls}
-            title={p.name}
-            sub={`Playlist · ${p.ownerName}`}
+            name={p.name}
             active={sameView(view, { name: 'partner', id: p.id })}
             onClick={() => nav({ name: 'partner', id: p.id })}
           />
         ))}
       </div>
 
-      <div className="sb-foot">
-        <button
-          className={`profile-btn${view.name === 'profile' ? ' active' : ''}`}
-          onClick={() => nav({ name: 'profile' })}
-          aria-label="Profil"
-        >
-          {initial}
+      <div className="nav-foot">
+        <button className={`nav-me${view.name === 'profile' ? ' active' : ''}`} onClick={() => nav({ name: 'profile' })} aria-label="Profil">
+          <span className="nav-avatar">{initial}</span>
+          <span className="nav-foot-name">{name}</span>
         </button>
       </div>
     </aside>

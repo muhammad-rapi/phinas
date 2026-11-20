@@ -15,7 +15,7 @@ interface Props {
 
 export function SearchBox({ query, onQuery, onSubmit, recent, onForget, onPlayTrack }: Props): React.JSX.Element {
   const [open, setOpen] = useState(false)
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const wrapRef = useRef<HTMLFormElement>(null)
 
   // Close the dropdown when clicking anywhere outside the search box.
   useEffect(() => {
@@ -35,75 +35,67 @@ export function SearchBox({ query, onQuery, onSubmit, recent, onForget, onPlayTr
   const showRecent = open && !query.trim()
 
   return (
-    <form className="searchbox" onSubmit={submit}>
-      <div className="searchwrap" ref={wrapRef}>
-        <label className="searchpill">
-          <Search size={18} />
-          <input
-            value={query}
-            onChange={(e) => {
-              onQuery(e.target.value)
-              setOpen(true)
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-            placeholder="Cari lagu atau artis"
-            aria-label="Cari lagu atau artis"
-          />
-          {query && (
-            <button type="button" className="icon-btn" onClick={() => onQuery('')} aria-label="Hapus pencarian">
-              <X size={16} />
-            </button>
-          )}
-        </label>
-        {showRecent && (
-          <div className="searchdrop">
-            <h4>Pencarian terakhir</h4>
-            {recent.length === 0 && <p className="muted">Belum ada pencarian.</p>}
-            {recent.map((r) => (
-              <div key={entryKey(r)} className="recent-item">
-                <button
-                  type="button"
-                  className="recent-main"
-                  onClick={() => {
-                    if (r.kind === 'track') onPlayTrack(r.track)
-                    else onQuery(r.text)
-                    setOpen(false)
-                  }}
-                >
-                  {r.kind === 'track' ? (
-                    <>
-                      <span
-                        className="queue-thumb"
-                        style={{
-                          backgroundImage: `url("${r.track.coverUrl}")`
-                        }}
-                      />
-                      <span className="queue-text">
-                        <span className="queue-name">{r.track.title}</span>
-                        <span className="muted queue-artist">Lagu · {r.track.artist}</span>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Clock size={18} />
-                      <span>{r.text}</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => onForget(r)}
-                  aria-label={`Hapus ${r.kind === 'track' ? r.track.title : r.text}`}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
+    <form className="search" onSubmit={submit} ref={wrapRef}>
+      <label className="searchpill">
+        <Search size={14} />
+        <input
+          value={query}
+          onChange={(e) => {
+            onQuery(e.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+          placeholder="Cari…"
+          aria-label="Cari lagu atau artis"
+        />
+        {query && (
+          <button type="button" className="icon-btn" onClick={() => onQuery('')} aria-label="Hapus pencarian">
+            <X size={14} />
+          </button>
         )}
-      </div>
+      </label>
+      {showRecent && (
+        <div className="search-drop">
+          <span className="label">Pencarian terakhir</span>
+          {recent.length === 0 && <p className="search-empty">Belum ada pencarian.</p>}
+          {recent.map((r) => (
+            <div key={entryKey(r)} className="search-row">
+              <button
+                type="button"
+                className="search-pick"
+                onClick={() => {
+                  if (r.kind === 'track') onPlayTrack(r.track)
+                  else onQuery(r.text)
+                  setOpen(false)
+                }}
+              >
+                {r.kind === 'track' ? (
+                  <span className="search-text">
+                    <strong>{r.track.title}</strong>
+                    <span className="small">Lagu · {r.track.artist}</span>
+                  </span>
+                ) : (
+                  <>
+                    <Clock size={14} />
+                    <span className="search-text">
+                      <span>{r.text}</span>
+                    </span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => onForget(r)}
+                aria-label={`Hapus ${r.kind === 'track' ? r.track.title : r.text}`}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </form>
   )
 }

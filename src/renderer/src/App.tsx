@@ -227,6 +227,7 @@ function Shell(): React.JSX.Element {
           recents.rememberTrack(t, '')
           player.play([t], 0)
         }}
+        name={profile.name}
         initial={profile.initial}
       />
       <main ref={mainRef} className="main">
