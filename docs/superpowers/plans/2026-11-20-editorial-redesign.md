@@ -4854,7 +4854,7 @@ for mode in Siang Malam; do
 done
 ```
 
-Expected for each shot: the PNG exists, and the log shows `[dev-shot] script result:` with `"mode":"day"` for Siang and `"mode":"night"` for Malam, a `page state` line whose `accent` is a `#rrggbb` value other than the terracotta defaults (`#9c4526` / `#e7a46c`) unless the cover is greyscale, and `[dev-shot] wrote …`. If a log shows `[dev-shot] failed: … timed out`, the feed did not load (check the network) or a selector changed; fix and rerun that one shot.
+Expected for each shot: the PNG exists, and the log shows `[dev-shot] script result:` with `"mode":"day"` for Siang and `"mode":"night"` for Malam, a `page state` line whose `accent` is a `#rrggbb` value other than the terracotta defaults (`#9c4526` / `#e8a770`) unless the cover is greyscale, and `[dev-shot] wrote …`. If a log shows `[dev-shot] failed: … timed out`, the feed did not load (check the network) or a selector changed; fix and rerun that one shot.
 
 - [ ] **Step 4: Look at every shot**
 
