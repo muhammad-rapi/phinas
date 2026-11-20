@@ -1,0 +1,34 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { CHANNELS, type PhinasApi, type PhinasEvents } from '../shared/ipc'
+
+const invoke = Object.fromEntries(
+  CHANNELS.map((name) => [name, (...args: unknown[]) => ipcRenderer.invoke(name, ...args)])
+) as unknown as PhinasApi
+
+const subscribe = <T>(channel: string, cb: (v: T) => void): (() => void) => {
+  const fn = (_e: unknown, v: T): void => cb(v)
+  ipcRenderer.on(channel, fn)
+  return () => ipcRenderer.removeListener(channel, fn)
+}
+
+const events: PhinasEvents = {
+  onPlayerCommand: (cb) => subscribe('player:command', cb),
+  pushNotchState: (state) => ipcRenderer.send('notch:state', state),
+  onNotchState: (cb) => subscribe('notch:state', cb),
+  sendPlayerCommand: (cmd) => ipcRenderer.send('player:command', cmd),
+  sendSeek: (sec) => ipcRenderer.send('player:seek', sec),
+  onPlayerSeek: (cb) => subscribe('player:seek', cb),
+  notifyLibraryChanged: () => ipcRenderer.send('library:changed'),
+  onLibraryChanged: (cb) => subscribe('library:changed', () => cb()),
+  setNotchExpanded: (expanded) => ipcRenderer.send('notch:expanded', expanded),
+  onNotchLayout: (cb) => subscribe('notch:layout', cb),
+  onNotchEnabled: (cb) => subscribe('notch:enabled', cb),
+  listenSend: (msg) => ipcRenderer.send('listen:send', msg),
+  onListenMessage: (cb) => subscribe('listen:message', cb),
+  onListenPresence: (cb) => subscribe('listen:presence', cb),
+  onListenConnection: (cb) => subscribe('listen:connection', cb),
+  notifyListenInvite: (name) => ipcRenderer.send('listen:invited', name),
+  onUpdateStatus: (cb) => subscribe('update:status', cb)
+}
+
+contextBridge.exposeInMainWorld('phinas', { ...invoke, ...events })
