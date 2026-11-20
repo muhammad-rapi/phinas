@@ -26,6 +26,7 @@ import { Profile } from './screens/Profile'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
 import { ListenTogetherProvider, useListen } from './sync/ListenTogetherProvider'
+import { SocialProvider } from './social/SocialProvider'
 import { useCover } from './theme/useCover'
 import { useTheme } from './theme/useTheme'
 import { sameView, type Nav, type View } from './views'
@@ -287,9 +288,11 @@ export function App(): React.JSX.Element {
   return (
     <LibraryProvider>
       <PlayerProvider>
-        <ListenTogetherProvider>
-          <Shell />
-        </ListenTogetherProvider>
+        <SocialProvider>
+          <ListenTogetherProvider>
+            <Shell />
+          </ListenTogetherProvider>
+        </SocialProvider>
       </PlayerProvider>
     </LibraryProvider>
   )
