@@ -29,6 +29,8 @@ export interface Deps {
   presence: PresenceHub | null
   cache: CacheStore
   openExternal: (url: string) => void
+  /** Tells the renderer the signed-in account changed (sign-in, sign-up, sign-out, deletion). */
+  notifyAccountChanged: () => void
   engine: SyncEngine | null
   lastError: { value?: string }
   recommender: Recommender
@@ -44,8 +46,13 @@ export function createHandlers(d: Deps): PhinasApi {
     return d.remote
   }
 
-  const signedIn = async (): Promise<SupabaseRemote | null> =>
-    d.remote && (await d.remote.session()) ? d.remote : null
+  /** The remote and the signed-in user's id, or null when signed out or not configured. */
+  const signedIn = async (): Promise<{ r: SupabaseRemote; uid: string } | null> => {
+    if (!d.remote) return null
+    // From the stored session, not the network, so the cache still works offline.
+    const s = await d.remote.session()
+    return s ? { r: d.remote, uid: s.userId } : null
+  }
 
   /** Leaves every realtime channel and forgets cached social data. */
   const leaveAll = async (): Promise<void> => {
@@ -94,37 +101,45 @@ export function createHandlers(d: Deps): PhinasApi {
     listLikes: async () => d.library.listLikes(),
     setLiked: async (t, liked) => d.library.setLiked(t, liked),
     syncSignIn: async (email, password) => {
-      await requireRemote().signIn(email, password)
+      const r = requireRemote()
+      d.cache.clear()
+      await r.signIn(email, password)
       d.lastError.value = undefined
       void d.engine?.flush()
+      d.notifyAccountChanged()
     },
     syncSignOut: async () => {
       await leaveAll()
       await requireRemote().signOut()
+      d.notifyAccountChanged()
     },
     syncSignUp: async (input) => {
-      await requireRemote().signUp(input)
+      const r = requireRemote()
+      d.cache.clear()
+      await r.signUp(input)
       d.lastError.value = undefined
       void d.engine?.flush()
+      d.notifyAccountChanged()
     },
     myProfile: async () => {
-      const r = await signedIn()
-      return r ? withCache(d.cache, 'profile', () => r.myProfile()) : null
+      const s = await signedIn()
+      return s ? withCache(d.cache, s.uid, 'profile', () => s.r.myProfile()) : null
     },
     updateMyProfile: async (name, scope) => {
       await requireRemote().updateMyProfile(name, scope)
-      d.cache.set('profile', await requireRemote().myProfile())
+      const s = await signedIn()
+      if (s) await withCache(d.cache, s.uid, 'profile', () => s.r.myProfile())
     },
     getConfig: async () => {
-      const r = await signedIn()
-      return r ? withCache(d.cache, 'config', () => r.getConfig()) : null
+      const s = await signedIn()
+      return s ? withCache(d.cache, s.uid, 'config', () => s.r.getConfig()) : null
     },
     listFriends: async () => {
-      const r = requireRemote()
-      const friends = await withCache(d.cache, 'friends', () => r.listFriends())
-      void r
-        .userId()
-        .then((me) => d.presence?.sync(me, friends.map((f) => f.userId)))
+      const s = await signedIn()
+      if (!s) return []
+      const friends = await withCache(d.cache, s.uid, 'friends', () => s.r.listFriends())
+      void d.presence
+        ?.sync(s.uid, friends.map((f) => f.userId))
         .catch((e) => console.warn('[presence] sync failed:', e))
       return friends
     },
@@ -139,16 +154,17 @@ export function createHandlers(d: Deps): PhinasApi {
     createInvite: () => requireRemote().createInvite(),
     revokeInvite: (code) => requireRemote().revokeInvite(code),
     deleteAccount: async () => {
-      await leaveAll()
       await requireRemote().deleteAccount()
+      await leaveAll()
+      d.notifyAccountChanged()
     },
     onlineFriends: async () => d.presence?.onlineIds() ?? [],
     setPlaylistVisibility: async (id, v) => d.library.setVisibility(id, v),
     listFriendPlaylists: (friendId) => requireRemote().listFriendPlaylists(friendId),
     listPublicPlaylists: () => requireRemote().listPublicPlaylists(),
     openLegal: async (page) => {
-      const url = LEGAL_URLS[page]
-      if (url) d.openExternal(url)
+      if (!Object.hasOwn(LEGAL_URLS, page)) return
+      d.openExternal(LEGAL_URLS[page])
     },
     syncStatus: async () => {
       const session = d.remote ? await d.remote.session() : null

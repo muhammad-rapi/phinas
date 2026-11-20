@@ -144,7 +144,8 @@ app.whenReady().then(async () => {
     pair,
     presence,
     cache,
-    openExternal: (url) => void shell.openExternal(url),
+    openExternal: (url) => void shell.openExternal(url).catch((e) => console.warn('[openExternal]', e)),
+    notifyAccountChanged: () => mainWindow?.webContents.send('account:changed'),
     engine,
     lastError,
     recommender,
@@ -165,8 +166,14 @@ app.whenReady().then(async () => {
       lastError.value = r.error
       // Every minute: refresh friends (keeps presence in step) and leave a pair that is no longer allowed.
       if (tick++ % 4 === 0) {
-        const friends = await handlers.listFriends().catch(() => null)
-        if (friends && !friends.some((f) => f.isPartner && f.canListen)) await pair?.close()
+        const friends = await handlers.listFriends().catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))))
+        if (friends instanceof Error && friends.message.includes('phinas:account_disabled')) {
+          // A disabled account may not listen together or show as online.
+          await pair?.close()
+          await presence?.close()
+        } else if (!(friends instanceof Error) && !friends.some((f) => f.isPartner && f.canListen)) {
+          await pair?.close()
+        }
       }
     }, SYNC_INTERVAL_MS)
   }

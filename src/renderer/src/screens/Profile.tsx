@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { friendlyError } from '../../../shared/errors'
 import type { MyProfile, SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
@@ -11,6 +11,8 @@ const THEMES: { id: ThemeName; label: string; hint: string }[] = [
   { id: 'dark', label: 'Dark', hint: 'Gelap, aksen ungu tetap' },
   { id: 'light', label: 'Light', hint: 'Terang, aksen biru' }
 ]
+
+const PROFILE_REFRESH_MS = 60_000
 
 interface Props {
   name: string
@@ -33,15 +35,26 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
   const [accepted, setAccepted] = useState(false)
   const [profile, setProfile] = useState<MyProfile | null>(null)
 
-  const load = useCallback(async () => {
+  // The status is cheap and local; the profile is a server call, so it is fetched less often.
+  const profileAt = useRef(0)
+  const wasSignedIn = useRef(false)
+  const load = useCallback(async (forceProfile = false) => {
     const s = await window.phinas.syncStatus()
     setStatus(s)
-    setProfile(s.signedIn ? await window.phinas.myProfile().catch(() => null) : null)
+    const justSignedIn = s.signedIn && !wasSignedIn.current
+    wasSignedIn.current = s.signedIn
+    if (!s.signedIn) {
+      setProfile(null)
+      return
+    }
+    if (!forceProfile && !justSignedIn && Date.now() - profileAt.current < PROFILE_REFRESH_MS) return
+    profileAt.current = Date.now()
+    setProfile(await window.phinas.myProfile().catch(() => null))
   }, [])
 
   useEffect(() => {
     void load()
-    const t = setInterval(load, 5000)
+    const t = setInterval(() => void load(), 5000)
     return () => clearInterval(t)
   }, [load])
 
@@ -56,10 +69,10 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
       }
       setPassword('')
       setInviteCode('')
-      await load()
+      await load(true)
       await lib.refreshPartner()
     } catch (err) {
-      setError(friendlyError(err) || (mode === 'up' ? 'Pendaftaran gagal' : 'Login gagal'))
+      setError(friendlyError(err))
     }
   }
 
@@ -70,7 +83,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
     if (!ok) return
     try {
       await window.phinas.deleteAccount()
-      await load()
+      await load(true)
       await lib.refreshPartner()
     } catch (err) {
       setError(friendlyError(err))
@@ -159,7 +172,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
                 className="btn secondary"
                 onClick={async () => {
                   await window.phinas.syncSignOut()
-                  await load()
+                  await load(true)
                   await lib.refreshPartner()
                 }}
               >

@@ -128,6 +128,10 @@ export interface PhinasEvents {
   onListenMessage(cb: (raw: unknown) => void): () => void
   onListenPresence(cb: (here: boolean) => void): () => void
   onListenConnection(cb: (up: boolean) => void): () => void
+  /** The pair channel was closed (by us, or refused by the server). Returns an unsubscribe. */
+  onListenClosed(cb: (reason: 'closed' | 'not-allowed') => void): () => void
+  /** Signed in, signed up, signed out or the account was deleted. Returns an unsubscribe. */
+  onAccountChanged(cb: () => void): () => void
   /** The set of online friends changed. Returns an unsubscribe. */
   onFriendsOnline(cb: (ids: string[]) => void): () => void
   /** The update status changed (found, downloading, ready). Returns an unsubscribe. */

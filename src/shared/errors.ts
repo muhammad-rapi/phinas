@@ -35,6 +35,11 @@ export function friendlyError(e: unknown): string {
   const raw = e instanceof Error ? e.message : typeof e === 'string' ? e : ''
   if (!raw) return GENERIC
   const code = /phinas:([a-z_]+)/.exec(raw)?.[1]
-  if (code) return MESSAGES[code] ?? GENERIC
+  if (code) {
+    const msg = MESSAGES[code]
+    if (msg) return msg
+    console.warn('[phinas] unknown error code', code)
+    return GENERIC
+  }
   return raw.replace(/^Error invoking remote method '[^']+': (Error: )?/, '') || GENERIC
 }

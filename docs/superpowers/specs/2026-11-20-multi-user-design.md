@@ -95,14 +95,15 @@ Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`
 
 **Remote and IPC**
 - `signUp({ email, password, displayName, inviteCode, acceptedTerms })`
-- Friends: `listFriends()` → `{ id, name, isPartner, online, canListen }[]`, `listFriendRequests()`, `sendFriendRequest(code)`, `respondFriendRequest(id, accept)`, `removeFriend(id)`, `requestPartner(id)`, `respondPartner(id, accept)`, `endPartner(id)`.
+- Friends: `listFriends()` → `{ id, name, isPartner, canListen }[]` (no `online` field: online ids come from `onlineFriends()` and the `friends:online` event), `listFriendRequests()`, `sendFriendRequest(code)`, `respondFriendRequest(id, accept)`, `removeFriend(id)`, `requestPartner(id)`, `respondPartner(id, accept)`, `endPartner(id)`.
 - Invites: `listMyInvites()`, `createInvite()`, `revokeInvite(code)`.
-- `getConfig()`, `setListenScope(scope)`, `deleteAccount()`, `myProfile()` (includes `friendCode`).
+- `getConfig()`, `updateMyProfile(name, scope)` (the listen scope is set here; there is no separate `setListenScope`), `deleteAccount()`, `myProfile()` (includes `friendCode`).
+- Events: `listen:closed` (`'closed' | 'not-allowed'`, the pair channel was closed) and `account:changed` (after sign-in, sign-up, sign-out and account deletion). On either, the renderer drops its Listen Together session and starts looking for a partner again.
 - `pairInfo()` now returns the partner (when `canListen`) instead of "the other profile". The remote gains `listFriendPlaylists(friendId?)` and `listPublicPlaylists()`, both returning `ownerId`, `ownerName`, `visibility`. The IPC name `listPartnerPlaylists` stays as a bridge (the partner's playlists) and is renamed in C.
 
 **Local library**
 - Migration adds `visibility` to local playlists (default `friends`); upsert sends it.
-- Cache `app_config`, friends and own profile locally so the app starts and renders offline.
+- Cache `app_config`, friends and own profile locally so the app starts and renders offline. The cache belongs to one user id and is cleared on sign-in, sign-up, sign-out and account deletion.
 
 **Realtime**
 - `PairChannel.open(me, friendId)` uses a private channel. A join refused by the server sets status `not-allowed` and does not retry.
@@ -129,3 +130,5 @@ With email confirmation off there is no self-service password reset. A user who 
 
 ## Out of scope
 UI redesign and new screens (C), web and admin panel (B), offline audio, user search, email confirmation and password reset by email, per-friend Listen Together switches, group listening rooms.
+
+Known: the local library is per computer; signing in as another user syncs the local playlists to that account — decide in the redesign (C).

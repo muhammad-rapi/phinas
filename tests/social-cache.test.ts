@@ -32,15 +32,17 @@ test('clear empties memory and disk', () => {
 
 test('withCache saves a fresh value', async () => {
   const c = new CacheStore(path)
-  const v = await withCache(c, 'config', async () => config)
+  const v = await withCache(c, 'u1', 'config', async () => config)
   expect(v).toEqual(config)
   expect(c.get('config')).toEqual(config)
+  expect(c.get('owner')).toBe('u1')
 })
 
 test('withCache falls back to the cache when offline', async () => {
   const c = new CacheStore(path)
+  c.set('owner', 'u1')
   c.set('config', config)
-  const v = await withCache(c, 'config', async () => {
+  const v = await withCache(c, 'u1', 'config', async () => {
     throw new Error('fetch failed')
   })
   expect(v).toEqual(config)
@@ -49,7 +51,7 @@ test('withCache falls back to the cache when offline', async () => {
 test('withCache rethrows when nothing is cached', async () => {
   const c = new CacheStore(path)
   await expect(
-    withCache(c, 'config', async () => {
+    withCache(c, 'u1', 'config', async () => {
       throw new Error('fetch failed')
     })
   ).rejects.toThrow('fetch failed')
@@ -57,10 +59,46 @@ test('withCache rethrows when nothing is cached', async () => {
 
 test('withCache never hides a server refusal behind the cache', async () => {
   const c = new CacheStore(path)
+  c.set('owner', 'u1')
   c.set('config', config)
   await expect(
-    withCache(c, 'config', async () => {
+    withCache(c, 'u1', 'config', async () => {
       throw new Error('phinas:account_disabled')
     })
   ).rejects.toThrow('phinas:account_disabled')
+})
+
+test('withCache ignores and clears a cache that belongs to another user', async () => {
+  const c = new CacheStore(path)
+  c.set('owner', 'u1')
+  c.set('config', config)
+  await expect(
+    withCache(c, 'u2', 'config', async () => {
+      throw new Error('fetch failed')
+    })
+  ).rejects.toThrow('fetch failed')
+  expect(c.get('config')).toBeUndefined()
+  expect(c.get('owner')).toBeUndefined()
+})
+
+test('withCache replaces another user\'s cache with a fresh value', async () => {
+  const c = new CacheStore(path)
+  c.set('owner', 'u1')
+  c.set('friends', [])
+  const other = { ...config, inviteQuota: 9 }
+  await withCache(c, 'u2', 'config', async () => other)
+  expect(c.get('owner')).toBe('u2')
+  expect(c.get('config')).toEqual(other)
+  expect(c.get('friends')).toBeUndefined()
+})
+
+test('a fetch that finishes after clear() is not cached', async () => {
+  const c = new CacheStore(path)
+  let finish!: (v: AppConfig) => void
+  const pending = withCache(c, 'u1', 'config', () => new Promise<AppConfig>((r) => (finish = r)))
+  c.clear()
+  finish(config)
+  expect(await pending).toEqual(config)
+  expect(c.get('config')).toBeUndefined()
+  expect(c.get('owner')).toBeUndefined()
 })

@@ -27,6 +27,8 @@ const events: PhinasEvents = {
   onListenMessage: (cb) => subscribe('listen:message', cb),
   onListenPresence: (cb) => subscribe('listen:presence', cb),
   onListenConnection: (cb) => subscribe('listen:connection', cb),
+  onListenClosed: (cb) => subscribe('listen:closed', cb),
+  onAccountChanged: (cb) => subscribe('account:changed', () => cb()),
   onFriendsOnline: (cb) => subscribe('friends:online', cb),
   notifyListenInvite: (name) => ipcRenderer.send('listen:invited', name),
   onUpdateStatus: (cb) => subscribe('update:status', cb)

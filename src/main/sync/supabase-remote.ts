@@ -207,9 +207,12 @@ export class SupabaseRemote implements Remote {
     await this.sb.auth.signOut();
   }
 
-  async session(): Promise<{ email?: string } | null> {
+  /** The stored session (no network call), so it also works offline. */
+  async session(): Promise<{ email?: string; userId: string } | null> {
     const { data } = await this.sb.auth.getSession();
-    return data.session ? { email: data.session.user.email } : null;
+    return data.session
+      ? { email: data.session.user.email, userId: data.session.user.id }
+      : null;
   }
 
   async userId(): Promise<string> {
