@@ -1,7 +1,7 @@
-/** Public legal pages (built in the web sub-project). */
+/** Public legal pages on the Phinas website (web/, deployed on Vercel). Keep in step with web/lib/site.ts. */
 export const LEGAL_URLS = {
-  terms: 'https://muhammad-rapi.github.io/phinas/terms',
-  privacy: 'https://muhammad-rapi.github.io/phinas/privacy'
+  terms: 'https://phinas.vercel.app/terms',
+  privacy: 'https://phinas.vercel.app/privacy'
 } as const
 
 export type LegalPage = keyof typeof LEGAL_URLS
