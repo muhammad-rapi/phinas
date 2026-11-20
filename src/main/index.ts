@@ -15,6 +15,8 @@ import { YoutubeMusicSource } from './music/source'
 import { SyncEngine } from './sync/engine'
 import { SupabaseRemote } from './sync/supabase-remote'
 import { PairChannel } from './sync/realtime'
+import { CacheStore } from './sync/cache'
+import { PresenceHub } from './sync/presence'
 import { createNotch } from './notch/window'
 import { Recommender } from './recommend/service'
 import { SettingsStore } from './settings'
@@ -89,20 +91,16 @@ app.whenReady().then(async () => {
   const engine = remote ? new SyncEngine(library, remote) : null
   const lastError: { value?: string } = {}
 
-  if (engine && remote) {
-    setInterval(async () => {
-      if (!(await remote.session())) return
-      const r = await engine.flush()
-      lastError.value = r.error
-    }, SYNC_INTERVAL_MS)
-  }
-
   const settings = new SettingsStore(join(userData, 'settings.json'))
   const recommender = new Recommender(library, source)
   let mainWindow: BrowserWindow | null = null
   const pair = remote
     ? new PairChannel(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
     : null
+  const presence = remote
+    ? new PresenceHub(remote.client, (channel, value) => mainWindow?.webContents.send(channel, value))
+    : null
+  const cache = new CacheStore(join(userData, 'social-cache.json'))
   const shot = Boolean(process.env['PHINAS_SHOT'])
   const notch = shot
     ? null
@@ -144,6 +142,9 @@ app.whenReady().then(async () => {
     proxyPort: () => proxyPort,
     remote,
     pair,
+    presence,
+    cache,
+    openExternal: (url) => void shell.openExternal(url),
     engine,
     lastError,
     recommender,
@@ -155,6 +156,19 @@ app.whenReady().then(async () => {
     ipcMain.handle(name, (_e, ...args) =>
       (handlers[name] as (...a: unknown[]) => unknown)(...args)
     )
+  }
+  if (engine && remote) {
+    let tick = 0
+    setInterval(async () => {
+      if (!(await remote.session())) return
+      const r = await engine.flush()
+      lastError.value = r.error
+      // Every minute: refresh friends (keeps presence in step) and leave a pair that is no longer allowed.
+      if (tick++ % 4 === 0) {
+        const friends = await handlers.listFriends().catch(() => null)
+        if (friends && !friends.some((f) => f.isPartner && f.canListen)) await pair?.close()
+      }
+    }, SYNC_INTERVAL_MS)
   }
   ipcMain.on('listen:send', (_e, msg) => pair?.send(msg))
   // An invite only shows inside the app, so without this a partner in another app never sees it.

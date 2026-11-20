@@ -12,6 +12,9 @@ import type { SystemVolume } from './system-volume'
 import type { Recommender } from './recommend/service'
 import type { SettingsStore } from './settings'
 import type { Updater } from './updater'
+import { LEGAL_URLS } from '../shared/links'
+import { withCache, type CacheStore } from './sync/cache'
+import type { PresenceHub } from './sync/presence'
 
 export interface Deps {
   library: Library
@@ -22,6 +25,10 @@ export interface Deps {
   remote: SupabaseRemote | null
   /** Realtime channel for listen together; null when Supabase is not configured. */
   pair: PairChannel | null
+  /** Friends' online state; null when Supabase is not configured. */
+  presence: PresenceHub | null
+  cache: CacheStore
+  openExternal: (url: string) => void
   engine: SyncEngine | null
   lastError: { value?: string }
   recommender: Recommender
@@ -35,6 +42,16 @@ export function createHandlers(d: Deps): PhinasApi {
   const requireRemote = (): SupabaseRemote => {
     if (!d.remote) throw new Error('Supabase belum dikonfigurasi (.env)')
     return d.remote
+  }
+
+  const signedIn = async (): Promise<SupabaseRemote | null> =>
+    d.remote && (await d.remote.session()) ? d.remote : null
+
+  /** Leaves every realtime channel and forgets cached social data. */
+  const leaveAll = async (): Promise<void> => {
+    await d.pair?.close()
+    await d.presence?.close()
+    d.cache.clear()
   }
 
   // Answers (including "no lyrics") are cached for the session; network failures are not.
@@ -82,8 +99,56 @@ export function createHandlers(d: Deps): PhinasApi {
       void d.engine?.flush()
     },
     syncSignOut: async () => {
-      await d.pair?.close()
+      await leaveAll()
       await requireRemote().signOut()
+    },
+    syncSignUp: async (input) => {
+      await requireRemote().signUp(input)
+      d.lastError.value = undefined
+      void d.engine?.flush()
+    },
+    myProfile: async () => {
+      const r = await signedIn()
+      return r ? withCache(d.cache, 'profile', () => r.myProfile()) : null
+    },
+    updateMyProfile: async (name, scope) => {
+      await requireRemote().updateMyProfile(name, scope)
+      d.cache.set('profile', await requireRemote().myProfile())
+    },
+    getConfig: async () => {
+      const r = await signedIn()
+      return r ? withCache(d.cache, 'config', () => r.getConfig()) : null
+    },
+    listFriends: async () => {
+      const r = requireRemote()
+      const friends = await withCache(d.cache, 'friends', () => r.listFriends())
+      void r
+        .userId()
+        .then((me) => d.presence?.sync(me, friends.map((f) => f.userId)))
+        .catch((e) => console.warn('[presence] sync failed:', e))
+      return friends
+    },
+    listFriendRequests: () => requireRemote().listFriendRequests(),
+    sendFriendRequest: (code) => requireRemote().sendFriendRequest(code),
+    respondFriendRequest: (id, accept) => requireRemote().respondFriendRequest(id, accept),
+    removeFriend: (id) => requireRemote().removeFriend(id),
+    requestPartner: (id) => requireRemote().requestPartner(id),
+    respondPartner: (id, accept) => requireRemote().respondPartner(id, accept),
+    endPartner: (id) => requireRemote().endPartner(id),
+    listMyInvites: () => requireRemote().listMyInvites(),
+    createInvite: () => requireRemote().createInvite(),
+    revokeInvite: (code) => requireRemote().revokeInvite(code),
+    deleteAccount: async () => {
+      await leaveAll()
+      await requireRemote().deleteAccount()
+    },
+    onlineFriends: async () => d.presence?.onlineIds() ?? [],
+    setPlaylistVisibility: async (id, v) => d.library.setVisibility(id, v),
+    listFriendPlaylists: (friendId) => requireRemote().listFriendPlaylists(friendId),
+    listPublicPlaylists: () => requireRemote().listPublicPlaylists(),
+    openLegal: async (page) => {
+      const url = LEGAL_URLS[page]
+      if (url) d.openExternal(url)
     },
     syncStatus: async () => {
       const session = d.remote ? await d.remote.session() : null
@@ -126,7 +191,7 @@ export function createHandlers(d: Deps): PhinasApi {
       }
     },
     listenClose: async () => d.pair?.close(),
-    listenStatus: async () => d.pair?.status() ?? { connected: false, partnerHere: false },
+    listenStatus: async () => d.pair?.status() ?? { connected: false, partnerHere: false, notAllowed: false },
     copyPartnerPlaylist: async (p) => {
       const copy = d.library.createPlaylist(`${p.name} (dari ${p.ownerName})`)
       for (const t of p.tracks) d.library.addTrack(copy.id, t)

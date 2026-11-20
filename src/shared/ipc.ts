@@ -1,4 +1,5 @@
-import type { ArtistDetail, FavoriteArtist, GenrePage, UpdateStatus, ListenInfo, ListenStatus, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SyncStatus, Track } from './types'
+import type { AppConfig, ArtistDetail, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenInfo, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
+import type { LegalPage } from './links'
 import type { SyncMessage } from './sync/protocol'
 
 export interface PhinasApi {
@@ -44,6 +45,38 @@ export interface PhinasApi {
   syncSignIn(email: string, password: string): Promise<void>
   syncSignOut(): Promise<void>
   syncStatus(): Promise<SyncStatus>
+  /** Registers with an invite code; signs in on success. Errors carry `phinas:<code>`. */
+  syncSignUp(input: SignUpInput): Promise<void>
+  /** Null when not signed in or Supabase is not configured. Falls back to the cache offline. */
+  myProfile(): Promise<MyProfile | null>
+  /** Null leaves a field unchanged. */
+  updateMyProfile(displayName: string | null, listenScope: ListenScope | null): Promise<void>
+  /** Null when not signed in. Falls back to the cache offline. */
+  getConfig(): Promise<AppConfig | null>
+  /** Accepted friends, partner first. Falls back to the cache offline. */
+  listFriends(): Promise<Friend[]>
+  listFriendRequests(): Promise<FriendRequest[]>
+  sendFriendRequest(friendCode: string): Promise<void>
+  respondFriendRequest(friendshipId: string, accept: boolean): Promise<void>
+  removeFriend(friendshipId: string): Promise<void>
+  requestPartner(friendshipId: string): Promise<void>
+  respondPartner(friendshipId: string, accept: boolean): Promise<void>
+  endPartner(friendshipId: string): Promise<void>
+  listMyInvites(): Promise<InviteCode[]>
+  createInvite(): Promise<string>
+  revokeInvite(code: string): Promise<void>
+  /** Deletes the account and everything in it on the server, then signs out. Local data stays. */
+  deleteAccount(): Promise<void>
+  /** Ids of friends who have Phinas open right now. */
+  onlineFriends(): Promise<string[]>
+  setPlaylistVisibility(id: string, visibility: Visibility): Promise<void>
+  /** Playlists of one friend, or of every friend. */
+  listFriendPlaylists(friendId?: string): Promise<PartnerPlaylist[]>
+  /** Public playlists of every other user. */
+  listPublicPlaylists(): Promise<PartnerPlaylist[]>
+  /** Opens the terms or privacy page in the browser. */
+  openLegal(page: LegalPage): Promise<void>
+  /** The partner's playlists (Berdua tab). Renamed in the redesign. */
   listPartnerPlaylists(): Promise<PartnerPlaylist[]>
   copyPartnerPlaylist(playlist: PartnerPlaylist): Promise<Playlist>
   /** Writes one history row. Local only. */
@@ -95,6 +128,8 @@ export interface PhinasEvents {
   onListenMessage(cb: (raw: unknown) => void): () => void
   onListenPresence(cb: (here: boolean) => void): () => void
   onListenConnection(cb: (up: boolean) => void): () => void
+  /** The set of online friends changed. Returns an unsubscribe. */
+  onFriendsOnline(cb: (ids: string[]) => void): () => void
   /** The update status changed (found, downloading, ready). Returns an unsubscribe. */
   onUpdateStatus(cb: (status: UpdateStatus) => void): () => void
   /** The partner invited us: the main process shows a system notification when the window is not focused. */
@@ -145,6 +180,27 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   syncSignIn: true,
   syncSignOut: true,
   syncStatus: true,
+  syncSignUp: true,
+  myProfile: true,
+  updateMyProfile: true,
+  getConfig: true,
+  listFriends: true,
+  listFriendRequests: true,
+  sendFriendRequest: true,
+  respondFriendRequest: true,
+  removeFriend: true,
+  requestPartner: true,
+  respondPartner: true,
+  endPartner: true,
+  listMyInvites: true,
+  createInvite: true,
+  revokeInvite: true,
+  deleteAccount: true,
+  onlineFriends: true,
+  setPlaylistVisibility: true,
+  listFriendPlaylists: true,
+  listPublicPlaylists: true,
+  openLegal: true,
   listPartnerPlaylists: true,
   copyPartnerPlaylist: true,
   recordPlay: true,
