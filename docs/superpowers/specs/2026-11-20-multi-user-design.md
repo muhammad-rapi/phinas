@@ -17,7 +17,7 @@ Offline-first for C means option 2: the app opens fast and stays fully usable of
 
 ## Decisions
 - **Relationships:** friends, many per user. Each user may have **at most one partner**, a flag on an accepted friendship, set only with consent from both sides. The partner is pinned first, owns the Berdua tab, and is the default Listen Together target.
-- **Becoming friends:** registering with someone's invite code makes you friends with its creator. Existing users befriend each other by entering a short friend code (e.g. `PHN-7K2Q`) shown in the profile; the other side accepts. No user search.
+- **Becoming friends:** registering with someone's invite code makes you friends with its creator. Existing users befriend each other by entering a short friend code (e.g. `PHN-7K2Q9M`; at most 20 unanswered outgoing requests) shown in the profile; the other side accepts. No user search.
 - **Invite codes:** admins unlimited; users get a quota (`invite_quota`, default 3, admin-editable, 0 closes it). Codes are single-use and expire after 14 days. The admin panel shows who invited whom.
 - **Playlist visibility:** `private` (owner only), `friends` (default), `public` (every active Phinas user; never shown on the website). Likes are visible to friends, with no separate setting.
 - **Listen Together:** a global switch (`listen_together_enabled`) and a per-user `listen_scope`: `friends` (default), `partner`, `off`. Both participants' scopes must allow the session. Enforced by the server.
@@ -81,7 +81,7 @@ User: `create_invite()` (quota is a lifetime limit: used codes plus still-open c
 
 Admin (all check `is_admin()`): `admin_list_users()` (joins `auth.users` for email, created and last sign-in times, invited_by, disabled, role), `admin_set_disabled(uid, bool)`, `admin_set_config(key, value)`, `admin_list_invites()`. Admins create codes with the normal `create_invite()`, which skips the quota for them.
 
-Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`, `not_signed_in`, `request_not_found`, `name_invalid`, `self_disable`, `config_unknown`, `signup_failed` (the generic Auth error).
+Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`, `not_signed_in`, `request_not_found`, `name_invalid`, `self_disable`, `config_unknown`, `too_many_requests`, `last_admin`, `invalid_args`, `signup_failed` (the generic Auth error). The last active admin cannot delete their account.
 
 ## Listen Together channels
 - Session channel: `pair:<uuidA>:<uuidB>` (sorted ids), `private: true`.

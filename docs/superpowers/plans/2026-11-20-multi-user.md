@@ -1223,14 +1223,14 @@ Expected: `05_admin` FAILS with `function public.admin_list_users() does not exi
 -- Admin panel RPCs. Each checks is_admin(); none needs the service-role key.
 
 create function private.require_admin() returns uuid
-language plpgsql stable security definer set search_path = public, private as $$
+language plpgsql stable security definer set search_path = private, public as $$
 begin
   if not is_admin() then raise exception 'phinas:not_admin'; end if;
   return auth.uid();
 end $$;
 
 create function public.admin_list_users() returns jsonb
-language plpgsql stable security definer set search_path = public, private, auth as $$
+language plpgsql stable security definer set search_path = private, public, auth as $$
 begin
   perform require_admin();
   return coalesce((
@@ -1254,7 +1254,7 @@ begin
 end $$;
 
 create function public.admin_list_invites() returns jsonb
-language plpgsql stable security definer set search_path = public, private as $$
+language plpgsql stable security definer set search_path = private, public as $$
 begin
   perform require_admin();
   return coalesce((
@@ -1274,7 +1274,7 @@ begin
 end $$;
 
 create function public.admin_set_disabled(p_user uuid, p_disabled boolean) returns void
-language plpgsql security definer set search_path = public, private as $$
+language plpgsql security definer set search_path = private, public as $$
 declare me uuid := require_admin();
 begin
   if p_user = me then raise exception 'phinas:self_disable'; end if;
@@ -1282,7 +1282,7 @@ begin
 end $$;
 
 create function public.admin_set_config(p_key text, p_value jsonb) returns void
-language plpgsql security definer set search_path = public, private as $$
+language plpgsql security definer set search_path = private, public as $$
 begin
   perform require_admin();
   update app_config set value = p_value where key = p_key;
@@ -1406,7 +1406,7 @@ Expected: `06_listen` FAILS with `function private.can_join_topic(text) does not
 --   presence:<uuid>                 the owner tracks presence; friends watch it
 
 create function private.can_join_topic(p_topic text) returns boolean
-language plpgsql stable security definer set search_path = public, private as $$
+language plpgsql stable security definer set search_path = private, public as $$
 declare
   u uuid := auth.uid();
   parts text[] := string_to_array(coalesce(p_topic, ''), ':');
@@ -1610,7 +1610,10 @@ const MESSAGES: Record<string, string> = {
   name_invalid: 'Nama harus 1 sampai 30 karakter.',
   scope_invalid: 'Pilihan Dengar Bareng tidak dikenal.',
   self_disable: 'Admin tidak bisa menonaktifkan dirinya sendiri.',
-  config_unknown: 'Pengaturan tidak dikenal.'
+  config_unknown: 'Pengaturan tidak dikenal.',
+  too_many_requests: 'Terlalu banyak permintaan pertemanan yang belum dijawab.',
+  last_admin: 'Kamu admin terakhir. Jadikan orang lain admin dulu sebelum menghapus akun.',
+  invalid_args: 'Permintaan tidak valid.'
 }
 
 const GENERIC = 'Terjadi kesalahan. Coba lagi.'
@@ -1693,7 +1696,7 @@ export interface MyProfile {
   displayName: string
   role: 'user' | 'admin'
   disabled: boolean
-  /** Short code friends type to add me, e.g. PHN-7K2Q. */
+  /** Short code friends type to add me, e.g. PHN-7K2Q9M. */
   friendCode: string
   listenScope: ListenScope
   /** Codes I can still create; null for admins (no limit). */
