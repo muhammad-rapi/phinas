@@ -35,3 +35,5 @@
 .nl-artist { color: var(--ink-soft); }
 .nl-skel { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
 .nl-bar { flex: 1; max-width: 220px; height: 10px; }
+/* Putar lagi and Playlist kamu: one row of covers each, below the lists. */
+.home-sec { margin-top: 34px; }

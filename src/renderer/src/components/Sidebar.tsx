@@ -1,3 +1,4 @@
+import { PlaylistCover } from './PlaylistCover'
 import { Compass, Download, Heart, History, Home, Plus, Users, type LucideIcon } from 'lucide-react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
@@ -33,9 +34,10 @@ function NavItem(p: { label: string; icon: LucideIcon; active: boolean; online?:
   )
 }
 
-function PlaylistItem(p: { name: string; active: boolean; onClick: () => void }): React.JSX.Element {
+function PlaylistItem(p: { name: string; covers: string[]; active: boolean; onClick: () => void }): React.JSX.Element {
   return (
     <button className={`nav-pl${p.active ? ' active' : ''}`} onClick={p.onClick} title={p.name}>
+      <PlaylistCover covers={p.covers} size={30} />
       <span>{p.name}</span>
     </button>
   )
@@ -88,6 +90,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
           <PlaylistItem
             key={p.id}
             name={p.name}
+            covers={p.coverUrls}
             active={sameView(view, { name: 'playlist', id: p.id })}
             onClick={() => nav({ name: 'playlist', id: p.id })}
           />
@@ -98,6 +101,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
           <PlaylistItem
             key={p.id}
             name={p.name}
+            covers={p.coverUrls}
             active={sameView(view, { name: 'partner', id: p.id })}
             onClick={() => nav({ name: 'partner', id: p.id })}
           />

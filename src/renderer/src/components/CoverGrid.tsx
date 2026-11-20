@@ -10,9 +10,10 @@ export interface GridItem {
 }
 
 /** Square covers in a grid, title and meta under each (artist releases, search playlists, …). */
-export function CoverGrid({ items, four = false }: { items: GridItem[]; four?: boolean }): React.JSX.Element {
+/** `strip` keeps a single row: covers that do not fit are left out (Beranda). */
+export function CoverGrid({ items, four = false, strip = false }: { items: GridItem[]; four?: boolean; strip?: boolean }): React.JSX.Element {
   return (
-    <div className={`grid-covers${four ? ' four' : ''}`}>
+    <div className={`grid-covers${four ? ' four' : ''}${strip ? ' strip' : ''}`}>
       {items.map((it) => (
         <button key={it.key} className="grid-item" onClick={it.onOpen} title={it.title}>
           {typeof it.art === 'string' ? <span className="grid-art" style={{ backgroundImage: `url("${it.art}")` }} /> : it.art}

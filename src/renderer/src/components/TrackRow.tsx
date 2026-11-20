@@ -62,9 +62,12 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
       >
         {isCurrent ? <Play size={12} fill="currentColor" aria-hidden="true" /> : index !== undefined ? index + 1 : ''}
       </button>
-      <div className="tl-meta">
-        <span className="tl-title">{track.title}</span>
-        <ArtistLinks className="tl-artist" artist={track.artist} />
+      <div className="tl-main">
+        <span className="tl-cover" style={track.coverUrl ? { backgroundImage: `url("${track.coverUrl}")` } : undefined} aria-hidden="true" />
+        <div className="tl-meta">
+          <span className="tl-title">{track.title}</span>
+          <ArtistLinks className="tl-artist" artist={track.artist} />
+        </div>
       </div>
       <div className="tl-actions" onClick={(e) => e.stopPropagation()}>
         <button className={`icon-btn${liked ? ' on' : ''}`} onClick={toggleLike} aria-label={liked ? 'Hapus dari disukai' : 'Suka'}>

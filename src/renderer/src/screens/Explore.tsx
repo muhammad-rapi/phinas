@@ -8,6 +8,19 @@ import type { Nav } from '../views'
 
 const FEED_ERROR = 'Tidak bisa memuat bagian ini. Cek koneksi internetmu.'
 
+import { genreIcon } from '../theme/genreIcon'
+
+/** A mood or genre pill with its icon. */
+function GenrePill({ title, onOpen }: { title: string; onOpen: () => void }): React.JSX.Element {
+  const Icon = genreIcon(title)
+  return (
+    <button className="ex-pill" onClick={onOpen}>
+      <Icon size={15} strokeWidth={1.8} aria-hidden="true" />
+      {title}
+    </button>
+  )
+}
+
 /** Numbered rows with a small cover: number, cover, title and artist, duration. Clicking plays from that row. */
 function RankedRows({ tracks, onPlay }: { tracks: Track[]; onPlay: (index: number) => void }): React.JSX.Element {
   const player = usePlayer()
@@ -76,9 +89,7 @@ export function Explore({ nav }: { nav: Nav }): React.JSX.Element {
           {feed ? (
             <div className="ex-pills">
               {feed.genres.map((g) => (
-                <button key={g.params} className="ex-pill" onClick={() => nav({ name: 'genre', id: g.params, title: g.title })}>
-                  {g.title}
-                </button>
+                <GenrePill key={g.params} title={g.title} onOpen={() => nav({ name: 'genre', id: g.params, title: g.title })} />
               ))}
             </div>
           ) : failed ? (

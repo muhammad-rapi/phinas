@@ -39,6 +39,8 @@
 .tl-num { justify-content: flex-start; width: 100%; height: 100%; min-height: 24px; font-family: var(--serif); font-size: 15px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 .tl-row.playing .tl-num, .tl-row.playing .tl-title { color: var(--accent); }
 .tl-meta { min-width: 0; line-height: 1.35; }
+.tl-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tl-cover { flex: none; width: 38px; height: 38px; background: var(--line) center / cover no-repeat; box-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.4); }
 .tl-title, .tl-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-title { font-weight: 700; }
 .tl-artist { font-size: 11px; color: var(--ink-soft); }
@@ -62,6 +64,8 @@
 /* Square covers without rounded corners or cards; title and meta under each. */
 .grid-covers { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 22px 18px; }
 .grid-covers.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* A single row: extra items get zero-height rows and are hidden. */
+.grid-covers.strip { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); grid-template-rows: auto; grid-auto-rows: 0; row-gap: 0; overflow: hidden; }
 @container (max-width: 760px) { .grid-covers.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .grid-item { flex-direction: column; align-items: stretch; gap: 2px; min-width: 0; text-align: left; }
 .grid-art { display: block; width: 100%; aspect-ratio: 1; margin-bottom: 8px; background: var(--line) center / cover; }

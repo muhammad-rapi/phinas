@@ -2,6 +2,9 @@ import { Pause, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { HomeFeed, Track } from '../../../shared/types'
 import { BerduaLine } from '../components/BerduaLine'
+import { CoverGrid } from '../components/CoverGrid'
+import { PlaylistCover } from '../components/PlaylistCover'
+import { useLibrary } from '../library/LibraryProvider'
 import { NumberedList } from '../components/NumberedList'
 import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
@@ -71,6 +74,60 @@ function CoverStory({ recent, nav }: { recent: Track[] | null; nav: Nav }): Reac
   )
 }
 
+/** One row of covers from the history; a cover plays the history from that track. */
+function PlayAgain({ recent, nav }: { recent: Track[] | null; nav: Nav }): React.JSX.Element | null {
+  const player = usePlayer()
+  if (!recent || recent.length === 0) return null
+  const tracks = recent.slice(0, 10)
+  return (
+    <section className="home-sec" aria-label="Putar lagi">
+      <h2 className="section-title-wrap">
+        <button className="section-title" onClick={() => nav({ name: 'recent' })}>
+          Putar lagi
+        </button>
+      </h2>
+      <CoverGrid
+        strip
+        items={tracks.map((t, i) => ({
+          key: `${t.videoId}-${i}`,
+          title: t.title,
+          meta: t.artist,
+          art: t.coverUrl,
+          onOpen: () => player.play(tracks, i)
+        }))}
+      />
+    </section>
+  )
+}
+
+/** Own playlists first, then the partner's, in one row of covers. */
+function YourPlaylists({ nav }: { nav: Nav }): React.JSX.Element | null {
+  const lib = useLibrary()
+  const items = [
+    ...lib.playlists.map((p) => ({
+      key: p.id,
+      title: p.name,
+      meta: 'Playlist',
+      art: <PlaylistCover covers={p.coverUrls} />,
+      onOpen: () => nav({ name: 'playlist', id: p.id })
+    })),
+    ...lib.partner.map((p) => ({
+      key: `partner-${p.id}`,
+      title: p.name,
+      meta: `Dari ${p.ownerName}`,
+      art: <PlaylistCover covers={p.coverUrls} />,
+      onOpen: () => nav({ name: 'partner', id: p.id })
+    }))
+  ]
+  if (items.length === 0) return null
+  return (
+    <section className="home-sec" aria-label="Playlist kamu">
+      <h2 className="section-title">Playlist kamu</h2>
+      <CoverGrid strip items={items} />
+    </section>
+  )
+}
+
 export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Element {
   const player = usePlayer()
   const [feed, setFeed] = useState<HomeFeed | null>(null)
@@ -105,6 +162,7 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
           failed={forYou.failed}
           errorText="Tidak bisa memuat rekomendasi. Cek koneksi internetmu."
           onPlay={(i) => forYou.tracks && player.play(forYou.tracks, i)}
+          rows={8}
         />
         <NumberedList
           title="Lagi ramai"
@@ -113,8 +171,11 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
           failed={trending.failed}
           errorText="Tidak bisa memuat yang lagi tren. Cek koneksi internetmu."
           onPlay={(i) => trending.tracks && player.play(trending.tracks, i)}
+          rows={8}
         />
       </div>
+      <PlayAgain recent={recent} nav={nav} />
+      <YourPlaylists nav={nav} />
     </div>
   )
 }
