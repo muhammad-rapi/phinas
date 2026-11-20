@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react'
-import { accentVars, dominantColor } from './color'
-
-export type ThemeName = 'dynamic' | 'dark' | 'light'
-const STORAGE_KEY = 'phinas.theme'
-
-function readStored(): ThemeName {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY)
-    if (v === 'dynamic' || v === 'dark' || v === 'light') return v
-  } catch {
-    /* storage unavailable */
-  }
-  return 'dynamic'
-}
+import { DEFAULT_ACCENT, dominantColor, paletteFor, parseHex, type Rgb } from './color'
+import { DARK_QUERY, browserStorage, readMode, resolveMode, writeMode, type ResolvedTheme, type ThemeMode } from './mode'
 
 async function pixelsOf(dataUrl: string): Promise<Uint8ClampedArray> {
   // A data URL is same-origin, so the canvas is never tainted.
@@ -27,69 +15,73 @@ async function pixelsOf(dataUrl: string): Promise<Uint8ClampedArray> {
   return ctx.getImageData(0, 0, 32, 32).data
 }
 
+export interface Theme {
+  /** What the user picked in Profil. */
+  mode: ThemeMode
+  setMode: (m: ThemeMode) => void
+  /** What is shown: the picked mode, or the OS's when following the system. */
+  resolved: ResolvedTheme
+  /** The notch is a dark pill in both modes, so it always gets the Malam accent. */
+  notch: { accent: string; onAccent: string }
+}
+
 /**
- * Applies the theme to <html>. In Dynamic mode the accent colors follow the cover art
- * (given as a data URL). Returns the active theme and whether the ambient cover
- * background should show.
+ * Applies the mode to <html data-theme> and writes --accent, --on-accent and --wash from the
+ * cover's dominant colour, or from the mood's colour while a mood is set.
  */
-export function useTheme(
-  coverData: string | null,
-  /** A mood's colours, which win over the theme's accent while set. */
-  mood: { accent: string; accentText: string; gradTop: string } | null = null
-): {
-  theme: ThemeName
-  setTheme: (t: ThemeName) => void
-} {
-  const [theme, setThemeState] = useState<ThemeName>(readStored)
+export function useTheme(coverData: string | null, moodAccent: string | null): Theme {
+  const [mode, setModeState] = useState<ThemeMode>(() => readMode(browserStorage()))
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia(DARK_QUERY).matches)
+  const [coverColor, setCoverColor] = useState<Rgb | null>(null)
 
-  const setTheme = (t: ThemeName): void => {
-    setThemeState(t)
-    try {
-      localStorage.setItem(STORAGE_KEY, t)
-    } catch {
-      /* ignore */
-    }
-  }
-
+  // Follow the OS live when it switches between light and dark.
   useEffect(() => {
-    const root = document.documentElement
-    // Dynamic uses the dark base; light/dark are fixed.
-    root.dataset.theme = theme === 'light' ? 'light' : 'dark'
-    root.dataset.mode = theme
-    const reset = (): void => {
-      root.style.removeProperty('--accent')
-      root.style.removeProperty('--accent-text')
-      root.style.removeProperty('--grad-top')
-    }
-    if (mood) {
-      root.style.setProperty('--accent', mood.accent)
-      // On the light theme the lighter text tone would be too faint: use the accent itself.
-      root.style.setProperty('--accent-text', theme === 'light' ? mood.accent : mood.accentText)
-      if (theme === 'light') root.style.removeProperty('--grad-top')
-      else root.style.setProperty('--grad-top', mood.gradTop)
-      return
-    }
-    if (theme !== 'dynamic' || !coverData) {
-      reset()
+    const mq = window.matchMedia(DARK_QUERY)
+    const onChange = (e: MediaQueryListEvent): void => setSystemDark(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  // The previous colour stays until the new cover is read, so the accent glides instead of blinking.
+  useEffect(() => {
+    if (!coverData) {
+      setCoverColor(null)
       return
     }
     let cancelled = false
     pixelsOf(coverData)
       .then((px) => {
         if (cancelled) return
-        const vars = accentVars(dominantColor(px))
-        root.style.setProperty('--accent', vars.accent)
-        root.style.setProperty('--accent-text', vars.accentText)
-        root.style.setProperty('--grad-top', vars.gradTop)
+        const c = dominantColor(px)
+        // A greyscale cover has no colour of its own: use the terracotta defaults.
+        setCoverColor(c === DEFAULT_ACCENT ? null : c)
       })
       .catch((e) => {
-        console.warn('[theme] could not read cover colors, using default accent:', e)
-        if (!cancelled) reset()
+        console.warn('[theme] could not read cover colors, using the default accent:', e)
+        if (!cancelled) setCoverColor(null)
       })
     return () => {
       cancelled = true
     }
-  }, [theme, coverData, mood])
+  }, [coverData])
 
-  return { theme, setTheme }
+  const resolved = resolveMode(mode, systemDark)
+  const source = (moodAccent ? parseHex(moodAccent) : null) ?? coverColor
+  const palette = paletteFor(source, resolved)
+  const notch = paletteFor(source, 'night')
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = resolved
+    root.style.setProperty('--accent', palette.accent)
+    root.style.setProperty('--on-accent', palette.onAccent)
+    root.style.setProperty('--wash', palette.wash)
+  }, [resolved, palette.accent, palette.onAccent, palette.wash])
+
+  const setMode = (m: ThemeMode): void => {
+    setModeState(m)
+    writeMode(browserStorage(), m)
+  }
+
+  return { mode, setMode, resolved, notch: { accent: notch.accent, onAccent: notch.onAccent } }
 }

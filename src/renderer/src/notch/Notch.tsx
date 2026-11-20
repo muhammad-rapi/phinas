@@ -149,8 +149,6 @@ export function Notch(): React.JSX.Element | null {
   }
   const paddingTop = layout.hasNotch ? layout.barHeight + 6 : 18
 
-  // Follows the app's theme. With a camera notch it stays dark: the notch itself is black.
-  const tone = state.theme === 'light' && !layout.hasNotch ? 'light' : 'dark'
   const peekSize = {
     w: Math.min(layout.expanded.w, layout.compact.w + (layout.hasNotch ? 60 : 90)),
     h: layout.hasNotch ? layout.barHeight + 40 : 60
@@ -158,8 +156,8 @@ export function Notch(): React.JSX.Element | null {
   const size = open ? layout.expanded : peek ? peekSize : layout.compact
   const style = {
     '--accent': state.accent,
-    '--accent-text': state.accentText,
-    '--grad-top': state.gradTop,
+    '--accent-text': state.accent,
+    '--on-accent': state.onAccent,
     '--w': `${size.w}px`,
     '--h': `${size.h}px`,
     '--pad': `${layout.pad}px`,
@@ -171,13 +169,10 @@ export function Notch(): React.JSX.Element | null {
   return (
     <div className="stage" style={style} onMouseLeave={leave}>
       <div
-        className={`pill ${layout.hasNotch ? 'attached' : 'floating'} ${tone}${open ? ' open' : peek ? ' peek' : ''}`}
+        className={`pill ${layout.hasNotch ? 'attached' : 'floating'}${open ? ' open' : peek ? ' peek' : ''}`}
         onMouseEnter={enter}
       >
 
-        {state.theme === 'dynamic' && tone === 'dark' && track.coverUrl && (
-          <div key={track.coverUrl} className="ambient" style={{ backgroundImage: `url("${track.coverUrl}")` }} />
-        )}
         <div className="tint" />
 
         {/* Idle: cover, what is being sung, and a live equalizer. */}

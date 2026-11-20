@@ -36,7 +36,7 @@ function Shell(): React.JSX.Element {
   const cover = useCover(player.track)
   // A mood picked on Home tints the app while you listen from it.
   const [mood, setMood] = useState<{ title: string; colors: MoodColors } | null>(null)
-  const { theme, setTheme } = useTheme(cover, mood?.colors ?? null)
+  const theme = useTheme(cover, mood?.colors.accent ?? null)
   const recents = useRecent()
   const profile = useProfile()
   const listen = useListen()
@@ -141,21 +141,7 @@ function Shell(): React.JSX.Element {
     }
   }, [])
 
-  // Keep the notch overlay in step with the player and the app's theme.
-  const [colors, setColors] = useState({ accent: '#8b5cf6', accentText: '#b79cff', gradTop: '#2b2150' })
-  useEffect(() => {
-    // The theme hook sets the accent variables a moment after the cover or theme changes.
-    const t = setTimeout(() => {
-      const cs = getComputedStyle(document.documentElement)
-      const get = (v: string, fallback: string): string => cs.getPropertyValue(v).trim() || fallback
-      setColors({
-        accent: get('--accent', '#8b5cf6'),
-        accentText: get('--accent-text', '#b79cff'),
-        gradTop: get('--grad-top', '#2b2150')
-      })
-    }, 400)
-    return () => clearTimeout(t)
-  }, [cover, theme, mood])
+  // Keep the notch overlay in step with the player and the app's mode.
   const liked = player.track ? lib.likes.some((l) => l.videoId === player.track!.videoId) : false
   useEffect(() => {
     window.phinas.pushNotchState({
@@ -164,10 +150,11 @@ function Shell(): React.JSX.Element {
       time: player.time,
       duration: player.duration,
       liked,
-      theme,
-      ...colors
+      theme: theme.resolved,
+      accent: theme.notch.accent,
+      onAccent: theme.notch.onAccent
     })
-  }, [player.track, player.playing, player.time, player.duration, liked, theme, colors])
+  }, [player.track, player.playing, player.time, player.duration, liked, theme.resolved, theme.notch.accent, theme.notch.onAccent])
 
   // Playing something started outside the mood's screens ends the mood.
   const queueHead = player.queue.tracks[0]?.videoId
@@ -214,14 +201,13 @@ function Shell(): React.JSX.Element {
       case 'import':
         return <ImportView nav={nav} />
       case 'profile':
-        return <Profile name={profile.name} onName={profile.setName} initial={profile.initial} theme={theme} onTheme={setTheme} />
+        return <Profile name={profile.name} onName={profile.setName} initial={profile.initial} theme={theme.mode} onTheme={theme.setMode} />
     }
   })()
 
   return (
     <NavProvider nav={nav}>
     <div className={`app${panelOpen ? ' with-panel' : ''}`}>
-      {cover && theme !== 'light' && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
       <div className="drag-strip" />
       <Sidebar
         view={view}

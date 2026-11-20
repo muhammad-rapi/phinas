@@ -3,13 +3,13 @@ import { friendlyError } from '../../../shared/errors'
 import type { MyProfile, SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import { useNotchEnabled } from '../notch/useNotchEnabled'
-import type { ThemeName } from '../theme/useTheme'
+import type { ThemeMode } from '../theme/mode'
 import { useUpdate } from '../update/useUpdate'
 
-const THEMES: { id: ThemeName; label: string; hint: string }[] = [
-  { id: 'dynamic', label: 'Dynamic', hint: 'Warna mengikuti sampul lagu' },
-  { id: 'dark', label: 'Dark', hint: 'Gelap, aksen ungu tetap' },
-  { id: 'light', label: 'Light', hint: 'Terang, aksen biru' }
+const THEMES: { id: ThemeMode; label: string; hint: string }[] = [
+  { id: 'system', label: 'Ikuti sistem', hint: 'Siang atau malam mengikuti komputer' },
+  { id: 'day', label: 'Siang', hint: 'Kertas terang' },
+  { id: 'night', label: 'Malam', hint: 'Tinta gelap' }
 ]
 
 const PROFILE_REFRESH_MS = 60_000
@@ -18,8 +18,8 @@ interface Props {
   name: string
   onName: (n: string) => void
   initial: string
-  theme: ThemeName
-  onTheme: (t: ThemeName) => void
+  theme: ThemeMode
+  onTheme: (t: ThemeMode) => void
 }
 
 export function Profile({ name, onName, initial, theme, onTheme }: Props): React.JSX.Element {

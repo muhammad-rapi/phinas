@@ -54,8 +54,8 @@ const MIN_COLOURED_SHARE = 0.02
 /**
  * RGBA flat array (like ImageData.data). Picks the most prominent *coloured* area.
  * Grey, white and black pixels are ignored: a flat background would otherwise outweigh a
- * subject whose shading is spread over many colour buckets. Greyscale covers fall back to
- * the default accent.
+ * subject whose shading is spread over many colour buckets. Greyscale covers return
+ * DEFAULT_ACCENT itself (the same object), which useTheme treats as "no colour".
  */
 export function dominantColor(data: ArrayLike<number>): Rgb {
   const buckets = new Map<number, { n: number; r: number; g: number; b: number; score: number }>()
@@ -86,33 +86,6 @@ export function dominantColor(data: ArrayLike<number>): Rgb {
   for (const e of buckets.values()) if (!best || e.score > best.score) best = e
   if (!best) return DEFAULT_ACCENT
   return { r: Math.round(best.r / best.n), g: Math.round(best.g / best.n), b: Math.round(best.b / best.n) }
-}
-
-const clamp = (x: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, x))
-
-/** Keep the accent readable on dark panels: lightness 0.35-0.6, saturation at least 0.35. */
-export function toAccent(c: Rgb): Rgb {
-  const { h, s, l } = rgbToHsl(c)
-  // A colourless input has no real hue (it reads as 0, i.e. red), so borrow the default's.
-  const hue = s < 0.05 ? rgbToHsl(DEFAULT_ACCENT).h : h
-  return hslToRgb(hue, Math.max(s, 0.35), clamp(l, 0.35, 0.6))
-}
-
-const css = ({ r, g, b }: Rgb): string => `rgb(${r} ${g} ${b})`
-
-/**
- * The accent lightened for use as TEXT or thin icons on a dark panel. The plain accent can be
- * a deep colour that works for buttons but disappears as text on a dark background.
- */
-export function accentText(c: Rgb): Rgb {
-  const { h, s } = rgbToHsl(toAccent(c))
-  return hslToRgb(h, clamp(s, 0.5, 0.95), 0.7)
-}
-
-export function accentVars(c: Rgb): { accent: string; accentText: string; gradTop: string } {
-  const a = toAccent(c)
-  const { h, s } = rgbToHsl(a)
-  return { accent: css(a), accentText: css(accentText(c)), gradTop: css(hslToRgb(h, s, 0.28)) }
 }
 
 /** The two editorial modes: Siang (paper) and Malam (ink). */

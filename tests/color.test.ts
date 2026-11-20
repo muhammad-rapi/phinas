@@ -7,8 +7,6 @@ import {
   PAPER,
   TERRACOTTA,
   accentFor,
-  accentText,
-  accentVars,
   contrastRatio,
   dominantColor,
   luminance,
@@ -16,7 +14,6 @@ import {
   paletteFor,
   parseHex,
   rgbToHsl,
-  toAccent,
   toHex,
   washFor,
   type Rgb,
@@ -71,56 +68,6 @@ describe('dominantColor', () => {
 
   test('falls back to default when everything is transparent', () => {
     expect(dominantColor(px(1, 2, 3, 0, 10))).toEqual(DEFAULT_ACCENT)
-  })
-})
-
-describe('toAccent', () => {
-  test('darkens near-white colors', () => {
-    const { l } = rgbToHsl(toAccent({ r: 245, g: 245, b: 240 }))
-    expect(l).toBeLessThanOrEqual(0.6)
-  })
-
-  test('lightens near-black colors', () => {
-    const { l } = rgbToHsl(toAccent({ r: 5, g: 5, b: 8 }))
-    // 0.01 tolerance: converting back to 8-bit RGB rounds the clamped value slightly.
-    expect(l).toBeGreaterThanOrEqual(0.34)
-  })
-
-  test('a colourless input never turns red', () => {
-    const { h } = rgbToHsl(toAccent({ r: 200, g: 200, b: 200 }))
-    expect(h).toBeCloseTo(rgbToHsl(DEFAULT_ACCENT).h, 1)
-  })
-
-  test('boosts washed-out saturation', () => {
-    const { s } = rgbToHsl(toAccent({ r: 130, g: 128, b: 128 }))
-    expect(s).toBeGreaterThanOrEqual(0.34)
-  })
-})
-
-describe('accentText', () => {
-  test('is always light enough to read on a dark panel, whatever the cover color', () => {
-    for (const c of [
-      { r: 3, g: 41, b: 217 },
-      { r: 20, g: 20, b: 120 },
-      { r: 200, g: 40, b: 40 },
-      { r: 240, g: 240, b: 120 }
-    ]) {
-      const { l } = rgbToHsl(accentText(c))
-      expect(l).toBeGreaterThanOrEqual(0.64)
-    }
-  })
-
-  test('keeps the hue of the accent', () => {
-    const accent = toAccent({ r: 3, g: 41, b: 217 })
-    expect(rgbToHsl(accentText({ r: 3, g: 41, b: 217 })).h).toBeCloseTo(rgbToHsl(accent).h, 1)
-  })
-})
-
-describe('accentVars', () => {
-  test('returns css color strings', () => {
-    const v = accentVars({ r: 200, g: 40, b: 40 })
-    expect(v.accent).toMatch(/^rgb\(\d+ \d+ \d+\)$/)
-    expect(v.gradTop).toMatch(/^rgb\(\d+ \d+ \d+\)$/)
   })
 })
 

@@ -211,11 +211,11 @@ export interface NotchState {
   time: number
   duration: number
   liked: boolean
-  /** The app's current theme, so the notch looks like the app. */
-  theme: 'dynamic' | 'dark' | 'light'
+  /** The app's resolved mode. The notch stays a dark pill in both; it only takes the accent. */
+  theme: 'day' | 'night'
+  /** The accent made for a dark surface (the Malam accent), and the text colour on it. */
   accent: string
-  accentText: string
-  gradTop: string
+  onAccent: string
 }
 
 /** Who we listen together with by default: the partner, when Listen Together is allowed with them. */
