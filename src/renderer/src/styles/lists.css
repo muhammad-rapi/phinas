@@ -85,9 +85,3 @@
 .import-missing { max-width: 640px; margin: 8px 0 20px; color: var(--ink-soft); }
 .import-missing summary { padding: 8px 0; cursor: pointer; }
 .import-missing ul { margin: 0; padding-left: 18px; }
-
-/* ---------- Berdua ---------- */
-.listen-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 0 0 26px; }
-.listen-card-title { font-family: var(--serif); font-size: 30px; line-height: 1.05; }
-.listen-card-title em { font-style: italic; color: var(--accent); }
-.listen-card-actions { display: flex; gap: 8px; margin-top: 6px; }
