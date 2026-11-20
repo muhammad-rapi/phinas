@@ -112,5 +112,61 @@ set local role authenticated;
 select throws_ok($$ select public.create_invite() $$, 'P0001', 'phinas:quota_exceeded', 'quota 0');
 reset role;
 
+update public.app_config set value = '3' where key = 'invite_quota';
+
+-- Someone else's code cannot be revoked.
+insert into tests.codes select 'budi_open', code from public.invite_codes
+  where created_by = tests.id('budi') and not revoked and used_at is null order by created_at limit 1;
+select tests.login('cici');
+set local role authenticated;
+select throws_ok($$ select public.revoke_invite(tests.code('budi_open')) $$, 'P0001', 'phinas:invite_invalid',
+  'cannot revoke someone else''s code');
+reset role;
+select is((select revoked from public.invite_codes where code = tests.code('budi_open')), false, 'code untouched');
+
+-- An expired unused code frees a slot.
+update public.invite_codes set expires_at = now() - interval '1 minute' where code = tests.code('budi_open');
+select tests.login('budi');
+set local role authenticated;
+select is((public.my_profile()->>'invitesLeft')::int, 1, 'an expired unused code frees a slot');
+select lives_ok($$ select public.create_invite() $$, 'budi creates one more');
+select is((public.my_profile()->>'invitesLeft')::int, 0, 'quota full again');
+reset role;
+
+-- Deleting an account.
+select tests.befriend('cici', 'admin');
+select tests.login('cici');
+set local role authenticated;
+select lives_ok($$ select public.delete_my_account() $$, 'cici deletes her account');
+reset role;
+select ok(not exists (select 1 from public.profiles where id = tests.id('cici')), 'profile gone');
+select ok(not exists (select 1 from public.friendships where tests.id('cici') in (user_a, user_b)), 'friendships gone');
+select ok(exists (select 1 from public.invite_codes
+  where created_by = tests.id('budi') and used_at is not null and used_by is null),
+  'the code she used stays used, with no user');
+select tests.login('budi');
+set local role authenticated;
+select is((public.my_profile()->>'invitesLeft')::int, 0, 'the inviter does not get the slot back');
+reset role;
+
+select tests.new_user('dedi', tests.invite('admin', 'dd'));
+update public.profiles set disabled = true where id = tests.id('dedi');
+select tests.login('dedi');
+set local role authenticated;
+select lives_ok($$ select public.delete_my_account() $$, 'a disabled user can delete their account');
+reset role;
+select ok(not exists (select 1 from public.profiles where id = tests.id('dedi')), 'disabled user gone');
+
+select tests.login('admin');
+set local role authenticated;
+select throws_ok($$ select public.delete_my_account() $$, 'P0001', 'phinas:last_admin', 'the last admin cannot leave');
+reset role;
+update public.profiles set role = 'admin' where id = tests.id('budi');
+select tests.login('admin');
+set local role authenticated;
+select lives_ok($$ select public.delete_my_account() $$, 'with a second admin, the first can leave');
+reset role;
+select ok(not exists (select 1 from public.profiles where id = tests.id('admin')), 'admin gone');
+
 select * from finish();
 rollback;

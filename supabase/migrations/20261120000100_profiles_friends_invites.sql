@@ -7,7 +7,7 @@ grant usage on schema private to authenticated, service_role;
 
 -- Short random codes without look-alike characters (no I, O, 0, 1).
 create function private.gen_code(prefix text, len int) returns text
-language sql volatile set search_path = public, private as $$
+language sql volatile set search_path = private, public as $$
   select prefix || string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + (get_byte(b, i - 1) % 32), 1), '' order by i)
   from (select extensions.gen_random_bytes(len) as b) r, generate_series(1, len) as i
 $$;
@@ -24,11 +24,11 @@ alter table public.profiles
 create index profiles_invited_by on public.profiles(invited_by);
 
 create function private.new_friend_code() returns text
-language plpgsql volatile set search_path = public, private as $$
+language plpgsql volatile set search_path = private, public as $$
 declare c text;
 begin
   loop
-    c := gen_code('PHN-', 4);
+    c := gen_code('PHN-', 6);
     exit when not exists (select 1 from profiles where friend_code = c);
   end loop;
   return c;
@@ -61,7 +61,7 @@ create index friendships_partner_requested_by on public.friendships(partner_requ
 
 -- A user can sit in either column, so "one partner per user" cannot be a unique index.
 create function private.check_one_partner() returns trigger
-language plpgsql security definer set search_path = public, private as $$
+language plpgsql security definer set search_path = private, public as $$
 begin
   if new.is_partner then
     perform 1 from profiles where id in (new.user_a, new.user_b) order by id for no key update;
@@ -113,17 +113,17 @@ alter table public.playlists
 
 -- Helpers. security definer so policies can call them without recursing through RLS.
 create function private.is_active(uid uuid) returns boolean
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select exists (select 1 from profiles where id = uid and not disabled)
 $$;
 
 create function private.is_admin() returns boolean
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select exists (select 1 from profiles where id = auth.uid() and role = 'admin' and not disabled)
 $$;
 
 create function private.are_friends(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select exists (
     select 1 from friendships
     where user_a = least(a, b) and user_b = greatest(a, b) and status = 'accepted'
@@ -131,7 +131,7 @@ language sql stable security definer set search_path = public, private as $$
 $$;
 
 create function private.is_partner(a uuid, b uuid) returns boolean
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select exists (
     select 1 from friendships
     where user_a = least(a, b) and user_b = greatest(a, b) and status = 'accepted' and is_partner
@@ -139,13 +139,13 @@ language sql stable security definer set search_path = public, private as $$
 $$;
 
 create function private.config(k text) returns jsonb
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select value from app_config where key = k
 $$;
 
 -- The caller's accepted friends whose accounts are active.
 create function private.friend_ids() returns setof uuid
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select case when f.user_a = auth.uid() then f.user_b else f.user_a end
   from friendships f
   where f.status = 'accepted' and auth.uid() in (f.user_a, f.user_b)
@@ -154,7 +154,7 @@ $$;
 
 -- 'ok' or the reason a code cannot be used. Callable before sign-up (granted to anon later).
 create function public.check_invite(p_code text) returns text
-language sql stable security definer set search_path = public, private as $$
+language sql stable security definer set search_path = private, public as $$
   select case
     when not coalesce((config('registration_open'))::boolean, false) then 'registration_closed'
     when i.code is null then 'invite_invalid'
@@ -170,14 +170,17 @@ $$;
 
 -- Registration gate. Any exception cancels the sign-up.
 create or replace function public.handle_new_user() returns trigger
-language plpgsql security definer set search_path = public, private as $$
+language plpgsql security definer set search_path = private, public as $$
 declare
   meta jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
   v_code text := upper(trim(coalesce(meta->>'invite_code', '')));
-  v_name text := left(nullif(trim(coalesce(meta->>'display_name', '')), ''), 30);
+  v_name text := left(nullif(btrim(coalesce(meta->>'display_name', ''), E' \t\r\n'), ''), 30);
   v_status text;
   v_inviter uuid;
 begin
+  -- A name with control characters counts as missing; the email-derived name is used instead.
+  if v_name ~ '[[:cntrl:]]' then v_name := null; end if;
+
   if coalesce(meta->>'accepted_terms', 'false') <> 'true' then
     raise exception 'phinas:terms_required';
   end if;

@@ -66,7 +66,7 @@ select is((select count(*)::int from public.profiles), 0, 'starts from an empty 
 select tests.new_user('admin');
 select is((select role from public.profiles where id = tests.id('admin')), 'admin',
   'first user becomes admin without an invite');
-select matches((select friend_code from public.profiles where id = tests.id('admin')), '^PHN-[A-Z2-9]{4}$',
+select matches((select friend_code from public.profiles where id = tests.id('admin')), '^PHN-[A-Z2-9]{6}$',
   'friend code format');
 select isnt((select accepted_terms_at from public.profiles where id = tests.id('admin')), null,
   'terms acceptance recorded');
@@ -140,6 +140,21 @@ select tests.invite('hana', 'c8');
 update public.profiles set disabled = true where id = tests.id('hana');
 select is(public.check_invite(tests.code('c8')), 'invite_revoked', 'codes of a disabled inviter do not work');
 update public.profiles set disabled = false where id = tests.id('hana');
+
+-- Names: tabs and newlines around the name are trimmed; a name with control characters
+-- inside falls back to the email-derived name.
+select tests.invite('admin', 'c9');
+insert into auth.users (instance_id, id, aud, role, email, raw_user_meta_data)
+values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 'lina@test.local',
+        jsonb_build_object('display_name', E'\t Lina \n', 'invite_code', tests.code('c9'), 'accepted_terms', true));
+select is((select display_name from public.profiles p join auth.users u on u.id = p.id where u.email = 'lina@test.local'),
+  'Lina', 'whitespace and newlines are trimmed from the name');
+select tests.invite('admin', 'c10');
+insert into auth.users (instance_id, id, aud, role, email, raw_user_meta_data)
+values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', 'mira@test.local',
+        jsonb_build_object('display_name', E'Mi\u0007ra', 'invite_code', tests.code('c10'), 'accepted_terms', true));
+select is((select display_name from public.profiles p join auth.users u on u.id = p.id where u.email = 'mira@test.local'),
+  'mira', 'a name with control characters falls back to the email name');
 
 select ok((select bool_and(relrowsecurity) from pg_class
   where oid in ('public.friendships'::regclass, 'public.invite_codes'::regclass, 'public.app_config'::regclass)),
