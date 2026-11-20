@@ -44,10 +44,23 @@ CREATE TABLE IF NOT EXISTS outbox(
 );
 `
 
+function hasColumn(db: DatabaseSync, table: string, column: string): boolean {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+  return cols.some((c) => c.name === column)
+}
+
+/** Column changes for databases created by older versions. Safe to run on every start. */
+export function migrate(db: DatabaseSync): void {
+  if (!hasColumn(db, 'playlists', 'visibility')) {
+    db.exec("ALTER TABLE playlists ADD COLUMN visibility TEXT NOT NULL DEFAULT 'friends'")
+  }
+}
+
 export function openDb(path: string): DatabaseSync {
   const db = new DatabaseSync(path)
   db.exec('PRAGMA foreign_keys = ON;')
   if (path !== ':memory:') db.exec('PRAGMA journal_mode = WAL;')
   db.exec(SCHEMA)
+  migrate(db)
   return db
 }

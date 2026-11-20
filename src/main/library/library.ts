@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
-import type { FavoriteArtist, LikeEntry, PlayEntry, Playlist, PlaylistWithTracks, PlayRecord, Track } from '../../shared/types'
+import type { FavoriteArtist, LikeEntry, PlayEntry, Playlist, PlaylistWithTracks, PlayRecord, Track, Visibility } from '../../shared/types'
 
 interface TrackRow {
   video_id: string
@@ -17,6 +17,8 @@ const toTrack = (r: TrackRow): Track => ({
   coverUrl: r.cover_url,
   durationSec: r.duration_sec
 })
+
+const VISIBILITIES: readonly Visibility[] = ['private', 'friends', 'public']
 
 export class Library {
   constructor(
@@ -49,7 +51,7 @@ export class Library {
   }
 
   createPlaylist(name: string): Playlist {
-    const p: Playlist = { id: this.newId(), name, updatedAt: this.now(), coverUrls: [] }
+    const p: Playlist = { id: this.newId(), name, updatedAt: this.now(), coverUrls: [], visibility: 'friends' }
     this.tx(() => {
       this.db
         .prepare('INSERT INTO playlists(id, name, updated_at) VALUES (?, ?, ?)')
@@ -66,6 +68,14 @@ export class Library {
     })
   }
 
+  setVisibility(id: string, visibility: Visibility): void {
+    if (!VISIBILITIES.includes(visibility)) throw new Error(`unknown visibility: ${String(visibility)}`)
+    this.tx(() => {
+      this.db.prepare('UPDATE playlists SET visibility = ? WHERE id = ?').run(visibility, id)
+      this.touch(id)
+    })
+  }
+
   deletePlaylist(id: string): void {
     this.tx(() => {
       this.db.prepare('DELETE FROM playlists WHERE id = ?').run(id)
@@ -75,8 +85,8 @@ export class Library {
 
   listPlaylists(): Playlist[] {
     const rows = this.db
-      .prepare('SELECT id, name, updated_at FROM playlists ORDER BY updated_at DESC, rowid DESC')
-      .all() as { id: string; name: string; updated_at: number }[]
+      .prepare('SELECT id, name, updated_at, visibility FROM playlists ORDER BY updated_at DESC, rowid DESC')
+      .all() as { id: string; name: string; updated_at: number; visibility: Visibility }[]
     const covers = this.db
       .prepare(
         `SELECT playlist_id, cover_url FROM playlist_tracks
@@ -93,13 +103,14 @@ export class Library {
       id: r.id,
       name: r.name,
       updatedAt: r.updated_at,
-      coverUrls: byPlaylist.get(r.id) ?? []
+      coverUrls: byPlaylist.get(r.id) ?? [],
+      visibility: r.visibility
     }))
   }
 
   getPlaylist(id: string): PlaylistWithTracks | null {
-    const p = this.db.prepare('SELECT id, name, updated_at FROM playlists WHERE id = ?').get(id) as
-      | { id: string; name: string; updated_at: number }
+    const p = this.db.prepare('SELECT id, name, updated_at, visibility FROM playlists WHERE id = ?').get(id) as
+      | { id: string; name: string; updated_at: number; visibility: Visibility }
       | undefined
     if (!p) return null
     const rows = this.db
@@ -113,7 +124,7 @@ export class Library {
       .slice(0, 4)
       .map((t) => t.coverUrl)
       .filter(Boolean)
-    return { id: p.id, name: p.name, updatedAt: p.updated_at, coverUrls, tracks }
+    return { id: p.id, name: p.name, updatedAt: p.updated_at, coverUrls, tracks, visibility: p.visibility }
   }
 
   addTrack(playlistId: string, track: Track): boolean {
