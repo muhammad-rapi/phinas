@@ -5,3 +5,4 @@ dist
 .superpowers
 .DS_Store
 .vitest
+.env.local
