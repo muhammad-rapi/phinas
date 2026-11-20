@@ -1,6 +1,6 @@
-import { Compass, Download, Heart, History, Home, Plus, Users, type LucideIcon } from 'lucide-react'
+import { Compass, Download, Globe, Heart, History, Home, Lock, Plus, Users, type LucideIcon } from 'lucide-react'
 import { Fragment, useState } from 'react'
-import type { Track } from '../../../shared/types'
+import type { Track, Visibility } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import type { RecentEntry } from '../search/recent'
 import { groupByOwner, onlineFriends } from '../social/lists'
@@ -9,6 +9,7 @@ import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
 import { PlaylistCover } from './PlaylistCover'
 import { SearchBox } from './SearchBox'
+import { sidebarIcon } from './visibility'
 
 interface Props {
   view: View
@@ -40,11 +41,14 @@ function NavItem(p: { label: string; icon: LucideIcon; active: boolean; alert?: 
   )
 }
 
-function PlaylistItem(p: { name: string; covers: string[]; active: boolean; onClick: () => void }): React.JSX.Element {
+function PlaylistItem(p: { name: string; covers: string[]; active: boolean; visibility?: Visibility; onClick: () => void }): React.JSX.Element {
+  const icon = p.visibility ? sidebarIcon(p.visibility) : null
   return (
     <button className={`nav-pl${p.active ? ' active' : ''}`} onClick={p.onClick} title={p.name}>
       <PlaylistCover covers={p.covers} size={30} />
       <span>{p.name}</span>
+      {icon === 'lock' && <Lock className="nav-vis" size={11} aria-label="Pribadi" />}
+      {icon === 'globe' && <Globe className="nav-vis" size={11} aria-label="Publik" />}
     </button>
   )
 }
@@ -169,6 +173,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
             name={p.name}
             covers={p.coverUrls}
             active={sameView(view, { name: 'playlist', id: p.id })}
+            visibility={p.visibility}
             onClick={() => nav({ name: 'playlist', id: p.id })}
           />
         ))}

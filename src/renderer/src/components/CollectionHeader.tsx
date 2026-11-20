@@ -18,8 +18,8 @@ export function AccentTitle({ text }: { text: string }): React.JSX.Element {
 interface Props {
   /** 130 px square: a PlaylistCover (2×2 mosaic), a cover, an icon tile or an artist photo. */
   cover: ReactNode
-  /** The label line, e.g. "Playlist", "Album · Hindia", "Artis" (shown in capitals). */
-  kind: string
+  /** The label line, e.g. "Playlist", "Album · Hindia", "Artis" (shown in capitals), or a control in that style. */
+  kind: ReactNode
   /** A plain title (its last word becomes italic accent), or a node (e.g. an editable name). */
   title: ReactNode
   meta: string

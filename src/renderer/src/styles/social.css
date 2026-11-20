@@ -66,3 +66,17 @@ button.fr-name:hover { color: var(--accent); }
 /* ---------- player bar: friend picker (opens upwards) ---------- */
 .listen-menu { top: auto; bottom: calc(100% + 10px); right: 0; min-width: 220px; }
 .listen-pick { gap: 8px; }
+
+/* ---------- playlist visibility ---------- */
+.vis-wrap { display: inline-block; }
+/* Sits inside the header's .label line, so it takes that look. */
+.vis-btn { gap: 6px; padding: 2px 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.vis-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.vis-menu { left: 0; right: auto; min-width: 240px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.vis-item { align-items: flex-start; gap: 10px; color: var(--ink); }
+.vis-item svg { flex: none; margin-top: 2px; color: var(--ink-soft); }
+.vis-item.active, .vis-item.active svg { color: var(--accent); }
+.vis-text { display: flex; flex-direction: column; gap: 1px; }
+.vis-text strong { font-weight: 600; }
+.vis-text .small { color: var(--ink-soft); }
+.nav-vis { flex: none; margin-left: auto; color: var(--ink-faint); }

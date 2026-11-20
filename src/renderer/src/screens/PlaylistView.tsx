@@ -4,6 +4,7 @@ import type { PlaylistWithTracks } from '../../../shared/types'
 import { AccentTitle, CollectionHeader } from '../components/CollectionHeader'
 import { PlaylistCover } from '../components/PlaylistCover'
 import { TrackListHead, TrackRow } from '../components/TrackRow'
+import { VisibilityPicker } from '../components/VisibilityPicker'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
@@ -52,7 +53,15 @@ export function PlaylistView({ id, nav }: { id: string; nav: Nav }): React.JSX.E
     <>
       <CollectionHeader
         cover={<PlaylistCover covers={pl.coverUrls} />}
-        kind="Playlist"
+        kind={
+          <VisibilityPicker
+            value={pl.visibility}
+            onChange={async (v) => {
+              await window.phinas.setPlaylistVisibility(pl.id, v)
+              await lib.refresh()
+            }}
+          />
+        }
         title={
           editing ? (
             <input
