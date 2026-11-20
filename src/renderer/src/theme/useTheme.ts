@@ -53,7 +53,7 @@ export function useTheme(coverData: string | null, moodAccent: string | null): T
       .then((px) => {
         if (cancelled) return
         const c = dominantColor(px)
-        // A greyscale cover has no colour of its own: use the terracotta defaults.
+        // A greyscale cover has no colour of its own: use the Phinas blue defaults.
         setCoverColor(c === DEFAULT_ACCENT ? null : c)
       })
       .catch((e) => {

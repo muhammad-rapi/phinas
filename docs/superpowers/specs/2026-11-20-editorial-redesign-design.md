@@ -47,7 +47,7 @@ Source: the current cover's dominant colour (`dominantColor` in `theme/color.ts`
 - `--accent`: the source colour adjusted to a contrast ratio of at least 4.5:1 against `--paper` and `--wash` (darkened for Siang, lightened for Malam), keeping its hue.
 - `--on-accent`: `#fff` or `--paper`, whichever has the higher contrast on `--accent`.
 - `--wash`: the source colour mixed into the paper, 25% for Siang and 30% for Malam. Pages use `background: linear-gradient(180deg, var(--wash) 0%, var(--paper) 45%)`.
-- Without a source: accent `#9c4526` (Siang) / `#e8a770` (Malam), wash from the same terracotta.
+- Without a source: the Phinas logo colours. Accent `#12286f` (Siang, the logo's navy) / `#69a3f4` (Malam, the logo's blue made readable on ink); wash from `#3a86f0` (`#c6d5e9` Siang, `#253856` Malam).
 - Changes animate over 600 ms (`transition` on the custom properties registered with `@property`).
 - New pure functions in `theme/color.ts`: `contrastRatio(a, b)`, `accentFor(source, mode)`, `washFor(source, mode)`, `onAccent(accent)`. They replace `accentVars`.
 

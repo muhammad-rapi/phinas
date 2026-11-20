@@ -101,9 +101,11 @@ const hex = (h: string): Rgb => ({
 export const PAPER: Record<Tone, Rgb> = { day: hex('#f4efe6'), night: hex('#1c1714') }
 export const INK: Record<Tone, Rgb> = { day: hex('#2a2420'), night: hex('#efe4d4') }
 /** The wash colour when nothing is playing and no mood is set. */
-export const TERRACOTTA: Rgb = hex('#e7a46c')
-/** The accent when nothing is playing and no mood is set (4.5:1 on the paper and on the terracotta wash). */
-export const FALLBACK_ACCENT: Record<Tone, Rgb> = { day: hex('#9c4526'), night: hex('#e8a770') }
+/** Phinas blue (the logo's record label): the colour when no song or mood gives one. */
+export const BRAND_BLUE: Rgb = hex('#3a86f0')
+/** The accent when nothing is playing and no mood is set (4.5:1 on the paper and on the blue wash). */
+/** Siang: the logo's navy. Malam: the brand blue made readable on ink (accentFor(BRAND_BLUE, 'night')). */
+export const FALLBACK_ACCENT: Record<Tone, Rgb> = { day: hex('#12286f'), night: hex('#69a3f4') }
 /** WCAG AA for normal text. */
 export const MIN_CONTRAST = 4.5
 /** How much of the source colour goes into the page wash. */
@@ -176,9 +178,9 @@ export interface Palette {
   wash: string
 }
 
-/** The dynamic tokens for a source colour (cover or mood), or the terracotta defaults without one. */
+/** The dynamic tokens for a source colour (cover or mood), or the Phinas blue defaults without one. */
 export function paletteFor(source: Rgb | null, tone: Tone): Palette {
   const accent = source ? accentFor(source, tone) : FALLBACK_ACCENT[tone]
-  const wash = washFor(source ?? TERRACOTTA, tone)
+  const wash = washFor(source ?? BRAND_BLUE, tone)
   return { accent: toHex(accent), onAccent: toHex(onAccent(accent, tone)), wash: toHex(wash) }
 }

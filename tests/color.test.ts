@@ -5,7 +5,7 @@ import {
   INK,
   MIN_CONTRAST,
   PAPER,
-  TERRACOTTA,
+  BRAND_BLUE,
   accentFor,
   contrastRatio,
   dominantColor,
@@ -132,9 +132,9 @@ describe('accentFor', () => {
       for (const s of SOURCES) expect(contrastRatio(accentFor(s, tone), washFor(s, tone))).toBeGreaterThanOrEqual(4.5)
     }
   })
-  test('the fallback accents read on the terracotta wash', () => {
+  test('the fallback accents read on the blue wash', () => {
     for (const tone of TONES) {
-      expect(contrastRatio(FALLBACK_ACCENT[tone], washFor(TERRACOTTA, tone))).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio(FALLBACK_ACCENT[tone], washFor(BRAND_BLUE, tone))).toBeGreaterThanOrEqual(4.5)
     }
   })
   test('leaves a source that already passes unchanged', () => {
@@ -144,10 +144,10 @@ describe('accentFor', () => {
 
 describe('washFor', () => {
   test('mixes 25% of the source into Siang paper', () => {
-    expect(washFor(TERRACOTTA, 'day')).toEqual({ r: 241, g: 220, b: 200 })
+    expect(washFor(BRAND_BLUE, 'day')).toEqual({ r: 198, g: 213, b: 233 })
   })
   test('mixes 30% of the source into Malam paper', () => {
-    expect(washFor(TERRACOTTA, 'night')).toEqual({ r: 89, g: 65, b: 46 })
+    expect(washFor(BRAND_BLUE, 'night')).toEqual({ r: 37, g: 56, b: 86 })
   })
   test('ink stays readable on any wash', () => {
     for (const tone of TONES) {
@@ -172,9 +172,9 @@ describe('onAccent', () => {
 })
 
 describe('paletteFor', () => {
-  test('without a source: the terracotta defaults', () => {
-    expect(paletteFor(null, 'day')).toEqual({ accent: '#9c4526', onAccent: '#ffffff', wash: '#f1dcc8' })
-    expect(paletteFor(null, 'night')).toEqual({ accent: '#e8a770', onAccent: '#1c1714', wash: '#59412e' })
+  test('without a source: the Phinas blue defaults', () => {
+    expect(paletteFor(null, 'day')).toEqual({ accent: '#12286f', onAccent: '#ffffff', wash: '#c6d5e9' })
+    expect(paletteFor(null, 'night')).toEqual({ accent: '#69a3f4', onAccent: '#1c1714', wash: '#253856' })
   })
   test('with a source: hex strings built from that source', () => {
     const p = paletteFor(parseHex('#2f6db5'), 'day')
