@@ -11,6 +11,7 @@ import { keyToCommand } from './player/keymap'
 import { RecentView } from './screens/RecentView'
 import { PlayerProvider, usePlayer } from './player/PlayerProvider'
 import { Home } from './screens/Home'
+import { Explore } from './screens/Explore'
 import { LikedView } from './screens/LikedView'
 import { PartnerView } from './screens/PartnerView'
 import { PlaylistView } from './screens/PlaylistView'
@@ -178,6 +179,8 @@ function Shell(): React.JSX.Element {
     switch (view.name) {
       case 'home':
         return <Home nav={nav} name={profile.name} />
+      case 'explore':
+        return <Explore nav={nav} />
       case 'search':
         return <Search query={query} submitNonce={submitNonce} onPick={recents.rememberTrack} nav={nav} />
       case 'liked':

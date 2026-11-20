@@ -1,6 +1,7 @@
 /** Which screen the main area is showing. */
 export type View =
   | { name: 'home' }
+  | { name: 'explore' }
   | { name: 'search' }
   | { name: 'profile' }
   | { name: 'import' }

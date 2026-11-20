@@ -57,6 +57,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
 
       <nav className="nav">
         <NavItem label="Beranda" active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
+        <NavItem label="Jelajah" active={view.name === 'explore'} onClick={() => nav({ name: 'explore' })} />
         <NavItem
           label="Berdua"
           active={view.name === 'together'}
