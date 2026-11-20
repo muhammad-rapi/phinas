@@ -267,7 +267,7 @@ function Shell(): React.JSX.Element {
         </aside>
       )}
       <PlayerBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((o) => !o)} />
-      {lyricsFull && <LyricsFull cover={cover} onClose={() => setLyricsFull(false)} />}
+      {lyricsFull && <LyricsFull onClose={() => setLyricsFull(false)} />}
     </div>
     </NavProvider>
   )
