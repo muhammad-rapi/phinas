@@ -40,7 +40,7 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
   const VolumeIcon = p.volume === 0 ? VolumeX : p.volume < 0.5 ? Volume1 : Volume2
 
   return (
-    <footer className="player" aria-label="Pemutar">
+    <section className="player" aria-label="Pemutar">
       <div className="player-track">
         {p.track && (
           <>
@@ -133,6 +133,6 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
           aria-label="Volume"
         />
       </div>
-    </footer>
+    </section>
   )
 }

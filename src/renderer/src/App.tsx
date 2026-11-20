@@ -103,6 +103,11 @@ function Shell(): React.JSX.Element {
         setLyricsFull(false)
         return
       }
+      // A control already handled this key (a row's own Enter/Space, a menu): don't run a shortcut too.
+      if (e.defaultPrevented) return
+      // Space/Enter on a focused button or link presses it; don't also toggle playback.
+      const activating = e.key === ' ' || e.key === 'Enter'
+      if (activating && (e.target as HTMLElement | null)?.closest('button, a, [role="button"]')) return
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         playerRef.current.run('focusSearch')

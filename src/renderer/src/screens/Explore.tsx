@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FavoriteArtist, HomeFeed, Track } from '../../../shared/types'
 import { CoverGrid, CoverGridSkeleton } from '../components/CoverGrid'
 import { formatTime } from '../components/TrackRow'
-import { ArtistLinks, pressable } from '../nav/NavProvider'
+import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
 
@@ -15,8 +15,18 @@ function RankedRows({ tracks, onPlay }: { tracks: Track[]; onPlay: (index: numbe
     <ol className="ex-rows">
       {tracks.map((t, i) => (
         <li key={`${t.videoId}-${i}`}>
-          <div className={`ex-row press${player.track?.videoId === t.videoId ? ' playing' : ''}`} {...pressable(() => onPlay(i))}>
-            <span className="ex-num">{String(i + 1).padStart(2, '0')}</span>
+          {/* Mouse: the whole row plays. Keyboard and screen readers: the number is the play button. */}
+          <div className={`ex-row${player.track?.videoId === t.videoId ? ' playing' : ''}`} onClick={() => onPlay(i)}>
+            <button
+              className="ex-num"
+              onClick={(e) => {
+                e.stopPropagation()
+                onPlay(i)
+              }}
+              aria-label={`Putar ${t.title}`}
+            >
+              {String(i + 1).padStart(2, '0')}
+            </button>
             <span className="ex-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
             <span className="ex-text">
               <span className="ex-title">{t.title}</span>

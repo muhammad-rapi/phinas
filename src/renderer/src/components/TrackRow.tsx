@@ -2,7 +2,7 @@ import { Heart, ListPlus, Play, X } from 'lucide-react'
 import { useState } from 'react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
-import { ArtistLinks, pressable } from '../nav/NavProvider'
+import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
 
 export const formatTime = (s: number): string =>
@@ -48,9 +48,20 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
   }
 
   return (
-    // Clicking anywhere on the row plays it; the action buttons stop the click from reaching here.
-    <div className={`tl-row${isCurrent ? ' playing' : ''}`} {...pressable(onPlay)} aria-label={`Putar ${track.title}`}>
-      <span className="tl-num">{isCurrent ? <Play size={12} fill="currentColor" aria-hidden="true" /> : index !== undefined ? index + 1 : ''}</span>
+    // A mouse click anywhere on the row plays it; the action buttons and artist links stop the click
+    // from reaching here. The row itself is not a control (it holds buttons): the number cell is
+    // the keyboard and screen-reader way to play it.
+    <div className={`tl-row${isCurrent ? ' playing' : ''}`} onClick={onPlay}>
+      <button
+        className="tl-num"
+        onClick={(e) => {
+          e.stopPropagation()
+          onPlay()
+        }}
+        aria-label={`Putar ${track.title}`}
+      >
+        {isCurrent ? <Play size={12} fill="currentColor" aria-hidden="true" /> : index !== undefined ? index + 1 : ''}
+      </button>
       <div className="tl-meta">
         <span className="tl-title">{track.title}</span>
         <ArtistLinks className="tl-artist" artist={track.artist} />

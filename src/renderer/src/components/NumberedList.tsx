@@ -22,9 +22,11 @@ export function NumberedList({ title, onTitle, tracks, failed, errorText, onPlay
   return (
     <section className="nl" aria-label={title}>
       {onTitle ? (
-        <button className="section-title" onClick={onTitle}>
-          {title}
-        </button>
+        <h2 className="section-title-wrap">
+          <button className="section-title" onClick={onTitle}>
+            {title}
+          </button>
+        </h2>
       ) : (
         <h2 className="section-title">{title}</h2>
       )}

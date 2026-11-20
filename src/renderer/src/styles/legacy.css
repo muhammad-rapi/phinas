@@ -139,19 +139,6 @@
 
 /* ---------- lyrics, full size ---------- */
 
-/* Listen together (kept minimal; the redesign will restyle it) */
-/* Sticky so an invite is seen even when the page is scrolled down. */
-.listen-action {
-  border: 0;
-  border-radius: 999px;
-  padding: 4px 14px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  background: var(--accent);
-  color: #fff;
-}
-
 /* ---------- listen-together card ---------- */
 /* Follows the theme's accent, toned down toward the background (a second saturated hue read as neon). */
 .listen-card { display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 8px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, #15131c), color-mix(in srgb, var(--accent) 25%, #15131c)); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); transition: background 0.5s; }
