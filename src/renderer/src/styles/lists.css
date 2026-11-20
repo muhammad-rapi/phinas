@@ -69,3 +69,21 @@
 .grid-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; }
 .grid-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-soft); }
 .grid-item:hover .grid-title { color: var(--accent); }
+
+/* ---------- Artis ---------- */
+.artist-more { margin: 14px 0 22px; }
+
+/* ---------- Impor ---------- */
+.import-hint { max-width: 640px; line-height: 1.7; color: var(--ink-soft); }
+.import-form { display: flex; gap: 10px; max-width: 640px; margin-top: 14px; }
+.import-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 640px; margin: 22px 0 8px; }
+.import-summary .field { flex: 1; min-width: 200px; font-weight: 600; }
+.import-missing { max-width: 640px; margin: 8px 0 20px; color: var(--ink-soft); }
+.import-missing summary { padding: 8px 0; cursor: pointer; }
+.import-missing ul { margin: 0; padding-left: 18px; }
+
+/* ---------- Berdua ---------- */
+.listen-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 0 0 26px; }
+.listen-card-title { font-family: var(--serif); font-size: 30px; line-height: 1.05; }
+.listen-card-title em { font-style: italic; color: var(--accent); }
+.listen-card-actions { display: flex; gap: 8px; margin-top: 6px; }

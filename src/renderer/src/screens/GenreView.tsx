@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { GenrePage } from '../../../shared/types'
-import { CoverArt, MediaCard } from '../components/MediaCard'
-import { Shelf } from '../components/Shelf'
+import { AccentTitle } from '../components/CollectionHeader'
+import { CoverGrid, CoverGridSkeleton } from '../components/CoverGrid'
 import type { Nav } from '../views'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; page: GenrePage }
 
-/** A mood or genre from YouTube Music: shelves of playlists and albums. */
+/** A mood or genre from YouTube Music: sections of playlists and albums. */
 export function GenreView({ params, title, nav }: { params: string; title: string; nav: Nav }): React.JSX.Element {
   const [state, setState] = useState<State>({ status: 'loading' })
 
@@ -24,29 +24,26 @@ export function GenreView({ params, title, nav }: { params: string; title: strin
 
   return (
     <>
-      <h2 className="page-title">{title}</h2>
-      {state.status === 'loading' && (
-        <div className="cover-grid" aria-busy="true">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="cover-card-art skeleton" />
-          ))}
-        </div>
-      )}
+      <h1 className="page-title">
+        <AccentTitle text={title} />
+      </h1>
+      {state.status === 'loading' && <CoverGridSkeleton count={6} />}
       {state.status === 'error' && <div className="notice">{title} tidak bisa dibuka. Cek koneksi internet kamu.</div>}
       {state.status === 'ready' && state.page.shelves.length === 0 && <p className="muted">Belum ada isi untuk {title}.</p>}
       {state.status === 'ready' &&
         state.page.shelves.map((sh) => (
-          <Shelf key={sh.title} title={sh.title}>
-            {sh.playlists.map((p) => (
-              <MediaCard
-                key={p.id}
-                art={<CoverArt url={p.coverUrl} />}
-                title={p.title}
-                subtitle={p.author}
-                onOpen={() => nav(sh.album ? { name: 'album', id: p.id } : { name: 'public', id: p.id, author: p.author })}
-              />
-            ))}
-          </Shelf>
+          <section key={sh.title} className="sec">
+            <h2 className="section-title">{sh.title}</h2>
+            <CoverGrid
+              items={sh.playlists.map((p) => ({
+                key: p.id,
+                art: p.coverUrl,
+                title: p.title,
+                meta: p.author,
+                onOpen: () => nav(sh.album ? { name: 'album', id: p.id } : { name: 'public', id: p.id, author: p.author })
+              }))}
+            />
+          </section>
         ))}
     </>
   )

@@ -126,32 +126,11 @@
 
 /* ---------- import ---------- */
 .library-actions { display: flex; gap: 6px; }
-.import-form { display: flex; gap: 10px; max-width: 720px; margin-top: 8px; }
-.import-form input { flex: 1; min-width: 0; background: var(--hover); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; color: var(--text); font: inherit; }
-.import-form input:focus { outline: 2px solid var(--accent); }
-.import-hint { max-width: 720px; line-height: 1.6; }
-.import-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; max-width: 720px; margin: 20px 0 8px; }
-.import-name { flex: 1; min-width: 200px; background: var(--hover); border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; color: var(--text); font: inherit; font-weight: 600; }
-.import-name:focus { outline: 2px solid var(--accent); }
-.import-missing { max-width: 720px; margin: 8px 0 20px; }
-.import-missing summary { cursor: pointer; color: var(--muted); padding: 8px 0; }
-.import-missing li { color: var(--muted); padding: 2px 0; }
 
 /* ---------- lyrics, full size ---------- */
 
 /* ---------- listen-together card ---------- */
 /* Follows the theme's accent, toned down toward the background (a second saturated hue read as neon). */
-.listen-card { display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 8px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 55%, #15131c), color-mix(in srgb, var(--accent) 25%, #15131c)); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); transition: background 0.5s; }
-.listen-card.live { background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 65%, #15131c), color-mix(in srgb, var(--accent) 35%, #15131c)); }
-.listen-card-icon { flex: none; opacity: 0.9; }
-.listen-card-text { flex: 1; min-width: 0; }
-.listen-card-line { font-size: 12px; opacity: 0.9; }
-.listen-card-title { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
-.listen-card-actions { display: flex; gap: 8px; }
-.listen-card-btn { height: 38px; padding: 0 20px; border-radius: 19px; background: #fff; color: #15131c; font-weight: 700; transition: transform 0.15s; }
-.listen-card-btn:hover:not(:disabled) { transform: scale(1.04); }
-.listen-card-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.listen-card-btn.ghost { background: rgba(255, 255, 255, 0.22); color: #fff; }
 
 
 /* ---------- bento (Beranda, Berdua) ---------- */
@@ -207,10 +186,6 @@ button.tile-title:hover { text-decoration: underline; }
 .bento-cards .mcard { width: auto; }
 .bento-cards .mcard-play { top: auto; bottom: 76px; }
 
-.listen-card.compact { flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0; padding: 18px; }
-.listen-card.compact .listen-card-title { font-size: 17px; }
-.listen-card-title.link { padding: 0; color: inherit; text-align: left; }
-.listen-card-title.link:hover { text-decoration: underline; }
 
 .artist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .artist { flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 8px; border-radius: 14px; text-align: center; transition: background 0.15s; }
@@ -226,13 +201,10 @@ button.tile-title:hover { text-decoration: underline; }
 
 /* ---------- artist links and page ---------- */
 .row-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.artist-more { margin: 8px 0 24px; }
 /* A div acting as a button (it holds artist links, which a <button> cannot). */
 /* Cards stack art, title and artist full width, so the title can truncate. */
 .cover-card.press { align-items: stretch; gap: 4px; }
 .cover-card > .cover-card-sub { display: block; }
-.artist-skel { border-radius: 50%; }
-.artist-skel-row { height: 56px; margin-bottom: 6px; }
 
 /* ---------- mood & genre ---------- */
 .genre-group + .genre-group { margin-top: 18px; }

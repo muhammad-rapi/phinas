@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { ArtistDetail } from '../../../shared/types'
-import { CollectionHeader } from '../components/CollectionHeader'
-import { CoverArt, MediaCard } from '../components/MediaCard'
-import { Shelf } from '../components/Shelf'
-import { TrackRow } from '../components/TrackRow'
+import { AccentTitle, CollectionHeader } from '../components/CollectionHeader'
+import { CoverGrid } from '../components/CoverGrid'
+import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
 
@@ -47,15 +46,17 @@ export function ArtistView({ name, nav }: { name: string; nav: Nav }): React.JSX
   if (state.status === 'loading') {
     return (
       <div aria-busy="true" aria-label={`Memuat ${name}`}>
-        <div className="collection-head">
-          <div className="collection-cover artist-skel skeleton" />
-          <div className="collection-info">
-            <div className="muted collection-kind">Artis</div>
-            <h1 className="collection-title">{name}</h1>
+        <header className="ch">
+          <div className="ch-cover artist-hero skeleton" />
+          <div className="ch-info">
+            <div className="label accent">Artis</div>
+            <h1 className="ch-title">
+              <AccentTitle text={name} />
+            </h1>
           </div>
-        </div>
+        </header>
         {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="track-row skeleton artist-skel-row" />
+          <div key={i} className="tl-skel skeleton" />
         ))}
       </div>
     )
@@ -73,27 +74,33 @@ export function ArtistView({ name, nav }: { name: string; nav: Nav }): React.JSX
         meta={a.releases.length ? `${a.releases.length} album & single` : ''}
         tracks={a.songs}
       />
-      {a.songs.length > 0 && <h3 className="shelf-title" style={{ margin: '8px 0' }}>Lagu populer</h3>}
-      {shown.map((t, i) => (
-        <TrackRow key={`${t.videoId}-${i}`} track={t} index={i} onPlay={() => player.play(a.songs, i)} />
-      ))}
-      {a.songs.length > SONGS_PREVIEW && (
-        <button className="pill-btn artist-more" onClick={() => setAllSongs((v) => !v)}>
-          {allSongs ? 'Tampilkan lebih sedikit' : `Lihat semua (${a.songs.length})`}
-        </button>
+      {a.songs.length > 0 && (
+        <section className="sec">
+          <h2 className="section-title">Lagu populer</h2>
+          <TrackListHead />
+          {shown.map((t, i) => (
+            <TrackRow key={`${t.videoId}-${i}`} track={t} index={i} onPlay={() => player.play(a.songs, i)} />
+          ))}
+          {a.songs.length > SONGS_PREVIEW && (
+            <button className="btn secondary artist-more" onClick={() => setAllSongs((v) => !v)}>
+              {allSongs ? 'Tampilkan lebih sedikit' : `Lihat semua (${a.songs.length})`}
+            </button>
+          )}
+        </section>
       )}
       {a.releases.length > 0 && (
-        <Shelf title="Album & single">
-          {a.releases.map((r) => (
-            <MediaCard
-              key={r.id}
-              art={<CoverArt url={r.coverUrl} />}
-              title={r.title}
-              subtitle={r.author}
-              onOpen={() => nav({ name: 'album', id: r.id })}
-            />
-          ))}
-        </Shelf>
+        <section className="sec">
+          <h2 className="section-title">Album &amp; single</h2>
+          <CoverGrid
+            items={a.releases.map((r) => ({
+              key: r.id,
+              art: r.coverUrl,
+              title: r.title,
+              meta: r.author,
+              onOpen: () => nav({ name: 'album', id: r.id })
+            }))}
+          />
+        </section>
       )}
     </>
   )

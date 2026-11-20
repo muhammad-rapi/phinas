@@ -48,8 +48,10 @@ export function ImportView({ nav }: { nav: Nav }): React.JSX.Element {
 
   return (
     <>
-      <h2 className="page-title">Impor dari Spotify</h2>
-      <p className="muted import-hint">
+      <h1 className="page-title">
+        Impor dari <em>Spotify</em>
+      </h1>
+      <p className="import-hint">
         Tempel link playlist atau album Spotify. Statusnya harus <strong>publik</strong>: di Spotify, buka playlist, pilih
         Bagikan, lalu Salin link. Lagunya dicari di YouTube Music, dan tidak perlu login atau akun Spotify di sini. Spotify
         hanya menampilkan sekitar 50-100 lagu pertama dari link publik.
@@ -57,6 +59,7 @@ export function ImportView({ nav }: { nav: Nav }): React.JSX.Element {
 
       <form className="import-form" onSubmit={run}>
         <input
+          className="field"
           value={link}
           onChange={(e) => setLink(e.target.value)}
           placeholder="https://open.spotify.com/playlist/..."
@@ -82,7 +85,7 @@ export function ImportView({ nav }: { nav: Nav }): React.JSX.Element {
             <div className="notice">Tidak ada lagu yang cocok, jadi tidak ada playlist yang dibuat.</div>
           ) : (
             <div className="import-summary">
-              <input className="import-name" value={name} onChange={(e) => setName(e.target.value)} aria-label="Nama playlist" />
+              <input className="field" value={name} onChange={(e) => setName(e.target.value)} aria-label="Nama playlist" />
               <button className="btn" disabled={saving} onClick={() => void save(state.result)}>
                 {saving ? 'Menyimpan...' : `Buat playlist (${state.result.matched.length} lagu)`}
               </button>
