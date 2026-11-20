@@ -153,7 +153,7 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
     <div className="home">
       <div className="label accent">{homeLabel(new Date(), name)}</div>
       <CoverStory recent={recent} nav={nav} />
-      <BerduaLine onOpen={() => nav({ name: 'together' })} />
+      <BerduaLine onOpen={() => nav({ name: 'friends' })} />
       <div className="home-lists">
         <NumberedList
           title="Untukmu"

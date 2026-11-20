@@ -18,3 +18,21 @@
 .auth-check { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--ink-soft); }
 .auth-check input { margin-top: 3px; accent-color: var(--accent); }
 .auth-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 4px; }
+
+/* ---------- Teman ---------- */
+.friends { max-width: 760px; }
+.fr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding-bottom: 22px; }
+.fr-code { font-family: var(--serif); font-size: 18px; font-weight: 400; letter-spacing: 0.04em; user-select: text; }
+.fr-row .fr-code { font-size: 15px; }
+.fr-spacer { flex: 1; }
+.fr-add { display: flex; gap: 8px; max-width: 420px; margin: -8px 0 22px; }
+.fr-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.fr-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.fr-row .text-link { font-size: 12px; }
+.fr-num { width: 22px; flex: none; font-family: var(--serif); font-size: 15px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.fr-name { padding: 0; font-weight: 700; color: var(--ink); text-align: left; }
+button.fr-name:hover { color: var(--accent); }
+.fr-status, .fr-text { font-size: 12px; color: var(--ink-soft); }
+.fr-text strong { color: var(--ink); }
+.fr-heart { flex: none; color: var(--accent); }
+.fr-auth { padding-top: 22px; }

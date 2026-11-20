@@ -3,7 +3,6 @@ import { Compass, Download, Heart, History, Home, Plus, Users, type LucideIcon }
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import type { RecentEntry } from '../search/recent'
-import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
 import { SearchBox } from './SearchBox'
 
@@ -45,7 +44,6 @@ function PlaylistItem(p: { name: string; covers: string[]; active: boolean; onCl
 
 export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget, onPlayTrack, name, initial }: Props): React.JSX.Element {
   const lib = useLibrary()
-  const listen = useListen()
 
   const create = async (): Promise<void> => {
     const p = await window.phinas.createPlaylist(`Playlist #${lib.playlists.length + 1}`)
@@ -62,13 +60,7 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
       <nav className="nav">
         <NavItem label="Beranda" icon={Home} active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
         <NavItem label="Jelajah" icon={Compass} active={view.name === 'explore'} onClick={() => nav({ name: 'explore' })} />
-        <NavItem
-          label="Berdua"
-          icon={Users}
-          active={view.name === 'together'}
-          online={listen.invitable.some((f) => f.isPartner)}
-          onClick={() => nav({ name: 'together' })}
-        />
+        <NavItem label="Teman" icon={Users} active={view.name === 'friends'} onClick={() => nav({ name: 'friends' })} />
         <NavItem label="Disukai" icon={Heart} active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
         <NavItem label="Riwayat" icon={History} active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
       </nav>

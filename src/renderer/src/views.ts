@@ -7,7 +7,7 @@ export type View =
   | { name: 'import' }
   | { name: 'liked' }
   | { name: 'recent' }
-  | { name: 'together' }
+  | { name: 'friends' }
   | { name: 'playlist'; id: string }
   | { name: 'partner'; id: string }
   | { name: 'public'; id: string; author?: string }
