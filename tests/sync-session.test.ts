@@ -447,3 +447,10 @@ test('the presence and connection flags are exposed in the state', () => {
   t.ta.emitPresence(false)
   expect(t.a.getState()).toMatchObject({ connected: false, partnerHere: false })
 })
+
+test('a busy decline ends the invite with its own reason', () => {
+  const t = setup()
+  t.a.invite()
+  t.ta.deliver(msg('b', { type: 'decline', reason: 'busy' }))
+  expect(t.a.getState()).toMatchObject({ status: 'ended', endReason: 'busy' })
+})

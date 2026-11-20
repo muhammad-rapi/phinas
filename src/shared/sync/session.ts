@@ -40,7 +40,7 @@ export interface PlayerPort {
 }
 
 export type SessionStatus = 'idle' | 'inviting' | 'invited' | 'active' | 'ended'
-export type EndReason = 'ended' | 'declined' | 'expired' | 'timeout' | 'version' | 'partner-ended'
+export type EndReason = 'ended' | 'declined' | 'expired' | 'timeout' | 'version' | 'partner-ended' | 'busy'
 
 export interface SessionState {
   status: SessionStatus
@@ -161,7 +161,9 @@ export class SyncSession {
       case 'accept':
         return this.onAccept(m)
       case 'decline':
-        if (this.state.status === 'inviting') this.finish(m.reason === 'version' ? 'version' : 'declined')
+        if (this.state.status === 'inviting') {
+          this.finish(m.reason === 'version' ? 'version' : m.reason === 'busy' ? 'busy' : 'declined')
+        }
         return
       case 'end':
         if (this.state.status === 'active') this.finish('partner-ended')

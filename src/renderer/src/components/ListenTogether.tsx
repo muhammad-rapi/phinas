@@ -10,7 +10,8 @@ const ENDED_TEXT: Record<EndReason, string> = {
   expired: 'Ajakan tidak dijawab.',
   timeout: 'Sesi berakhir karena koneksi terputus.',
   version: 'Versi app berbeda. Update app dulu supaya sama.',
-  'partner-ended': 'Pasangan mengakhiri sesi.'
+  'partner-ended': 'Pasangan mengakhiri sesi.',
+  busy: 'Pasangan sedang dengar bareng orang lain.'
 }
 
 /** Player bar button: start, cancel or end a session, and show how it is going. */

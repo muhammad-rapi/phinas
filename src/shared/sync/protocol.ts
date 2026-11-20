@@ -20,7 +20,8 @@ export type SyncPayload =
   | { type: 'invite'; version: number }
   /** `snapshot` is the acceptor's queue, used when the inviter has nothing playing. */
   | { type: 'accept'; version: number; snapshot: SyncAction | null }
-  | { type: 'decline'; reason?: 'version' }
+  /** `busy`: the friend is already in a session or has another invite open. */
+  | { type: 'decline'; reason?: 'version' | 'busy' }
   | { type: 'end' }
   /** Sent by a side that lost and regained its own connection. */
   | { type: 'hello'; version: number }
