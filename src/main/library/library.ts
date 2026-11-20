@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DatabaseSync } from 'node:sqlite'
 import type { FavoriteArtist, LikeEntry, PlayEntry, Playlist, PlaylistWithTracks, PlayRecord, Track, Visibility } from '../../shared/types'
+import type { MergePlan } from './merge'
 
 interface TrackRow {
   video_id: string
@@ -290,5 +291,47 @@ export class Library {
 
   clearKey(key: string): void {
     this.db.prepare('DELETE FROM outbox WHERE key = ?').run(key)
+  }
+
+  /** Every playlist with its tracks (the local side of a pull). */
+  allPlaylists(): PlaylistWithTracks[] {
+    return this.listPlaylists()
+      .map((p) => this.getPlaylist(p.id))
+      .filter((p): p is PlaylistWithTracks => p !== null)
+  }
+
+  /** Applies a pull. The changes come from the server, so nothing is queued for upload. */
+  applyMerge(plan: MergePlan): void {
+    this.tx(() => {
+      const upsert = this.db.prepare(
+        `INSERT INTO playlists(id, name, updated_at, visibility) VALUES (?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at, visibility = excluded.visibility`
+      )
+      const clear = this.db.prepare('DELETE FROM playlist_tracks WHERE playlist_id = ?')
+      const insert = this.db.prepare(
+        `INSERT INTO playlist_tracks(playlist_id, position, video_id, title, artist, cover_url, duration_sec)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      for (const p of plan.upsert) {
+        upsert.run(p.id, p.name, p.updatedAt, p.visibility)
+        clear.run(p.id)
+        p.tracks.forEach((x, i) => insert.run(p.id, i, x.videoId, x.title, x.artist, x.coverUrl, x.durationSec))
+      }
+      const remove = this.db.prepare('DELETE FROM playlists WHERE id = ?')
+      for (const id of plan.remove) remove.run(id)
+      if (plan.likes) {
+        this.db.exec('DELETE FROM liked_tracks')
+        const like = this.db.prepare(
+          `INSERT OR REPLACE INTO liked_tracks(video_id, title, artist, cover_url, duration_sec, liked_at)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        for (const l of plan.likes) like.run(l.videoId, l.title, l.artist, l.coverUrl, l.durationSec, l.likedAt)
+      }
+    })
+  }
+
+  /** Closes the database file (before another account's library opens). */
+  close(): void {
+    this.db.close()
   }
 }
