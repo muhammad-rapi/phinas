@@ -13,7 +13,8 @@ import { PlayerProvider, usePlayer } from './player/PlayerProvider'
 import { Home } from './screens/Home'
 import { Explore } from './screens/Explore'
 import { LikedView } from './screens/LikedView'
-import { PartnerView } from './screens/PartnerView'
+import { FriendPlaylistView } from './screens/FriendPlaylistView'
+import { FriendView } from './screens/FriendView'
 import { PlaylistView } from './screens/PlaylistView'
 import { PublicPlaylistView } from './screens/PublicPlaylistView'
 import { Search } from './screens/Search'
@@ -212,8 +213,10 @@ function Shell(): React.JSX.Element {
         return <ArtistView key={view.id} name={view.id} nav={nav} />
       case 'genre':
         return <GenreView key={view.id} params={view.id} title={view.title} nav={nav} />
-      case 'partner':
-        return <PartnerView id={view.id} nav={nav} />
+      case 'friendPlaylist':
+        return <FriendPlaylistView key={view.id} id={view.id} nav={nav} />
+      case 'friend':
+        return <FriendView key={view.id} id={view.id} nav={nav} />
       case 'friends':
         return <FriendsView nav={nav} />
       case 'import':

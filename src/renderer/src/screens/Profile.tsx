@@ -70,7 +70,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
       setPassword('')
       setInviteCode('')
       await load(true)
-      await lib.refreshPartner()
+      await lib.refreshFriends()
     } catch (err) {
       setError(friendlyError(err))
     }
@@ -84,7 +84,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
     try {
       await window.phinas.deleteAccount()
       await load(true)
-      await lib.refreshPartner()
+      await lib.refreshFriends()
     } catch (err) {
       setError(friendlyError(err))
     }
@@ -161,7 +161,7 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
                 onClick={async () => {
                   await window.phinas.syncSignOut()
                   await load(true)
-                  await lib.refreshPartner()
+                  await lib.refreshFriends()
                 }}
               >
                 Keluar

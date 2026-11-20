@@ -4,11 +4,10 @@ import type { PartnerPlaylist, Playlist, Track } from '../../../shared/types'
 interface LibraryApi {
   playlists: Playlist[]
   likes: Track[]
-  partner: PartnerPlaylist[]
-  /** True when partner playlists could not be loaded (not signed in, offline, ...). */
-  partnerUnavailable: boolean
+  /** Playlists friends share with me (DARI TEMAN), newest first. Empty when signed out. */
+  friends: PartnerPlaylist[]
   refresh(): Promise<void>
-  refreshPartner(): Promise<void>
+  refreshFriends(): Promise<void>
 }
 
 const Ctx = createContext<LibraryApi | null>(null)
@@ -19,14 +18,13 @@ export function useLibrary(): LibraryApi {
   return v
 }
 
-const PARTNER_REFRESH_MS = 60_000
+const FRIENDS_REFRESH_MS = 60_000
 
 /** One shared copy of the library so every screen and the sidebar stay in step. */
 export function LibraryProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [likes, setLikes] = useState<Track[]>([])
-  const [partner, setPartner] = useState<PartnerPlaylist[]>([])
-  const [partnerUnavailable, setPartnerUnavailable] = useState(false)
+  const [friends, setFriends] = useState<PartnerPlaylist[]>([])
 
   const refresh = useCallback(async () => {
     const [p, l] = await Promise.all([window.phinas.listPlaylists(), window.phinas.listLikes()])
@@ -34,26 +32,30 @@ export function LibraryProvider({ children }: { children: ReactNode }): React.JS
     setLikes(l)
   }, [])
 
-  const refreshPartner = useCallback(async () => {
+  const refreshFriends = useCallback(async () => {
     try {
-      setPartner(await window.phinas.listPartnerPlaylists())
-      setPartnerUnavailable(false)
+      const status = await window.phinas.syncStatus()
+      setFriends(status.signedIn ? await window.phinas.listFriendPlaylists() : [])
     } catch {
-      setPartner([])
-      setPartnerUnavailable(true)
+      // offline: keep the last list
     }
   }, [])
 
   useEffect(() => {
     void refresh()
-    void refreshPartner()
-    const t = setInterval(refreshPartner, PARTNER_REFRESH_MS)
-    return () => clearInterval(t)
-  }, [refresh, refreshPartner])
+    void refreshFriends()
+    const t = setInterval(() => void refreshFriends(), FRIENDS_REFRESH_MS)
+    // Another account means another library file and other friends.
+    const off = window.phinas.onAccountChanged(() => {
+      void refresh()
+      void refreshFriends()
+    })
+    return () => {
+      clearInterval(t)
+      off()
+    }
+  }, [refresh, refreshFriends])
 
-  const api = useMemo(
-    () => ({ playlists, likes, partner, partnerUnavailable, refresh, refreshPartner }),
-    [playlists, likes, partner, partnerUnavailable, refresh, refreshPartner]
-  )
+  const api = useMemo(() => ({ playlists, likes, friends, refresh, refreshFriends }), [playlists, likes, friends, refresh, refreshFriends])
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

@@ -380,10 +380,4 @@ export class SupabaseRemote implements Remote {
     ) as unknown as PlaylistRow[];
     return rows.map(toPartnerPlaylist);
   }
-
-  /** Bridge for the Berdua tab until the redesign: the partner's playlists. */
-  async listPartnerPlaylists(): Promise<PartnerPlaylist[]> {
-    const partner = (await this.listFriends()).find((f) => f.isPartner);
-    return partner ? this.listFriendPlaylists(partner.userId) : [];
-  }
 }

@@ -214,7 +214,6 @@ export function createHandlers(d: Deps): PhinasApi {
         libraryError: d.host.error ?? undefined
       }
     },
-    listPartnerPlaylists: async () => requireRemote().listPartnerPlaylists(),
     recordPlay: async (rec) => {
       // History must never break playback.
       try {
@@ -233,7 +232,7 @@ export function createHandlers(d: Deps): PhinasApi {
       d.setNotchEnabled(enabled)
     },
     listenStatus: async () => d.pairs?.status() ?? {},
-    copyPartnerPlaylist: async (p) => {
+    copyFriendPlaylist: async (p) => {
       const lib = d.host.library
       const copy = lib.createPlaylist(`${p.name} (dari ${p.ownerName})`)
       for (const t of p.tracks) lib.addTrack(copy.id, t)

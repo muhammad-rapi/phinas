@@ -23,9 +23,13 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/** A friend's name. */
-function FriendName({ friend }: { friend: Friend; nav: Nav }): React.JSX.Element {
-  return <span className="fr-name">{friend.name}</span>
+/** A friend's name; opens their profile. */
+function FriendName({ friend, nav }: { friend: Friend; nav: Nav }): React.JSX.Element {
+  return (
+    <button className="fr-name" onClick={() => nav({ name: 'friend', id: friend.userId })}>
+      {friend.name}
+    </button>
+  )
 }
 
 /** Teman: sign in when signed out; otherwise friend code, partner, requests, friends and invites. */
@@ -280,6 +284,9 @@ function SignedIn({ nav }: { nav: Nav }): React.JSX.Element {
                   Ajak
                 </button>
               )}
+              <button className="text-link" onClick={() => nav({ name: 'friend', id: f.userId })}>
+                Lihat
+              </button>
             </li>
           ))}
         </ol>

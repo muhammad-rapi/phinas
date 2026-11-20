@@ -60,7 +60,12 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
       <nav className="nav">
         <NavItem label="Beranda" icon={Home} active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
         <NavItem label="Jelajah" icon={Compass} active={view.name === 'explore'} onClick={() => nav({ name: 'explore' })} />
-        <NavItem label="Teman" icon={Users} active={view.name === 'friends'} onClick={() => nav({ name: 'friends' })} />
+        <NavItem
+          label="Teman"
+          icon={Users}
+          active={view.name === 'friends' || view.name === 'friend'}
+          onClick={() => nav({ name: 'friends' })}
+        />
         <NavItem label="Disukai" icon={Heart} active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
         <NavItem label="Riwayat" icon={History} active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
       </nav>
@@ -88,14 +93,14 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
           />
         ))}
         {lib.playlists.length === 0 && <p className="nav-empty">Buat playlist pertamamu dengan tombol +.</p>}
-        {lib.partner.length > 0 && <div className="label nav-group">Dari pasangan</div>}
-        {lib.partner.map((p) => (
+        {lib.friends.length > 0 && <div className="label nav-group">Dari teman</div>}
+        {lib.friends.map((p) => (
           <PlaylistItem
             key={p.id}
             name={p.name}
             covers={p.coverUrls}
-            active={sameView(view, { name: 'partner', id: p.id })}
-            onClick={() => nav({ name: 'partner', id: p.id })}
+            active={sameView(view, { name: 'friendPlaylist', id: p.id })}
+            onClick={() => nav({ name: 'friendPlaylist', id: p.id })}
           />
         ))}
       </div>

@@ -4,17 +4,19 @@ import { PlaylistCover } from '../components/PlaylistCover'
 import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
+import { rememberedPlaylist } from '../social/playlistCache'
 import type { Nav } from '../views'
 
-export function PartnerView({ id, nav }: { id: string; nav: Nav }): React.JSX.Element {
+/** A friend's shared playlist or a public one: read-only, with "Salin ke library saya". */
+export function FriendPlaylistView({ id, nav }: { id: string; nav: Nav }): React.JSX.Element {
   const player = usePlayer()
   const lib = useLibrary()
-  const pl = lib.partner.find((p) => p.id === id)
+  const pl = lib.friends.find((p) => p.id === id) ?? rememberedPlaylist(id)
 
-  if (!pl) return <p className="muted">Playlist pasangan ini tidak tersedia.</p>
+  if (!pl) return <p className="muted">Playlist ini tidak tersedia.</p>
 
   const copy = async (): Promise<void> => {
-    const c = await window.phinas.copyPartnerPlaylist(pl)
+    const c = await window.phinas.copyFriendPlaylist(pl)
     await lib.refresh()
     nav({ name: 'playlist', id: c.id })
   }

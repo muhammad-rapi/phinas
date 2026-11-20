@@ -8,8 +8,11 @@ export type View =
   | { name: 'liked' }
   | { name: 'recent' }
   | { name: 'friends' }
+  /** A friend's profile; `id` is their user id. */
+  | { name: 'friend'; id: string }
   | { name: 'playlist'; id: string }
-  | { name: 'partner'; id: string }
+  /** A friend's shared playlist or a public one (read-only). */
+  | { name: 'friendPlaylist'; id: string }
   | { name: 'public'; id: string; author?: string }
   /** `id` is the artist's name as shown on tracks. */
   | { name: 'artist'; id: string }

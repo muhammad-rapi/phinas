@@ -100,7 +100,7 @@ function PlayAgain({ recent, nav }: { recent: Track[] | null; nav: Nav }): React
   )
 }
 
-/** Own playlists first, then the partner's, in one row of covers. */
+/** Own playlists first, then friends', in one row of covers. */
 function YourPlaylists({ nav }: { nav: Nav }): React.JSX.Element | null {
   const lib = useLibrary()
   const items = [
@@ -111,12 +111,12 @@ function YourPlaylists({ nav }: { nav: Nav }): React.JSX.Element | null {
       art: <PlaylistCover covers={p.coverUrls} />,
       onOpen: () => nav({ name: 'playlist', id: p.id })
     })),
-    ...lib.partner.map((p) => ({
-      key: `partner-${p.id}`,
+    ...lib.friends.map((p) => ({
+      key: `friend-${p.id}`,
       title: p.name,
       meta: `Dari ${p.ownerName}`,
       art: <PlaylistCover covers={p.coverUrls} />,
-      onOpen: () => nav({ name: 'partner', id: p.id })
+      onOpen: () => nav({ name: 'friendPlaylist', id: p.id })
     }))
   ]
   if (items.length === 0) return null

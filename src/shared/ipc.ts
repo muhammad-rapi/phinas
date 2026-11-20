@@ -79,8 +79,7 @@ export interface PhinasApi {
   /** The welcome screen was answered with "Pakai tanpa akun". */
   finishWelcome(): Promise<void>
   /** The partner's playlists (Berdua tab). Renamed in the redesign. */
-  listPartnerPlaylists(): Promise<PartnerPlaylist[]>
-  copyPartnerPlaylist(playlist: PartnerPlaylist): Promise<Playlist>
+  copyFriendPlaylist(playlist: PartnerPlaylist): Promise<Playlist>
   /** Writes one history row. Local only. */
   recordPlay(rec: PlayRecord): Promise<void>
   /** Unique tracks played recently, newest first. */
@@ -207,8 +206,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   listPublicPlaylists: true,
   openLegal: true,
   finishWelcome: true,
-  listPartnerPlaylists: true,
-  copyPartnerPlaylist: true,
+  copyFriendPlaylist: true,
   recordPlay: true,
   listRecentPlays: true,
   listFavoriteArtists: true,

@@ -36,3 +36,8 @@ button.fr-name:hover { color: var(--accent); }
 .fr-text strong { color: var(--ink); }
 .fr-heart { flex: none; color: var(--accent); }
 .fr-auth { padding-top: 22px; }
+
+
+/* ---------- friend profile ---------- */
+.ch-cover:has(.fr-avatar) { border-radius: 50%; }
+.fr-avatar { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--serif); font-size: 64px; font-style: italic; }
