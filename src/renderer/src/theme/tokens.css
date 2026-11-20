@@ -1,0 +1,51 @@
+/* Design tokens of the editorial look. Siang is the default; Malam overrides under [data-theme='night'].
+   --accent, --on-accent and --wash are written by theme/useTheme.ts; the values here are the
+   terracotta defaults used before it runs. They are registered so a song change fades over 600 ms. */
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #9c4526; }
+@property --on-accent { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+@property --wash { syntax: '<color>'; inherits: true; initial-value: #f1dcc8; }
+
+:root {
+  --paper: #f4efe6;
+  --ink: #2a2420;
+  --ink-soft: #5a4f45;
+  --ink-faint: #b9ab9a;
+  --line: #e2d8c8;
+  --online: #5aa36b;
+  --accent: #9c4526;
+  --on-accent: #ffffff;
+  --wash: #f1dcc8;
+  /* The one shadow in the app, for large covers only. */
+  --cover-shadow: 0 18px 30px -18px rgba(90, 40, 20, 0.6);
+  --serif: 'Newsreader', Georgia, serif;
+  --sans: 'Montserrat', system-ui, sans-serif;
+  color-scheme: light;
+  transition: --accent 600ms ease, --on-accent 600ms ease, --wash 600ms ease;
+}
+
+:root[data-theme='night'] {
+  --paper: #1c1714;
+  --ink: #efe4d4;
+  --ink-soft: #9a8b7b;
+  --ink-faint: #5e5145;
+  --line: #352c25;
+  --online: #7cc28b;
+  --accent: #e7a46c;
+  --on-accent: #1c1714;
+  --wash: #59412e;
+  --cover-shadow: 0 18px 30px -18px rgba(0, 0, 0, 0.85);
+  color-scheme: dark;
+}
+
+/* Old names still read by styles/legacy.css while areas are rebuilt. Removed with it (Task 14). */
+:root {
+  --bg: var(--paper);
+  --text: var(--ink);
+  --muted: var(--ink-soft);
+  --hover: color-mix(in srgb, var(--ink) 6%, transparent);
+  --glass: transparent;
+  --glass-strong: var(--paper);
+  --accent-text: var(--accent);
+  --grad-top: var(--wash);
+  --radius: 0px;
+}
