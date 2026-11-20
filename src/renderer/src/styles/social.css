@@ -41,3 +41,20 @@ button.fr-name:hover { color: var(--accent); }
 /* ---------- friend profile ---------- */
 .ch-cover:has(.fr-avatar) { border-radius: 50%; }
 .fr-avatar { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--serif); font-size: 64px; font-style: italic; }
+
+
+/* ---------- sidebar: request dot, online group, friends' playlists ---------- */
+/* The only red in the app: something waits for an answer on Teman. */
+.nav-alert { flex: none; width: 7px; height: 7px; margin-left: auto; border-radius: 50%; background: #d64545; }
+.nav-online { margin-top: 14px; }
+.nav-online > .nav-group { margin: 0 0 4px; }
+.nav-person { justify-content: flex-start; gap: 8px; width: 100%; min-width: 0; padding: 4px 0; font-size: 12px; color: var(--ink-soft); text-align: left; }
+.nav-person:hover, .nav-person[aria-expanded='true'] { color: var(--ink); }
+.nav-person-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-person-note { flex: none; font-size: 11px; color: var(--accent); }
+.nav-heart { flex: none; color: var(--accent); }
+.nav-person-menu { left: 0; right: auto; min-width: 180px; }
+.menu-item:disabled { color: var(--ink-faint); }
+.nav-more { padding: 4px 0 0 16px; font-size: 11px; color: var(--ink-soft); }
+.nav-more:hover { color: var(--accent); }
+.nav-owner { padding: 6px 0 2px; font-size: 11px; font-weight: 600; color: var(--ink-faint); }
