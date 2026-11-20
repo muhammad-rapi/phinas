@@ -15,7 +15,7 @@ interface Props {
   rows?: number
 }
 
-/** A short numbered text list: "01  Title — Artist". Clicking a row plays the list from it. */
+/** A short numbered list: "01  [cover]  Title — Artist". Clicking a row plays the list from it. */
 export function NumberedList({ title, onTitle, tracks, failed, errorText, onPlay, rows = 4 }: Props): React.JSX.Element | null {
   const player = usePlayer()
   if (tracks && tracks.length === 0) return null
@@ -37,6 +37,7 @@ export function NumberedList({ title, onTitle, tracks, failed, errorText, onPlay
           {Array.from({ length: rows }, (_, i) => (
             <li key={i} className="nl-row nl-skel">
               <span className="nl-num">{num(i)}</span>
+              <span className="nl-cover skeleton" />
               <span className="nl-bar skeleton" />
             </li>
           ))}
@@ -47,6 +48,7 @@ export function NumberedList({ title, onTitle, tracks, failed, errorText, onPlay
             <li key={`${t.videoId}-${i}`}>
               <button className={`nl-row${player.track?.videoId === t.videoId ? ' playing' : ''}`} onClick={() => onPlay(i)}>
                 <span className="nl-num">{num(i)}</span>
+                <span className="nl-cover" style={t.coverUrl ? { backgroundImage: `url("${t.coverUrl}")` } : undefined} />
                 <span className="nl-text">
                   {t.title} <span className="nl-artist">— {t.artist}</span>
                 </span>

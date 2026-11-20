@@ -216,6 +216,8 @@ function Shell(): React.JSX.Element {
   return (
     <NavProvider nav={nav}>
     <div className={`app${panelOpen ? ' with-panel' : ''}`}>
+      {/* The cover, blurred, behind everything; the paper on top is translucent so its colours show. */}
+      {cover && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
       <div className="drag-strip" />
       <Sidebar
         view={view}

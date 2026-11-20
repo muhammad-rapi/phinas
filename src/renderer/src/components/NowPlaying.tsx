@@ -42,13 +42,10 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
     <div className="panel">
       <SessionBlock />
       <div className="panel-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'lyrics'} className="label panel-tab" onClick={() => setTab('lyrics')}>
+        <button role="tab" aria-selected={tab === 'lyrics'} className="panel-tab" onClick={() => setTab('lyrics')}>
           Lirik
         </button>
-        <span className="label" aria-hidden="true">
-          ·
-        </span>
-        <button role="tab" aria-selected={tab === 'queue'} className="label panel-tab" onClick={() => setTab('queue')}>
+        <button role="tab" aria-selected={tab === 'queue'} className="panel-tab" onClick={() => setTab('queue')}>
           Antrean
         </button>
         {tab === 'lyrics' && (

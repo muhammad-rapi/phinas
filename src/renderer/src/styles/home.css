@@ -27,10 +27,11 @@
 .home-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; margin-top: 22px; }
 @container (max-width: 760px) { .home-lists { grid-template-columns: minmax(0, 1fr); } }
 .nl-rows { list-style: none; margin: 0; padding: 0; }
-.nl-row { justify-content: flex-start; gap: 12px; width: 100%; min-width: 0; padding: 4px 0; font-size: 12px; line-height: 1.6; text-align: left; color: var(--ink); }
+.nl-row { justify-content: flex-start; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 5px 0; font-size: 12px; line-height: 1.6; text-align: left; color: var(--ink); }
+.nl-cover { flex: none; width: 36px; height: 36px; background: var(--line) center / cover no-repeat; box-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.4); }
 .nl-row:hover .nl-text, .nl-row.playing .nl-text, .nl-row.playing .nl-num { color: var(--accent); }
 .nl-num { flex: none; width: 20px; font-family: var(--serif); font-size: 14px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 .nl-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nl-artist { color: var(--ink-soft); }
-.nl-skel { display: flex; align-items: center; }
+.nl-skel { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
 .nl-bar { flex: 1; max-width: 220px; height: 10px; }

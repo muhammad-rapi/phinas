@@ -1,4 +1,4 @@
-import { Download, Plus } from 'lucide-react'
+import { Compass, Download, Heart, History, Home, Plus, Users, type LucideIcon } from 'lucide-react'
 import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import type { RecentEntry } from '../search/recent'
@@ -22,9 +22,11 @@ interface Props {
 }
 
 /** A text navigation item; the active one is bold with an accent dot before it. */
-function NavItem(p: { label: string; active: boolean; online?: boolean; onClick: () => void }): React.JSX.Element {
+function NavItem(p: { label: string; icon: LucideIcon; active: boolean; online?: boolean; onClick: () => void }): React.JSX.Element {
+  const Icon = p.icon
   return (
     <button className={`nav-item${p.active ? ' active' : ''}`} onClick={p.onClick} aria-current={p.active ? 'page' : undefined}>
+      <Icon className="nav-icon" size={17} strokeWidth={p.active ? 2.2 : 1.8} aria-hidden="true" />
       <span>{p.label}</span>
       {p.online && <span className="online-dot" role="img" aria-label="Pasangan online" />}
     </button>
@@ -51,21 +53,22 @@ export function Sidebar({ view, nav, query, onQuery, onSubmit, recent, onForget,
 
   return (
     <aside className="sidebar" aria-label="Navigasi">
-      {/* The wordmark is also the window's drag handle, below the macOS window buttons. */}
-      <div className="nav-brand">phinas</div>
+      {/* An empty strip: the window's drag handle, and room for the macOS window buttons. */}
+      <div className="nav-brand" aria-hidden="true" />
       <SearchBox query={query} onQuery={onQuery} onSubmit={onSubmit} recent={recent} onForget={onForget} onPlayTrack={onPlayTrack} />
 
       <nav className="nav">
-        <NavItem label="Beranda" active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
-        <NavItem label="Jelajah" active={view.name === 'explore'} onClick={() => nav({ name: 'explore' })} />
+        <NavItem label="Beranda" icon={Home} active={view.name === 'home'} onClick={() => nav({ name: 'home' })} />
+        <NavItem label="Jelajah" icon={Compass} active={view.name === 'explore'} onClick={() => nav({ name: 'explore' })} />
         <NavItem
           label="Berdua"
+          icon={Users}
           active={view.name === 'together'}
           online={listen.available && listen.state.partnerHere}
           onClick={() => nav({ name: 'together' })}
         />
-        <NavItem label="Disukai" active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
-        <NavItem label="Riwayat" active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
+        <NavItem label="Disukai" icon={Heart} active={view.name === 'liked'} onClick={() => nav({ name: 'liked' })} />
+        <NavItem label="Riwayat" icon={History} active={view.name === 'recent'} onClick={() => nav({ name: 'recent' })} />
       </nav>
 
       <div className="nav-section">
