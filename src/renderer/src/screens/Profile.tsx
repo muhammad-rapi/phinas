@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import type { SyncStatus } from '../../../shared/types'
+import { friendlyError } from '../../../shared/errors'
+import type { MyProfile, SyncStatus } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import { useNotchEnabled } from '../notch/useNotchEnabled'
 import type { ThemeName } from '../theme/useTheme'
@@ -26,8 +27,17 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notch, setNotch] = useNotchEnabled()
+  const [mode, setMode] = useState<'in' | 'up'>('in')
+  const [displayName, setDisplayName] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
+  const [accepted, setAccepted] = useState(false)
+  const [profile, setProfile] = useState<MyProfile | null>(null)
 
-  const load = useCallback(() => window.phinas.syncStatus().then(setStatus), [])
+  const load = useCallback(async () => {
+    const s = await window.phinas.syncStatus()
+    setStatus(s)
+    setProfile(s.signedIn ? await window.phinas.myProfile().catch(() => null) : null)
+  }, [])
 
   useEffect(() => {
     void load()
@@ -35,16 +45,35 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
     return () => clearInterval(t)
   }, [load])
 
-  const signIn = async (e: FormEvent): Promise<void> => {
+  const submit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
     setError(null)
     try {
-      await window.phinas.syncSignIn(email, password)
+      if (mode === 'up') {
+        await window.phinas.syncSignUp({ email, password, displayName, inviteCode, acceptedTerms: accepted })
+      } else {
+        await window.phinas.syncSignIn(email, password)
+      }
       setPassword('')
+      setInviteCode('')
       await load()
       await lib.refreshPartner()
     } catch (err) {
-      setError(err instanceof Error ? err.message.replace(/^Error invoking remote method '\w+': Error: /, '') : 'Login gagal')
+      setError(friendlyError(err) || (mode === 'up' ? 'Pendaftaran gagal' : 'Login gagal'))
+    }
+  }
+
+  const deleteAccount = async (): Promise<void> => {
+    const ok = window.confirm(
+      'Hapus akun Phinas? Playlist dan lagu yang disukai di server ikut terhapus, dan teman-temanmu tidak bisa melihatnya lagi. Data di komputer ini tetap ada.'
+    )
+    if (!ok) return
+    try {
+      await window.phinas.deleteAccount()
+      await load()
+      await lib.refreshPartner()
+    } catch (err) {
+      setError(friendlyError(err))
     }
   }
 
@@ -107,35 +136,111 @@ export function Profile({ name, onName, initial, theme, onTheme }: Props): React
       <UpdateSection />
 
       <section className="profile-section">
-        <h3>Akun dan sync dengan pasangan</h3>
+        <h3>Akun</h3>
         {status && !status.configured && (
           <div className="notice">Supabase belum dikonfigurasi. Isi file .env lalu jalankan ulang app.</div>
         )}
         {status?.configured && status.signedIn && (
           <>
+            {profile?.disabled && <div className="notice">{friendlyError(new Error('phinas:account_disabled'))}</div>}
             <p>
               Masuk sebagai <strong>{status.email}</strong>.{' '}
               {status.pending === 0 ? 'Semua perubahan sudah tersinkron.' : `${status.pending} perubahan belum tersinkron.`}
             </p>
+            {profile && (
+              <p>
+                Kode temanmu: <strong style={{ userSelect: 'text' }}>{profile.friendCode}</strong>
+              </p>
+            )}
             {status.lastError && <div className="notice">Sync gagal: {status.lastError}. Akan dicoba lagi otomatis.</div>}
-            <button
-              className="btn secondary"
-              onClick={async () => {
-                await window.phinas.syncSignOut()
-                await load()
-                await lib.refreshPartner()
-              }}
-            >
-              Keluar
-            </button>
+            {error && <div className="notice">{error}</div>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn secondary"
+                onClick={async () => {
+                  await window.phinas.syncSignOut()
+                  await load()
+                  await lib.refreshPartner()
+                }}
+              >
+                Keluar
+              </button>
+              <button className="btn secondary" onClick={() => void deleteAccount()}>
+                Hapus akun
+              </button>
+            </div>
           </>
         )}
         {status?.configured && !status.signedIn && (
-          <form onSubmit={signIn} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+            {mode === 'up' && (
+              <input
+                placeholder="Nama"
+                value={displayName}
+                maxLength={30}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+              />
+            )}
             <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              minLength={mode === 'up' ? 6 : undefined}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            {mode === 'up' && (
+              <>
+                <input
+                  placeholder="Kode undangan"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  required
+                />
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} required />
+                  <span>
+                    Saya setuju dengan{' '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        void window.phinas.openLegal('terms')
+                      }}
+                    >
+                      Syarat &amp; Ketentuan
+                    </a>{' '}
+                    dan{' '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        void window.phinas.openLegal('privacy')
+                      }}
+                    >
+                      Kebijakan Privasi
+                    </a>
+                    .
+                  </span>
+                </label>
+              </>
+            )}
             {error && <div className="notice">{error}</div>}
-            <button className="btn" type="submit">Masuk</button>
+            <button className="btn" type="submit">
+              {mode === 'up' ? 'Daftar' : 'Masuk'}
+            </button>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => {
+                setMode(mode === 'up' ? 'in' : 'up')
+                setError(null)
+              }}
+            >
+              {mode === 'up' ? 'Sudah punya akun? Masuk' : 'Punya kode undangan? Daftar'}
+            </button>
           </form>
         )}
       </section>
