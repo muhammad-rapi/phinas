@@ -3298,7 +3298,7 @@ Every step here changes the live project. Do each only after the user says go, a
 
 - [ ] **Step 1: Link the CLI** — the user runs `! supabase login`, then `supabase link --project-ref <ref>` (the ref is in the Supabase URL in `.env`; the DB password comes from the user).
 - [ ] **Step 2: Mark the hand-applied schema as applied** — `supabase migration repair --status applied 20261120000000`.
-- [ ] **Step 3: Dry run** — `supabase db push --dry-run`; expect exactly migrations `...0100` to `...0600`.
+- [ ] **Step 3: Dry run** — `supabase db push --dry-run`; expect exactly migrations `...0100` to `...0700` (0700 = atomic playlist/likes writes added in C2), plus any later ones listed in `supabase/migrations/`.
 - [ ] **Step 4: Push** — `supabase db push`.
 - [ ] **Step 4b: Check the Realtime policies exist** — in the SQL editor: `select count(*) from pg_policies where schemaname = 'realtime' and policyname like 'phinas%';` must be `2`. If it is `0`, the migration skipped them (no `realtime.messages`); stop and investigate before shipping the app.
 - [ ] **Step 5: Make the user admin** — in the SQL editor: `update public.profiles set role = 'admin' where id = (select id from auth.users where email = '<user email>');` then `select display_name, role, friend_code from public.profiles;` and confirm the two existing accounts are partners: `select is_partner from public.friendships;` → `true`.
