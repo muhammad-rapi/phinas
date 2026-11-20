@@ -63,6 +63,7 @@ select * from no_plan();
 
 select is((select count(*)::int from public.profiles), 0, 'starts from an empty database');
 
+select is(public.check_invite('ANYTHING'), 'ok', 'check_invite lets the very first account through');
 select tests.new_user('admin');
 select is((select role from public.profiles where id = tests.id('admin')), 'admin',
   'first user becomes admin without an invite');

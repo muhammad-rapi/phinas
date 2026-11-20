@@ -164,6 +164,8 @@ $$;
 create function public.check_invite(p_code text) returns text
 language sql stable security definer set search_path = private, public as $$
   select case
+    -- Bootstrap: the very first account needs no invite (handle_new_user makes it the admin).
+    when not exists (select 1 from profiles) then 'ok'
     when not coalesce((config('registration_open'))::boolean, false) then 'registration_closed'
     when i.code is null then 'invite_invalid'
     when i.revoked then 'invite_revoked'
