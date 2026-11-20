@@ -1,5 +1,5 @@
--- Run once in the Supabase dashboard: SQL Editor > New query > paste > Run.
--- Do this BEFORE creating the two user accounts.
+-- Initial two-account schema (already applied in production by hand; mark it applied with
+-- `supabase migration repair --status applied 20261120000000` before the first `db push`).
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
