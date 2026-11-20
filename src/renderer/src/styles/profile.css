@@ -1,0 +1,39 @@
+/* Profil. */
+
+.pf-head { display: flex; align-items: center; gap: 28px; padding: 20px 0 28px; }
+.pf-avatar { display: grid; place-items: center; flex: none; width: 96px; height: 96px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--sans); font-size: 44px; }
+.pf-who { flex: 1; min-width: 0; }
+.pf-name { width: 100%; margin: 4px 0 6px; padding: 0; border: 0; background: none; outline: 0; color: var(--ink); font-family: var(--sans); font-size: var(--fs-3xl); font-weight: 300; line-height: 1.08; letter-spacing: -0.03em; }
+.pf-name:focus-visible { outline: 0; }
+.pf-name:focus { border-bottom: 1px solid var(--accent); }
+.pf-stats { display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: var(--fs-base); color: var(--ink-soft); }
+.pf-stats strong { color: var(--ink); }
+.pf-sec { max-width: 680px; padding-bottom: 28px; }
+.pf-sec p { color: var(--ink-soft); }
+.pf-sec p strong { color: var(--ink); }
+/* Ikuti sistem / Siang / Malam */
+/* Ikuti sistem / Siang / Malam and the listen scope: three cards with an icon each. */
+.pf-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pf-theme { flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; text-align: left; transition: border-color 0.15s, background 0.15s; }
+.pf-theme:hover:not(:disabled) { border-color: var(--ink-faint); }
+.pf-theme-icon { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink-soft); }
+.pf-theme strong { font-size: var(--fs-md); font-weight: 600; }
+.pf-theme .small { color: var(--ink-soft); }
+.pf-theme.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pf-theme.active strong { color: var(--accent); }
+.pf-theme.active .pf-theme-icon { background: var(--accent); color: var(--on-accent); }
+.pf-check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.pf-check input { margin-top: 3px; accent-color: var(--accent); }
+.pf-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-form { display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+.pf-code { user-select: text; }
+
+/* ---------- profile photo ---------- */
+
+.pf-photo { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; }
+.pf-avatar-btn { position: relative; border-radius: 50%; }
+.pf-avatar-edit { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; opacity: 0; transition: opacity 0.15s; }
+.pf-avatar-btn:hover .pf-avatar-edit, .pf-avatar-btn:focus-visible .pf-avatar-edit { opacity: 1; }
+.pf-avatar-btn:disabled { cursor: progress; }
+.pf-photo-remove { font-size: var(--fs-sm); }
+.fr-mini { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: var(--fs-sm); font-weight: 600; }

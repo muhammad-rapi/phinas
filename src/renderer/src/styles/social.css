@@ -1,0 +1,86 @@
+/* Social screens: welcome, sign-in form, Teman, friend profile, sidebar groups, online line, pickers. */
+
+/* ---------- welcome ---------- */
+.welcome { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 48px 24px; background: linear-gradient(180deg, var(--wash) 0%, var(--paper) 55%), var(--paper); }
+.welcome-drag { position: fixed; top: 0; left: 0; right: 0; height: 40px; -webkit-app-region: drag; }
+.welcome-body { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; width: 100%; max-width: 420px; }
+.welcome-title { font-family: var(--sans); font-size: 52px; font-weight: 300; line-height: 1.05; letter-spacing: -0.035em; }
+.welcome-title em { color: var(--accent); }
+.welcome-line { margin: 0 0 12px; font-size: var(--fs-lg); line-height: 1.5; color: var(--ink-soft); }
+.welcome-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; max-width: 320px; }
+.welcome-actions .text-link { align-self: flex-start; margin-top: 6px; }
+.welcome-back { margin-top: 4px; }
+.welcome-legal { margin-top: 18px; }
+
+/* ---------- sign-in / sign-up form ---------- */
+.auth-form { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
+.auth-form .notice { margin: 4px 0 0; cursor: default; }
+.auth-check { display: flex; align-items: flex-start; gap: 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-soft); }
+.auth-check input { margin-top: 3px; accent-color: var(--accent); }
+.auth-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 4px; }
+
+/* ---------- Teman ---------- */
+.friends { max-width: 760px; }
+.fr-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding-bottom: 22px; }
+.fr-code { font-family: var(--sans); font-size: 18px; font-weight: 600; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; user-select: text; }
+.fr-row .fr-code { font-size: 15px; }
+.fr-spacer { flex: 1; }
+.fr-add { display: flex; gap: 8px; max-width: 420px; margin: -8px 0 22px; }
+.fr-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.fr-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-md); }
+.fr-row .text-link { font-size: var(--fs-base); }
+.fr-num { width: 22px; flex: none; font-family: var(--sans); font-size: 15px; font-weight: 300; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.fr-name { padding: 0; font-weight: 600; color: var(--ink); text-align: left; }
+button.fr-name:hover { color: var(--accent); }
+.fr-status, .fr-text { font-size: var(--fs-base); color: var(--ink-soft); }
+.fr-text strong { color: var(--ink); }
+.fr-heart { flex: none; color: var(--accent); }
+.fr-auth { padding-top: 22px; }
+
+
+/* ---------- friend profile ---------- */
+.ch-cover:has(.fr-avatar) { border-radius: 50%; }
+.fr-avatar { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--sans); font-size: 64px; }
+
+
+/* ---------- sidebar: request dot, online group, friends' playlists ---------- */
+/* The only red in the app: something waits for an answer on Teman. */
+.nav-alert { flex: none; width: 7px; height: 7px; margin-left: auto; border-radius: 50%; background: #d64545; }
+.nav-online { margin-top: 14px; }
+.nav-online > .nav-group { margin: 0 0 4px; }
+.nav-person { justify-content: flex-start; gap: 8px; width: 100%; min-width: 0; padding: 5px 10px; border-radius: var(--radius); font-size: var(--fs-base); color: var(--ink-soft); text-align: left; transition: background 0.15s; }
+.nav-person:hover, .nav-person[aria-expanded='true'] { color: var(--ink); }
+.nav-person-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-person-note { flex: none; font-size: var(--fs-sm); color: var(--accent); }
+.nav-heart { flex: none; color: var(--accent); }
+.nav-person-menu { left: 0; right: auto; min-width: 180px; }
+.menu-item:disabled { color: var(--ink-faint); }
+.nav-more { padding: 4px 10px 0 28px; font-size: var(--fs-sm); color: var(--ink-soft); }
+.nav-more:hover { color: var(--accent); }
+.nav-owner { padding: 8px 10px 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--ink-faint); }
+
+/* ---------- Beranda: online line ---------- */
+.online-names { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
+.online-names .berdua-name { display: inline; }
+
+/* ---------- player bar: friend picker (opens upwards) ---------- */
+.listen-menu { top: auto; bottom: calc(100% + 10px); right: 0; min-width: 220px; }
+.listen-pick { gap: 8px; }
+
+/* ---------- playlist visibility ---------- */
+.vis-wrap { display: inline-block; }
+/* Sits inside the header's .label line, so it takes that look. */
+.vis-btn { gap: 6px; padding: 2px 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.vis-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+.vis-menu { left: 0; right: auto; min-width: 240px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.vis-item { align-items: flex-start; gap: 10px; color: var(--ink); }
+.vis-item svg { flex: none; margin-top: 2px; color: var(--ink-soft); }
+.vis-item.active, .vis-item.active svg { color: var(--accent); }
+.vis-text { display: flex; flex-direction: column; gap: 1px; }
+.vis-text strong { font-weight: 600; }
+.vis-text .small { color: var(--ink-soft); }
+.nav-vis { flex: none; margin-left: auto; color: var(--ink-faint); }
+
+/* ---------- Profil: listen scope ---------- */
+.pf-note { margin: 10px 0 0; color: var(--ink-soft); }
+.pf-theme:disabled { opacity: 0.5; }
