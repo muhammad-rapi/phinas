@@ -45,6 +45,21 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
   const [draft, setDraft] = useState<string | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const signedIn = social.signedIn
+  // MyProfile has no id; the signed-in email identifies the account.
+  const userId = social.me ? social.email : null
+
+  const clearTimer = (): void => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = null
+  }
+  // Leaving, signing out or switching account drops an unsent name; it must not land on another account.
+  useEffect(() => {
+    clearTimer()
+    setDraft(null)
+    setNameError(null)
+    return clearTimer
+  }, [signedIn, userId])
+  const [savingScope, setSavingScope] = useState(false)
 
   const load = async (): Promise<void> => {
     setStatus(await window.phinas.syncStatus().catch(() => null))
@@ -65,10 +80,13 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
       onName(value)
       return
     }
+    // Not loaded yet: the box shows nothing real to edit, and the local name is not this account's.
+    if (!userId) return
     setDraft(value)
     setNameError(null)
-    if (saveTimer.current) clearTimeout(saveTimer.current)
+    clearTimer()
     saveTimer.current = setTimeout(() => {
+      saveTimer.current = null
       const trimmed = value.trim()
       if (!trimmed) {
         setNameError(friendlyError(new Error('phinas:name_invalid')))
@@ -83,12 +101,16 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
   }
 
   const changeScope = async (scope: ListenScope): Promise<void> => {
+    if (savingScope) return
     setScopeError(null)
+    setSavingScope(true)
     try {
       await window.phinas.updateMyProfile(null, scope)
       await social.refresh()
     } catch (e) {
       setScopeError(friendlyError(e))
+    } finally {
+      setSavingScope(false)
     }
   }
 
@@ -122,7 +144,7 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
         <div className="pf-avatar">{initial}</div>
         <div className="pf-who">
           <span className="label accent">Profil</span>
-          <input className="pf-name" value={shownName} maxLength={30} onChange={(e) => changeName(e.target.value)} aria-label="Nama tampilan" />
+          <input className="pf-name" value={shownName} maxLength={30} onChange={(e) => changeName(e.target.value)} aria-label="Nama tampilan" disabled={signedIn && !social.me} />
           {nameError && (
             <div className="notice" role="alert">
               {nameError}
@@ -170,7 +192,7 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
                   role="radio"
                   aria-checked={on}
                   className={`pf-theme${on ? ' active' : ''}`}
-                  disabled={social.offline || !social.me}
+                  disabled={social.offline || !social.me || savingScope}
                   onClick={() => void changeScope(s.id)}
                 >
                   <strong>{s.label}</strong>

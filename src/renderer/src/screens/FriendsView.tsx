@@ -203,7 +203,7 @@ function SignedIn({ nav }: { nav: Nav }): React.JSX.Element {
               <FriendName friend={partner} nav={nav} />
               <span className="fr-status">{friendStatusText(isOnline(partner), withYou(partner))}</span>
               <span className="fr-spacer" />
-              {partner.canListen && !withYou(partner) && (
+              {isOnline(partner) && partner.canListen && !withYou(partner) && (
                 <button className="text-link" onClick={() => listen.invite(partner.userId)} disabled={!listen.canInvite(partner.userId)}>
                   Dengar bareng
                 </button>

@@ -56,6 +56,14 @@ export function AuthForm({ mode, onMode, onDone }: Props): React.JSX.Element {
       setInviteCode('')
       onDone()
     } catch (err) {
+      // Signed in, but opening the account's library failed: Profil shows that error; don't trap the user here.
+      const s = await window.phinas.syncStatus().catch(() => null)
+      if (s?.signedIn) {
+        setPassword('')
+        setInviteCode('')
+        onDone()
+        return
+      }
       setError(friendlyError(err))
     } finally {
       setBusy(false)

@@ -62,6 +62,8 @@ function Shell(): React.JSX.Element {
   const mainRef = useRef<HTMLElement>(null)
   // First launch: the welcome screen until the user signs in or goes on without an account.
   const [welcome, setWelcome] = useState(false)
+  const welcomeRef = useRef(false)
+  welcomeRef.current = welcome
   useEffect(() => {
     window.phinas
       .syncStatus()
@@ -113,6 +115,8 @@ function Shell(): React.JSX.Element {
   libRef.current = lib
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // The welcome overlay covers the window: no shortcuts behind it.
+      if (welcomeRef.current) return
       const typing = (e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable]') !== null
       if (e.key === 'Escape') {
         setLyricsFull(false)

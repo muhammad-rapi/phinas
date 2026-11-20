@@ -1,6 +1,6 @@
 import { Compass, Download, Globe, Heart, History, Home, Lock, Plus, Users, type LucideIcon } from 'lucide-react'
-import { Fragment, useState } from 'react'
-import type { Track, Visibility } from '../../../shared/types'
+import { Fragment } from 'react'
+import type { Friend, Track, Visibility } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import type { RecentEntry } from '../search/recent'
 import { groupByOwner, onlineFriends } from '../social/lists'
@@ -9,6 +9,7 @@ import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
 import { PlaylistCover } from './PlaylistCover'
 import { SearchBox } from './SearchBox'
+import { useMenu } from './useMenu'
 import { sidebarIcon } from './visibility'
 
 interface Props {
@@ -56,8 +57,6 @@ function PlaylistItem(p: { name: string; covers: string[]; active: boolean; visi
 /** ONLINE · n: friends who have Phinas open, partner first. A name opens a small menu. */
 function OnlineGroup({ nav }: { nav: Nav }): React.JSX.Element | null {
   const social = useSocial()
-  const listen = useListen()
-  const [menu, setMenu] = useState<string | null>(null)
   if (!social.signedIn) return null
   const people = onlineFriends(social.friends, social.online)
   if (people.length === 0) return null
@@ -67,54 +66,59 @@ function OnlineGroup({ nav }: { nav: Nav }): React.JSX.Element | null {
   return (
     <div className="nav-online">
       <div className="label nav-group">Online · {people.length}</div>
-      {shown.map((f) => {
-        const withYou = listen.activeFriend === f.userId && listen.state.status === 'active'
-        const open = menu === f.userId
-        return (
-          <div key={f.userId} className="menu-wrap">
-            <button className="nav-person" onClick={() => setMenu(open ? null : f.userId)} aria-haspopup="menu" aria-expanded={open}>
-              <span className="online-dot" aria-hidden="true" />
-              {f.isPartner && <Heart className="nav-heart" size={11} fill="currentColor" aria-label="Pasangan" />}
-              <span className="nav-person-name">{f.name}</span>
-              {withYou && <span className="nav-person-note">· bareng kamu</span>}
-            </button>
-            {open && (
-              <>
-                <div className="menu-backdrop" onClick={() => setMenu(null)} />
-                <div className="menu nav-person-menu" role="menu">
-                  {f.canListen && !withYou && (
-                    <button
-                      role="menuitem"
-                      className="menu-item"
-                      disabled={!listen.canInvite(f.userId)}
-                      onClick={() => {
-                        setMenu(null)
-                        listen.invite(f.userId)
-                      }}
-                    >
-                      Ajak dengar bareng
-                    </button>
-                  )}
-                  <button
-                    role="menuitem"
-                    className="menu-item"
-                    onClick={() => {
-                      setMenu(null)
-                      nav({ name: 'friend', id: f.userId })
-                    }}
-                  >
-                    Lihat profil
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )
-      })}
+      {shown.map((f) => (
+        <OnlinePerson key={f.userId} friend={f} nav={nav} />
+      ))}
       {more > 0 && (
         <button className="nav-more" onClick={() => nav({ name: 'friends' })}>
           +{more} lainnya
         </button>
+      )}
+    </div>
+  )
+}
+
+function OnlinePerson({ friend: f, nav }: { friend: Friend; nav: Nav }): React.JSX.Element {
+  const listen = useListen()
+  const { open, toggle, close, wrapRef, triggerRef, onKeyDown } = useMenu()
+  const withYou = listen.activeFriend === f.userId && listen.state.status === 'active'
+  return (
+    <div className="menu-wrap" ref={wrapRef} onKeyDown={onKeyDown}>
+      <button ref={triggerRef} className="nav-person" onClick={toggle} aria-haspopup="menu" aria-expanded={open}>
+        <span className="online-dot" aria-hidden="true" />
+        {f.isPartner && <Heart className="nav-heart" size={11} fill="currentColor" aria-label="Pasangan" />}
+        <span className="nav-person-name">{f.name}</span>
+        {withYou && <span className="nav-person-note">· bareng kamu</span>}
+      </button>
+      {open && (
+        <>
+          <div className="menu-backdrop" onClick={close} />
+          <div className="menu nav-person-menu" role="menu">
+            {f.canListen && !withYou && (
+              <button
+                role="menuitem"
+                className="menu-item"
+                disabled={!listen.canInvite(f.userId)}
+                onClick={() => {
+                  close()
+                  listen.invite(f.userId)
+                }}
+              >
+                Ajak dengar bareng
+              </button>
+            )}
+            <button
+              role="menuitem"
+              className="menu-item"
+              onClick={() => {
+                close()
+                nav({ name: 'friend', id: f.userId })
+              }}
+            >
+              Lihat profil
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

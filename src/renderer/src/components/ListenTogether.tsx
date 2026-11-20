@@ -1,5 +1,6 @@
 import { Headphones, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useMenu } from './useMenu'
 import type { EndReason } from '../../../shared/sync/session'
 import { useSocial } from '../social/SocialProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
@@ -12,9 +13,12 @@ import { endedText, liveLabel } from '../sync/status'
 export function ListenButton(): React.JSX.Element | null {
   const l = useListen()
   const social = useSocial()
-  const [open, setOpen] = useState(false)
-  if (!social.signedIn) return null
+  const { open, toggle, close, wrapRef, triggerRef, onKeyDown } = useMenu()
   const { status } = l.state
+  const partnerReady = l.partner !== null && l.canInvite(l.partner.userId)
+  // The list is stale once the session or the partner's state moves on.
+  useEffect(() => close(), [status, partnerReady, close])
+  if (!social.signedIn) return null
   const name = l.activeName
 
   if (status === 'active') {
@@ -38,16 +42,16 @@ export function ListenButton(): React.JSX.Element | null {
   }
 
   const partner = l.partner
-  const partnerReady = partner !== null && l.canInvite(partner.userId)
   const title = partner && partnerReady ? `Dengar bareng ${partner.name}` : 'Dengar bareng teman'
   const click = (): void => {
     if (partner && partnerReady) l.invite(partner.userId)
-    else setOpen((o) => !o)
+    else toggle()
   }
 
   return (
-    <div className="menu-wrap">
+    <div className="menu-wrap" ref={wrapRef} onKeyDown={onKeyDown}>
       <button
+        ref={triggerRef}
         className="icon-btn listen-btn"
         onClick={click}
         disabled={status === 'invited'}
@@ -60,7 +64,7 @@ export function ListenButton(): React.JSX.Element | null {
       </button>
       {open && (
         <>
-          <div className="menu-backdrop" onClick={() => setOpen(false)} />
+          <div className="menu-backdrop" onClick={close} />
           <div className="menu listen-menu" role="menu">
             <div className="label menu-title">Dengar bareng</div>
             {l.invitable.length === 0 && <div className="menu-empty">Belum ada teman online yang bisa diajak.</div>}
@@ -71,7 +75,7 @@ export function ListenButton(): React.JSX.Element | null {
                 className="menu-item listen-pick"
                 disabled={!l.canInvite(f.userId)}
                 onClick={() => {
-                  setOpen(false)
+                  close()
                   l.invite(f.userId)
                 }}
               >

@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { PartnerPlaylist, Playlist, Track } from '../../../shared/types'
+import { clearPlaylists } from '../social/playlistCache'
 
 interface LibraryApi {
   playlists: Playlist[]
@@ -32,10 +33,14 @@ export function LibraryProvider({ children }: { children: ReactNode }): React.JS
     setLikes(l)
   }, [])
 
+  // A slow answer from the previous account must not overwrite the current one's list.
+  const friendsSeq = useRef(0)
   const refreshFriends = useCallback(async () => {
+    const mine = ++friendsSeq.current
     try {
       const status = await window.phinas.syncStatus()
-      setFriends(status.signedIn ? await window.phinas.listFriendPlaylists() : [])
+      const list = status.signedIn ? await window.phinas.listFriendPlaylists() : []
+      if (mine === friendsSeq.current) setFriends(list)
     } catch {
       // offline: keep the last list
     }
@@ -47,6 +52,8 @@ export function LibraryProvider({ children }: { children: ReactNode }): React.JS
     const t = setInterval(() => void refreshFriends(), FRIENDS_REFRESH_MS)
     // Another account means another library file and other friends.
     const off = window.phinas.onAccountChanged(() => {
+      clearPlaylists()
+      setFriends([])
       void refresh()
       void refreshFriends()
     })
