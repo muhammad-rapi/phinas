@@ -1,7 +1,7 @@
 import { Pause, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { HomeFeed, Track } from '../../../shared/types'
-import { BerduaLine } from '../components/BerduaLine'
+import { OnlineLine } from '../components/OnlineLine'
 import { CoverGrid } from '../components/CoverGrid'
 import { PlaylistCover } from '../components/PlaylistCover'
 import { useLibrary } from '../library/LibraryProvider'
@@ -153,7 +153,7 @@ export function Home({ nav, name }: { nav: Nav; name: string }): React.JSX.Eleme
     <div className="home">
       <div className="label accent">{homeLabel(new Date(), name)}</div>
       <CoverStory recent={recent} nav={nav} />
-      <BerduaLine onOpen={() => nav({ name: 'friends' })} />
+      <OnlineLine nav={nav} />
       <div className="home-lists">
         <NumberedList
           title="Untukmu"
