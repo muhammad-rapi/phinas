@@ -116,7 +116,7 @@ export interface PhinasEvents {
   notifyLibraryChanged(): void
   /** Main window: the notch changed the library. Returns an unsubscribe. */
   onLibraryChanged(cb: () => void): () => void
-  /** Notch window: expanded or compact, so the main process can resize the window. */
+  /** Notch window: the pill is open (take clicks) or closed (pass clicks through to the apps below). */
   setNotchExpanded(expanded: boolean): void
   /** Notch window: where the pill sits (set once by the main process). */
   onNotchLayout(cb: (layout: NotchLayout) => void): () => void

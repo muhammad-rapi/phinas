@@ -29,7 +29,8 @@ export function createNotch(opts: {
   const platform = opts.platform ?? process.platform
   let enabled = opts.enabled
   let hasTrack = false
-  let expanded = false
+  /** True while the pill is open: only then does the window take mouse clicks. */
+  let interactive = false
   let lastState: NotchState | null = null
   let layout: NotchLayout = detectNotch(platform, { x: 0, y: 0, width: 1440, height: 900 }, { x: 0, y: 0, width: 1440, height: 900 })
   let win: BrowserWindow | null = null
@@ -44,7 +45,8 @@ export function createNotch(opts: {
     if (!win || win.isDestroyed()) return
     const d = targetDisplay()
     layout = detectNotch(platform, d.bounds, d.workArea)
-    win.setBounds(computeBounds(platform, d.bounds, d.workArea, layout, expanded))
+    // Always the open size: resizing a transparent window mid-animation shows a torn frame on macOS.
+    win.setBounds(computeBounds(platform, d.bounds, d.workArea, layout, true))
     win.webContents.send('notch:layout', layout)
   }
 
@@ -55,7 +57,7 @@ export function createNotch(opts: {
     else if (!wanted && win) {
       win.destroy()
       win = null
-      expanded = false
+      interactive = false
     }
   }
 
@@ -85,6 +87,8 @@ export function createNotch(opts: {
           backgroundThrottling: false
         }
       })
+      // The transparent area passes clicks to the apps below; mouse moves still reach the pill (hover).
+      win.setIgnoreMouseEvents(true, { forward: true })
       win.setAlwaysOnTop(true, 'screen-saver')
       if (platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })
       opts.loadPage(win)
@@ -113,8 +117,10 @@ export function createNotch(opts: {
     if (win && !win.isDestroyed()) win.webContents.send('notch:state', state)
   })
   ipcMain.on('notch:expanded', (_e, value: boolean) => {
-    expanded = value
-    if (win && !win.isDestroyed()) place()
+    interactive = value === true
+    if (!win || win.isDestroyed()) return
+    if (interactive) win.setIgnoreMouseEvents(false)
+    else win.setIgnoreMouseEvents(true, { forward: true })
   })
   ipcMain.on('library:changed', () => {
     opts.mainWindow()?.webContents.send('library:changed')

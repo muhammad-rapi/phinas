@@ -14,8 +14,6 @@ const FALLBACK_LAYOUT: NotchLayout = {
   expanded: { w: 440, h: 252 },
   pad: 20
 }
-/** How long the pill takes to shrink; the window is resized only after that. */
-const COLLAPSE_MS = 520
 /** How long the "now playing" peek stays out after the song changes. */
 const PEEK_MS = 3500
 /** Song changes this soon after the window opens are start-up noise, not news. */
@@ -80,7 +78,6 @@ export function Notch(): React.JSX.Element | null {
     }
   }, [])
   const [open, setOpen] = useState(false)
-  const collapseTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const lyrics = useSyncedLyrics(state)
   // While the user drags the progress bar, show the dragged position instead of the playing one.
   const [scrub, setScrub] = useState<number | null>(null)
@@ -103,22 +100,15 @@ export function Notch(): React.JSX.Element | null {
     // No peek for the first song the window sees, nor while the app is still starting up.
     if (!trackId || !before || before === trackId) return
     if (openRef.current || Date.now() - mountedAt.current < STARTUP_QUIET_MS) return
-    clearTimeout(collapseTimer.current)
     clearTimeout(peekTimer.current)
+    // A peek is only a look: the window stays click-through, so it never blocks the apps below.
     setPeek(true)
-    window.phinas.setNotchExpanded(true)
     // Not cleared when the song changes again: a newer peek replaces it, so the pill always shrinks back.
-    peekTimer.current = setTimeout(() => {
-      setPeek(false)
-      collapseTimer.current = setTimeout(() => {
-        if (!openRef.current) window.phinas.setNotchExpanded(false)
-      }, COLLAPSE_MS)
-    }, PEEK_MS)
+    peekTimer.current = setTimeout(() => setPeek(false), PEEK_MS)
   }, [trackId])
   useEffect(() => () => clearTimeout(peekTimer.current), [])
 
   const enter = (): void => {
-    clearTimeout(collapseTimer.current)
     clearTimeout(peekTimer.current)
     setPeek(false)
     setOpen(true)
@@ -127,9 +117,8 @@ export function Notch(): React.JSX.Element | null {
   const leave = (): void => {
     setOpen(false)
     setPicker(false)
-    clearTimeout(collapseTimer.current)
-    // Shrink the window only once the pill has finished shrinking.
-    collapseTimer.current = setTimeout(() => window.phinas.setNotchExpanded(false), COLLAPSE_MS)
+    // The window keeps its size (the pill shrinks in CSS); it just stops taking clicks.
+    window.phinas.setNotchExpanded(false)
   }
 
   if (!state?.track) return null
