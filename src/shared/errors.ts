@@ -26,7 +26,8 @@ const MESSAGES: Record<string, string> = {
   last_admin: 'Kamu admin terakhir. Jadikan orang lain admin dulu sebelum menghapus akun.',
   invalid_args: 'Permintaan tidak valid.',
   config_invalid: 'Nilai pengaturan tidak valid.',
-  user_not_found: 'User tidak ditemukan.'
+  user_not_found: 'User tidak ditemukan.',
+  not_owner: 'Playlist ini milik akun lain.'
 }
 
 const GENERIC = 'Terjadi kesalahan. Coba lagi.'

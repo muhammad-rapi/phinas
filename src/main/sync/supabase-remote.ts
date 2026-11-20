@@ -230,32 +230,17 @@ export class SupabaseRemote implements Remote {
     return this.sb;
   }
 
+  /** Stores the playlist and replaces its tracks in one transaction (replace_playlist RPC). */
   async upsertPlaylist(p: PlaylistWithTracks): Promise<void> {
-    await this.userId();
-    check(
-      await this.sb.from("playlists").upsert({
+    await this.rpc("replace_playlist", {
+      p: {
         id: p.id,
         name: p.name,
         visibility: p.visibility,
         updated_at: new Date(p.updatedAt).toISOString(),
-      }),
-    );
-    check(
-      await this.sb.from("playlist_tracks").delete().eq("playlist_id", p.id),
-    );
-    if (p.tracks.length) {
-      check(
-        await this.sb
-          .from("playlist_tracks")
-          .insert(
-            p.tracks.map((t, i) => ({
-              playlist_id: p.id,
-              position: i,
-              ...toRow(t),
-            })),
-          ),
-      );
-    }
+        tracks: p.tracks.map(toRow),
+      },
+    });
   }
 
   async deletePlaylist(id: string): Promise<void> {
@@ -263,18 +248,14 @@ export class SupabaseRemote implements Remote {
     check(await this.sb.from("playlists").delete().eq("id", id));
   }
 
+  /** Replaces the account's likes in one transaction (replace_likes RPC). */
   async replaceLikes(likes: LikeEntry[]): Promise<void> {
-    const me = await this.userId();
-    check(await this.sb.from("liked_tracks").delete().eq("owner_id", me));
-    if (likes.length)
-      check(
-        await this.sb.from("liked_tracks").insert(
-          likes.map((l) => ({
-            ...toRow(l),
-            liked_at: new Date(l.likedAt).toISOString(),
-          })),
-        ),
-      );
+    await this.rpc("replace_likes", {
+      p: likes.map((l) => ({
+        ...toRow(l),
+        liked_at: new Date(l.likedAt).toISOString(),
+      })),
+    });
   }
 
   /** Every row of a query, a page at a time. `page` must order the rows by a unique key. */

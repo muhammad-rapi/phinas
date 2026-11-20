@@ -55,6 +55,12 @@ describe('mergeLibrary', () => {
     expect(mergeLibrary(local, remote, ['likes']).likes).toBeNull()
   })
 
+  test('an empty server likes list keeps the synced local likes', () => {
+    const plan = mergeLibrary(snap([pl('a', 5)], [like(1, 10)]), snap([pl('a', 5)]), [])
+    expect(plan.likes).toBeNull()
+    expect(mergeChanges(plan)).toBe(0)
+  })
+
   test('the same set of likes changes nothing', () => {
     expect(mergeLibrary(snap([], [like(1, 10)]), snap([], [like(1, 99)]), []).likes).toBeNull()
   })

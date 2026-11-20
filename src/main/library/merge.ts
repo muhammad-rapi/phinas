@@ -29,6 +29,7 @@ const sameLikes = (a: LikeEntry[], b: LikeEntry[]): boolean => {
  * - Likes: the server's set wins.
  * - Guard: an entirely empty server answer (no playlists, no likes) while the local library has synced data
  *   deletes nothing.
+ * - Guard: an empty server likes list while this computer has synced likes keeps the local likes.
  */
 export function mergeLibrary(local: LibrarySnapshot, remote: LibrarySnapshot, pendingKeys: readonly string[]): MergePlan {
   const pending = new Set(pendingKeys)
@@ -45,7 +46,10 @@ export function mergeLibrary(local: LibrarySnapshot, remote: LibrarySnapshot, pe
   const localSynced = local.playlists.some((p) => !isPending(p.id)) || (local.likes.length > 0 && !pending.has('likes'))
   const emptyAnswer = remote.playlists.length === 0 && remote.likes.length === 0 && localSynced
   const remove = emptyAnswer ? [] : local.playlists.filter((p) => !remoteIds.has(p.id) && !isPending(p.id)).map((p) => p.id)
-  const likes = emptyAnswer || pending.has('likes') || sameLikes(local.likes, remote.likes) ? null : remote.likes
+  // Same reasoning for likes alone: an empty list is more likely a failed write than everything unliked.
+  const likesWiped = remote.likes.length === 0 && local.likes.length > 0
+  const likes =
+    emptyAnswer || likesWiped || pending.has('likes') || sameLikes(local.likes, remote.likes) ? null : remote.likes
   return { upsert, remove, likes }
 }
 
