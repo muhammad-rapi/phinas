@@ -15,9 +15,12 @@ begin
     if parts[1] = 'pair' and array_length(parts, 1) = 3 then
       a := parts[2]::uuid;
       b := parts[3]::uuid;
+      -- Only the canonical spelling: a second spelling of the same uuid is a second channel.
+      if parts[2] <> a::text or parts[3] <> b::text then return false; end if;
       return a < b and u in (a, b) and can_listen(a, b);
     elsif parts[1] = 'presence' and array_length(parts, 1) = 2 then
       a := parts[2]::uuid;
+      if parts[2] <> a::text then return false; end if;
       return is_active(u) and is_active(a) and (a = u or are_friends(u, a));
     end if;
   exception when invalid_text_representation then
@@ -42,7 +45,7 @@ begin
     create policy "phinas send" on realtime.messages for insert to authenticated
     with check (
       private.can_join_topic(realtime.topic())
-      and (realtime.topic() like 'pair:%' or realtime.topic() = 'presence:' || auth.uid()::text)
+      and (left(realtime.topic(), 5) = 'pair:' or realtime.topic() = 'presence:' || auth.uid()::text)
     )
   $p$;
 end $$;

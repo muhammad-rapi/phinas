@@ -64,6 +64,10 @@ begin
   if not is_admin() then raise exception 'phinas:not_admin'; end if;
   update profiles set disabled = p_disabled where id = p_user;
   if not found then raise exception 'phinas:user_not_found'; end if;
+  -- End the sessions too, so the access token cannot be refreshed (refresh_tokens cascade).
+  if p_disabled then
+    delete from auth.sessions where user_id = p_user;
+  end if;
 end $$;
 
 create function public.admin_set_config(p_key text, p_value jsonb) returns void

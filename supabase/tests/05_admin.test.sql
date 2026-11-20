@@ -74,6 +74,14 @@ select throws_ok($$ select public.admin_set_config('registration_open', 'false')
   'config: admin only');
 reset role;
 
+-- budi has a live session and refresh token; disabling must end them.
+insert into auth.sessions (id, user_id, created_at, updated_at)
+values ('00000000-0000-0000-0000-0000000000a1', tests.id('budi'), now(), now());
+insert into auth.refresh_tokens (instance_id, token, user_id, revoked, session_id)
+values ('00000000-0000-0000-0000-000000000000', 'tok-budi', tests.id('budi')::text, false,
+        '00000000-0000-0000-0000-0000000000a1');
+select is((select count(*)::int from auth.sessions where user_id = tests.id('budi')), 1, 'budi has a session');
+
 select tests.login('admin');
 set local role authenticated;
 select is(jsonb_array_length(public.admin_list_users()), 2, 'admin sees every user');
@@ -94,6 +102,8 @@ select lives_ok($$ select public.admin_set_config('listen_together_enabled', 'fa
 reset role;
 
 select ok((select disabled from public.profiles where id = tests.id('budi')), 'budi is disabled');
+select is((select count(*)::int from auth.sessions where user_id = tests.id('budi')), 0, 'disabling ends sessions');
+select is((select count(*)::int from auth.refresh_tokens where token = 'tok-budi'), 0, 'disabling drops refresh tokens');
 select is((select value from public.app_config where key = 'listen_together_enabled'), 'false'::jsonb, 'switch stored');
 
 -- A disabled user still reads their own profile, but cannot act.

@@ -118,6 +118,58 @@ select is((select f->>'canListen' from jsonb_array_elements(public.list_friends(
 reset role;
 update public.app_config set value = 'true' where key = 'listen_together_enabled';
 
+
+-- Policy level: runs the check the Realtime server runs (realtime.authorize), plus real rows.
+create function tests.has_rt() returns boolean language sql stable
+as $$ select to_regclass('realtime.messages') is not null and to_regprocedure('realtime.authorize(text,text,text,text,text,text[],text[])') is not null $$;
+
+-- {read broadcast, read presence, write broadcast, write presence}
+create function tests.authz(p_user text, p_topic text) returns boolean[] language plpgsql as $$
+declare r record;
+begin
+  select * into r from realtime.authorize('authenticated', p_topic,
+    json_build_object('sub', tests.id(p_user), 'role', 'authenticated')::text, tests.id(p_user)::text, '{}',
+    array['broadcast','presence'], array['broadcast','presence']);
+  return r.read_allowed || r.write_allowed;
+end $$;
+
+create function tests.put(p_topic text) returns void language plpgsql as $$
+begin
+  insert into realtime.messages (topic, extension, payload, event, private)
+  values (p_topic, 'broadcast', '{}', 'msg', true);
+end $$;
+
+-- Rows of that topic p_user can read, as the authenticated role.
+create function tests.visible(p_user text, p_topic text) returns int language plpgsql as $$
+declare n int;
+begin
+  begin
+    perform set_config('role', 'authenticated', true),
+            set_config('realtime.topic', p_topic, true),
+            set_config('request.jwt.claims',
+              json_build_object('sub', tests.id(p_user), 'role', 'authenticated')::text, true);
+    select count(*) into n from realtime.messages where topic = realtime.topic();
+    raise sqlstate 'RTA01';
+  exception when sqlstate 'RTA01' then null;
+  end;
+  return n;
+end $$;
+
+
+select case when tests.has_rt() then ok(tests.authz('budi', tests.pair('budi','sari')) = array[true,true,true,true], 'member reads, sends and tracks on the pair') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('sari', tests.pair('budi','sari')) = array[true,true,true,true], 'the other member too') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('tono', tests.pair('budi','sari')) = array[false,false,false,false], 'a non-member can neither read nor send on the pair') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('budi', 'presence:' || tests.id('budi')) = array[true,true,true,true], 'owner reads and tracks own presence') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('sari', 'presence:' || tests.id('budi')) = array[true,true,false,false], 'a watcher reads but cannot send on presence') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('tono', 'presence:' || tests.id('budi')) = array[false,false,false,false], 'a stranger has no presence access') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('budi', 'pair:' || upper(least(tests.id('budi'),tests.id('sari'))::text) || ':' || upper(greatest(tests.id('budi'),tests.id('sari'))::text)) = array[false,false,false,false], 'uppercase pair topic denied') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('budi', 'pair:' || replace(least(tests.id('budi'),tests.id('sari'))::text,'-','') || ':' || replace(greatest(tests.id('budi'),tests.id('sari'))::text,'-','')) = array[false,false,false,false], 'unhyphenated pair topic denied') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('budi', 'presence:' || upper(tests.id('budi')::text)) = array[false,false,false,false], 'uppercase presence topic denied') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.authz('budi', 'presence:' || replace(tests.id('budi')::text,'-','')) = array[false,false,false,false], 'unhyphenated presence topic denied') else skip('no realtime', 1) end;
+select case when tests.has_rt() then tests.put(tests.pair('budi','sari')) end;
+select case when tests.has_rt() then ok(tests.visible('budi', tests.pair('budi','sari')) = 1, 'a member sees the message') else skip('no realtime', 1) end;
+select case when tests.has_rt() then ok(tests.visible('tono', tests.pair('budi','sari')) = 0, 'a non-member sees no rows') else skip('no realtime', 1) end;
+
 -- A disabled side blocks.
 update public.profiles set disabled = true where id = tests.id('sari');
 select tests.login('budi');
