@@ -1,7 +1,7 @@
 # Multi-user Phinas (sub-project A): design
 
 Date: 2026-11-20
-Status: draft for review
+Status: approved
 
 ## Goal
 Open Phinas to the user's friends. Today the backend assumes exactly two accounts: every signed-in user can read every playlist and like, and "partner" means "the other profile". This sub-project replaces that with invite-only registration, a friend graph with an optional mutual partner, per-playlist visibility, server-enforced Listen Together permissions, and the tables an admin panel needs.
@@ -54,7 +54,11 @@ The app calls `auth.signUp` with `data: { display_name, invite_code, accepted_te
 3. Locks the invite row and rejects with `invite_invalid`, `invite_used`, `invite_expired` or `invite_revoked`.
 4. Creates the profile (unique `friend_code`, `accepted_terms_at = now()`, `invited_by`), marks the code used, and inserts an accepted friendship with the code's creator.
 
-Any rejection raises an exception, so the auth user is not created. Error codes are carried in the exception message as `phinas:<code>` and mapped to Indonesian text in the app.
+Any rejection raises an exception, so the auth user is not created. Supabase Auth hides trigger messages behind a generic "Database error saving new user", so the app first calls `check_invite(code)` (callable by `anon`, returns `ok` or an error code) to show a precise message. The trigger stays the real gate.
+
+Bootstrap: when `profiles` is empty, the first sign-up needs no invite and becomes `admin`. This serves fresh projects and the tests.
+
+RPC errors are raised as `phinas:<code>` and mapped to Indonesian text in the app.
 
 ## Access rules
 Helpers (SQL, `stable`, `security definer` where needed): `is_active(uid)`, `is_admin()`, `are_friends(a, b)`, `is_partner(a, b)`, `config(key)`.
@@ -63,26 +67,26 @@ Every policy also requires the caller to be active. A disabled account can read 
 
 | Table | Read | Write |
 |---|---|---|
-| `profiles` | self, friends, owners of public playlists (display name only, through a view) | self: `display_name`, `listen_scope`; never `role`/`disabled` |
+| `profiles` (`id`, `display_name` columns only) | self, friends, owners of public playlists | none; use `update_my_profile()` |
 | `playlists`, `playlist_tracks` | own; `friends` → friends; `public` → all active users | own |
 | `liked_tracks` | self, friends | own |
 | `friendships` | rows that include the caller | RPC only |
 | `invite_codes` | codes the caller created | RPC only |
 | `app_config` | all active users | admin RPC only |
 
-Column protection on `profiles` uses a `before update` trigger that rejects changes to `role`, `disabled`, `friend_code`, `invited_by`, `accepted_terms_at` unless the caller is an admin RPC.
+Column protection on `profiles`: `authenticated` gets `select (id, display_name)` only and no insert, update or delete. A user reads their full row through `my_profile()` (allowed even when disabled, so the app can say so) and changes name or scope through `update_my_profile()`. `role` and `disabled` change only through admin RPCs or the SQL editor.
 
 ### RPCs
 User: `create_invite()` (quota is a lifetime limit: used codes plus still-open codes count; expired or revoked unused codes do not), `revoke_invite(code)`, `send_friend_request(friend_code)`, `respond_friend_request(id, accept)`, `remove_friend(id)`, `request_partner(friendship_id)`, `respond_partner(friendship_id, accept)`, `end_partner(friendship_id)`, `delete_my_account()`.
 
-Admin (all check `is_admin()`): `admin_list_users()` (joins `auth.users` for email, created and last sign-in times, invited_by, disabled, role), `admin_set_disabled(uid, bool)`, `admin_set_config(key, value)`, `admin_create_invite()`, `admin_list_invites()`.
+Admin (all check `is_admin()`): `admin_list_users()` (joins `auth.users` for email, created and last sign-in times, invited_by, disabled, role), `admin_set_disabled(uid, bool)`, `admin_set_config(key, value)`, `admin_list_invites()`. Admins create codes with the normal `create_invite()`, which skips the quota for them.
 
-Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`.
+Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`, `not_signed_in`, `request_not_found`, `name_invalid`, `self_disable`, `config_unknown`, `signup_failed` (the generic Auth error).
 
 ## Listen Together channels
 - Session channel: `pair:<uuidA>:<uuidB>` (sorted ids), `private: true`.
 - Presence channel: `presence:<uid>`, `private: true`, one per user; friends join it to see who is online.
-- RLS on `realtime.messages` (Supabase Realtime Authorization) checks `realtime.topic()`:
+- RLS on `realtime.messages` (Supabase Realtime Authorization) calls `can_join_topic(realtime.topic())`, a plain SQL function that the tests exercise directly. The policy migration is skipped with a notice when `realtime.messages` does not exist (a local stack without Realtime):
   - `pair:*`: global switch on, caller is one of the two ids, both active, friends, and both `listen_scope` values allow it (`friends` → any friend, `partner` → partner only, `off` → nobody).
   - `presence:*`: caller is the owner or an active friend of the owner.
 - Join is checked when a channel subscribes. If the switch or a scope changes during a session, the open channel may keep working, so the app re-reads `app_config` and the friend's `canListen` before each session starts and ends a session that is no longer allowed. New joins are always blocked by the server.
@@ -94,7 +98,7 @@ Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`
 - Friends: `listFriends()` → `{ id, name, isPartner, online, canListen }[]`, `listFriendRequests()`, `sendFriendRequest(code)`, `respondFriendRequest(id, accept)`, `removeFriend(id)`, `requestPartner(id)`, `respondPartner(id, accept)`, `endPartner(id)`.
 - Invites: `listMyInvites()`, `createInvite()`, `revokeInvite(code)`.
 - `getConfig()`, `setListenScope(scope)`, `deleteAccount()`, `myProfile()` (includes `friendCode`).
-- `pairInfo()` is removed. `listPartnerPlaylists()` becomes `listFriendPlaylists(friendId?)` and `listPublicPlaylists()`, both returning `ownerId`, `ownerName`, `visibility`.
+- `pairInfo()` now returns the partner (when `canListen`) instead of "the other profile". The remote gains `listFriendPlaylists(friendId?)` and `listPublicPlaylists()`, both returning `ownerId`, `ownerName`, `visibility`. The IPC name `listPartnerPlaylists` stays as a bridge (the partner's playlists) and is renamed in C.
 
 **Local library**
 - Migration adds `visibility` to local playlists (default `friends`); upsert sends it.
