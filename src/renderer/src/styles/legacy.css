@@ -1,3 +1,5 @@
+@keyframes ambient-in { from { opacity: 0; } to { opacity: var(--ambient-opacity); } }
+
 /* Pre-redesign rules still in use. Each redesign task prunes its area (scripts/prune-legacy-css.mjs); the file is deleted in Task 14. */
 
 /* ---------- layout ---------- */

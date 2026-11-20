@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, Notification, session, shell } from 'electron'
+import { app, BrowserWindow, globalShortcut, ipcMain, nativeTheme, Notification, session, shell } from 'electron'
 import icon from '../../build/icon.png?asset'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,7 +34,7 @@ function createWindow(): BrowserWindow {
     minHeight: 600,
     // Screenshot runs (dev helper) stay hidden so they never steal keystrokes from the real app.
     show: !process.env['PHINAS_SHOT'],
-    backgroundColor: '#000000',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1714' : '#f4efe6',
     title: 'Phinas',
     // Windows and Linux: no File/Edit/View bar (Alt shows it); F11 still toggles fullscreen.
     autoHideMenuBar: true,

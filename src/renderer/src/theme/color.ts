@@ -102,8 +102,8 @@ export const PAPER: Record<Tone, Rgb> = { day: hex('#f4efe6'), night: hex('#1c17
 export const INK: Record<Tone, Rgb> = { day: hex('#2a2420'), night: hex('#efe4d4') }
 /** The wash colour when nothing is playing and no mood is set. */
 export const TERRACOTTA: Rgb = hex('#e7a46c')
-/** The accent when nothing is playing and no mood is set. */
-export const FALLBACK_ACCENT: Record<Tone, Rgb> = { day: hex('#9c4526'), night: hex('#e7a46c') }
+/** The accent when nothing is playing and no mood is set (4.5:1 on the paper and on the terracotta wash). */
+export const FALLBACK_ACCENT: Record<Tone, Rgb> = { day: hex('#9c4526'), night: hex('#e8a770') }
 /** WCAG AA for normal text. */
 export const MIN_CONTRAST = 4.5
 /** How much of the source colour goes into the page wash. */
@@ -138,18 +138,21 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 }
 
 /**
- * The source colour made readable on the mode's paper (at least 4.5:1), keeping its hue and
- * saturation: darkened step by step for Siang, lightened for Malam.
+ * The source colour made readable (at least 4.5:1) on both the mode's paper and its wash,
+ * since accent text sits on the wash at the top of pages. Keeps hue and saturation: darkened
+ * step by step for Siang, lightened for Malam.
  */
 export function accentFor(source: Rgb, tone: Tone): Rgb {
   const paper = PAPER[tone]
-  if (contrastRatio(source, paper) >= MIN_CONTRAST) return source
+  const wash = washFor(source, tone)
+  const readable = (c: Rgb): boolean => Math.min(contrastRatio(c, paper), contrastRatio(c, wash)) >= MIN_CONTRAST
+  if (readable(source)) return source
   const { h, s, l } = rgbToHsl(source)
   for (let i = 1; i <= 100; i++) {
     const x = tone === 'day' ? l - i / 100 : l + i / 100
     if (x < 0 || x > 1) break
     const c = hslToRgb(h, s, x)
-    if (contrastRatio(c, paper) >= MIN_CONTRAST) return c
+    if (readable(c)) return c
   }
   return tone === 'day' ? { r: 0, g: 0, b: 0 } : WHITE
 }

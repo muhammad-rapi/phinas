@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DEFAULT_ACCENT, dominantColor, paletteFor, parseHex, type Rgb } from './color'
 import { DARK_QUERY, browserStorage, readMode, resolveMode, writeMode, type ResolvedTheme, type ThemeMode } from './mode'
 
@@ -67,8 +67,8 @@ export function useTheme(coverData: string | null, moodAccent: string | null): T
 
   const resolved = resolveMode(mode, systemDark)
   const source = (moodAccent ? parseHex(moodAccent) : null) ?? coverColor
-  const palette = paletteFor(source, resolved)
-  const notch = paletteFor(source, 'night')
+  const palette = useMemo(() => paletteFor(source, resolved), [source, resolved])
+  const notch = useMemo(() => paletteFor(source, 'night'), [source])
 
   useEffect(() => {
     const root = document.documentElement

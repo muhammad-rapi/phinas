@@ -127,8 +127,18 @@ describe('accentFor', () => {
     const blue = parseHex('#2f6db5')!
     expect(luminance(accentFor(blue, 'night'))).toBeGreaterThan(luminance(blue))
   })
+  test('every output also reaches 4.5:1 on its wash', () => {
+    for (const tone of TONES) {
+      for (const s of SOURCES) expect(contrastRatio(accentFor(s, tone), washFor(s, tone))).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+  test('the fallback accents read on the terracotta wash', () => {
+    for (const tone of TONES) {
+      expect(contrastRatio(FALLBACK_ACCENT[tone], washFor(TERRACOTTA, tone))).toBeGreaterThanOrEqual(4.5)
+    }
+  })
   test('leaves a source that already passes unchanged', () => {
-    expect(accentFor({ r: 0, g: 0, b: 255 }, 'day')).toEqual({ r: 0, g: 0, b: 255 })
+    expect(accentFor({ r: 26, g: 26, b: 64 }, 'day')).toEqual({ r: 26, g: 26, b: 64 })
   })
 })
 
@@ -164,7 +174,7 @@ describe('onAccent', () => {
 describe('paletteFor', () => {
   test('without a source: the terracotta defaults', () => {
     expect(paletteFor(null, 'day')).toEqual({ accent: '#9c4526', onAccent: '#ffffff', wash: '#f1dcc8' })
-    expect(paletteFor(null, 'night')).toEqual({ accent: '#e7a46c', onAccent: '#1c1714', wash: '#59412e' })
+    expect(paletteFor(null, 'night')).toEqual({ accent: '#e8a770', onAccent: '#1c1714', wash: '#59412e' })
   })
   test('with a source: hex strings built from that source', () => {
     const p = paletteFor(parseHex('#2f6db5'), 'day')

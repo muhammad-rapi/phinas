@@ -5,6 +5,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const file = fileURLToPath(new URL('../src/renderer/src/styles/legacy.css', import.meta.url))
+if (!process.argv[2]) {
+  console.error("prune-legacy-css: missing regex argument. Usage: node scripts/prune-legacy-css.mjs '<regex>'")
+  process.exit(1)
+}
 const re = new RegExp(process.argv[2])
 const css = readFileSync(file, 'utf8')
 const out = []
@@ -18,7 +22,9 @@ while (i < css.length) {
     continue
   }
   if (css.startsWith('/*', i)) {
-    const end = css.indexOf('*/', i) + 2
+    const close = css.indexOf('*/', i)
+    // An unterminated comment runs to the end of the file.
+    const end = close === -1 ? css.length : close + 2
     out.push(css.slice(i, end))
     i = end
     continue

@@ -44,10 +44,10 @@ Type scale: page title 44 px serif (line-height 0.95), section title 18 px serif
 
 ### Dynamic colour
 Source: the current cover's dominant colour (`dominantColor` in `theme/color.ts`, existing) or the active mood's colour (existing `moodColors`), the mood winning while set.
-- `--accent`: the source colour adjusted to a contrast ratio of at least 4.5:1 against `--paper` (darkened for Siang, lightened for Malam), keeping its hue.
+- `--accent`: the source colour adjusted to a contrast ratio of at least 4.5:1 against `--paper` and `--wash` (darkened for Siang, lightened for Malam), keeping its hue.
 - `--on-accent`: `#fff` or `--paper`, whichever has the higher contrast on `--accent`.
 - `--wash`: the source colour mixed into the paper, 25% for Siang and 30% for Malam. Pages use `background: linear-gradient(180deg, var(--wash) 0%, var(--paper) 45%)`.
-- Without a source: accent `#9c4526` (Siang) / `#e7a46c` (Malam), wash from the same terracotta.
+- Without a source: accent `#9c4526` (Siang) / `#e8a770` (Malam), wash from the same terracotta.
 - Changes animate over 600 ms (`transition` on the custom properties registered with `@property`).
 - New pure functions in `theme/color.ts`: `contrastRatio(a, b)`, `accentFor(source, mode)`, `washFor(source, mode)`, `onAccent(accent)`. They replace `accentVars`.
 
