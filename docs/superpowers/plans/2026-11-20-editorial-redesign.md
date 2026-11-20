@@ -2712,7 +2712,9 @@ import { dayPart, homeLabel } from '../src/renderer/src/screens/home/dayPart'
 
 describe('dayPart', () => {
   test.each<[number, string]>([
-    [0, 'pagi'],
+    [0, 'malam'],
+    [3, 'malam'],
+    [4, 'pagi'],
     [10, 'pagi'],
     [11, 'siang'],
     [14, 'siang'],
@@ -2804,8 +2806,9 @@ export type DayPart = 'pagi' | 'siang' | 'sore' | 'malam'
 
 const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
-/** Pagi before 11, siang before 15, sore before 18, malam otherwise. */
+/** Malam before 4, pagi before 11, siang before 15, sore before 18, malam otherwise. */
 export function dayPart(hour: number): DayPart {
+  if (hour < 4) return 'malam'
   if (hour < 11) return 'pagi'
   if (hour < 15) return 'siang'
   if (hour < 18) return 'sore'

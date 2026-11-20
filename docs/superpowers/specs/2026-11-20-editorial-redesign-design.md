@@ -74,7 +74,7 @@ The blurred cover background (`.ambient`) and all glass variables (`--glass`, `-
 
 ## 3. Home
 Top to bottom, all on the page wash:
-1. **Label:** `{HARI} {BAGIAN HARI} · UNTUK {NAMA}` (e.g. `KAMIS SORE · UNTUK RAFI`), in `--accent`. Day part: pagi < 11, siang < 15, sore < 18, malam otherwise. Name from the local profile name; without one, `UNTUKMU`.
+1. **Label:** `{HARI} {BAGIAN HARI} · UNTUK {NAMA}` (e.g. `KAMIS SORE · UNTUK RAFI`), in `--accent`. Day part: malam < 4, pagi < 11, siang < 15, sore < 18, malam otherwise. Name from the local profile name; without one, `UNTUKMU`.
 2. **Cover story:** 170 px cover with a soft shadow, beside it a 44 px serif title "Lanjutkan" and, on the next line, the track title in italic `--accent` followed by a period; then the artist and a ▶ Putar button. (Tracks carry no album, so no album line.) Uses the existing `continueTrack(current, recent)`. Current track: the button toggles play/pause and reads "Jeda" while playing. Otherwise it plays the recent list from that track. With no current track and no history: title "Mulai dari *sini.*", text "Cari lagu atau buka Jelajah", buttons Cari (focuses the search box) and Jelajah.
 3. **Berdua line** (between two `--line` rules), only when signed in with a partner: online dot, partner name, "sedang online" or "offline", and on the right the Listen Together action of the current state (Ajak dengar bareng / Batalkan / Terima · Tolak / Akhiri), as a text link in `--accent`. Clicking the name opens Berdua. Not shown otherwise.
 4. **Two lists side by side** (one column when the content is narrower than 760 px):
