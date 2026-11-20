@@ -1,3 +1,4 @@
+import { Ban, Heart, Monitor, Moon, Sun, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { friendlyError } from '../../../shared/errors'
 import type { ListenScope, SyncStatus } from '../../../shared/types'
@@ -8,16 +9,16 @@ import type { ThemeMode } from '../theme/mode'
 import { useUpdate } from '../update/useUpdate'
 import type { Nav } from '../views'
 
-const THEMES: { id: ThemeMode; label: string; hint: string }[] = [
-  { id: 'system', label: 'Ikuti sistem', hint: 'Siang atau malam mengikuti komputer' },
-  { id: 'day', label: 'Siang', hint: 'Kertas terang' },
-  { id: 'night', label: 'Malam', hint: 'Tinta gelap' }
+const THEMES: { id: ThemeMode; label: string; hint: string; icon: LucideIcon }[] = [
+  { id: 'system', label: 'Ikuti sistem', hint: 'Siang atau malam mengikuti komputer', icon: Monitor },
+  { id: 'day', label: 'Siang', hint: 'Kertas terang', icon: Sun },
+  { id: 'night', label: 'Malam', hint: 'Tinta gelap', icon: Moon }
 ]
 
-const SCOPES: { id: ListenScope; label: string; hint: string }[] = [
-  { id: 'friends', label: 'Semua teman', hint: 'Teman mana pun yang online' },
-  { id: 'partner', label: 'Pasangan saja', hint: 'Hanya pasanganmu' },
-  { id: 'off', label: 'Tidak ada', hint: 'Tidak ada yang bisa mengajak' }
+const SCOPES: { id: ListenScope; label: string; hint: string; icon: LucideIcon }[] = [
+  { id: 'friends', label: 'Semua teman', hint: 'Teman mana pun yang online', icon: Users },
+  { id: 'partner', label: 'Pasangan saja', hint: 'Hanya pasanganmu', icon: Heart },
+  { id: 'off', label: 'Tidak ada', hint: 'Tidak ada yang bisa mengajak', icon: Ban }
 ]
 
 /** Typing pauses this long before the name goes to the server. */
@@ -173,6 +174,9 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
               className={`pf-theme${theme === t.id ? ' active' : ''}`}
               onClick={() => onTheme(t.id)}
             >
+              <span className="pf-theme-icon" aria-hidden="true">
+                <t.icon size={18} />
+              </span>
               <strong>{t.label}</strong>
               <span className="small">{t.hint}</span>
             </button>
@@ -195,6 +199,9 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
                   disabled={social.offline || !social.me || savingScope}
                   onClick={() => void changeScope(s.id)}
                 >
+                  <span className="pf-theme-icon" aria-hidden="true">
+                    <s.icon size={18} />
+                  </span>
                   <strong>{s.label}</strong>
                   <span className="small">{s.hint}</span>
                 </button>

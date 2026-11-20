@@ -4,6 +4,7 @@ import type { Track } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
 import { ArtistLinks } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
+import { coverStyle } from './cover'
 
 export const formatTime = (s: number): string =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
@@ -63,7 +64,7 @@ export function TrackRow({ track, index, onPlay, onRemove }: Props): React.JSX.E
         {isCurrent ? <Play size={12} fill="currentColor" aria-hidden="true" /> : index !== undefined ? index + 1 : ''}
       </button>
       <div className="tl-main">
-        <span className="tl-cover" style={track.coverUrl ? { backgroundImage: `url("${track.coverUrl}")` } : undefined} aria-hidden="true" />
+        <span className="tl-cover cover-bg" style={coverStyle(track.coverUrl)} aria-hidden="true" />
         <div className="tl-meta">
           <span className="tl-title">{track.title}</span>
           <ArtistLinks className="tl-artist" artist={track.artist} />

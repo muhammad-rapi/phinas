@@ -12,6 +12,7 @@ import type { Nav } from '../views'
 import { continueTrack } from './home/continue'
 import { homeLabel } from './home/dayPart'
 import { forYouList, trendingList } from './home/lists'
+import { coverStyle } from '../components/cover'
 
 /** The big top block: continue the loaded or last-played track, or a way to start. */
 function CoverStory({ recent, nav }: { recent: Track[] | null; nav: Nav }): React.JSX.Element {
@@ -48,7 +49,7 @@ function CoverStory({ recent, nav }: { recent: Track[] | null; nav: Nav }): Reac
   const playing = isCurrent && player.playing
   return (
     <div className="story">
-      <div className="story-cover" style={{ backgroundImage: `url("${track.coverUrl}")` }} />
+      <div className="story-cover cover-bg" style={coverStyle(track.coverUrl)} />
       <div className="story-text">
         <h1 className="story-title">
           Lanjutkan

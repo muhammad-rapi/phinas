@@ -1,5 +1,5 @@
 import { Innertube } from 'youtubei.js'
-import type { ArtistDetail, Genre, GenrePage, HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
+import type { ArtistDetail, ArtistHit, Genre, GenrePage, HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
 import { fillAlbumTrack, mapGenreButton, mapGenrePlaylist, mapNewRelease, mapVideoCard, mapPanelItem, mapPlaylistItem, mapReleaseItem, mapSongItem, sectionTracks, upsizeCover, type RawPanelItem, type RawPlaylistItem, type RawSection, type RawSong, type RawTwoRowItem } from './mapper'
 
 export interface MusicSource {
@@ -8,6 +8,8 @@ export interface MusicSource {
   getStreamUrl(videoId: string, fresh?: boolean): Promise<string>
   getHomeFeed(): Promise<HomeFeed>
   searchPlaylists(query: string): Promise<PublicPlaylist[]>
+  /** Artists matching the search text, best first (YouTube Music's artist results). */
+  searchArtists(query: string): Promise<ArtistHit[]>
   getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
   /** Songs that follow `videoId` on YouTube Music (up next plus related), best first. */
   getRelated(videoId: string): Promise<Track[]>
@@ -68,6 +70,23 @@ export class YoutubeMusicSource implements MusicSource {
     const res = await yt.music.search(query, { type: 'song' })
     const items = (res.songs?.contents ?? []) as unknown as RawSong[]
     return items.map(mapSongItem).filter((t): t is Track => t !== null)
+  }
+
+  async searchArtists(query: string): Promise<ArtistHit[]> {
+    const yt = await this.client()
+    const found = await yt.music.search(query, { type: 'artist' })
+    type RawArtist = { id?: string; name?: string; thumbnail?: { contents?: { url: string; width: number }[] } }
+    const items = (found.artists?.contents ?? []) as unknown as RawArtist[]
+    const hits: ArtistHit[] = []
+    for (const a of items) {
+      const name = a.name?.trim()
+      if (!a.id || !name) continue
+      const thumbs = a.thumbnail?.contents ?? []
+      const best = thumbs.reduce<{ url: string; width: number } | null>((x, y) => (!x || y.width > x.width ? y : x), null)
+      hits.push({ id: a.id, name, photoUrl: best ? upsizeCover(best.url) : '' })
+      if (hits.length === 8) break
+    }
+    return hits
   }
 
   async searchPlaylists(query: string): Promise<PublicPlaylist[]> {

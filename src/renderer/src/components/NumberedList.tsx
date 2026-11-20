@@ -1,5 +1,8 @@
 import type { Track } from '../../../shared/types'
+import { ArtistLinks, pressable } from '../nav/NavProvider'
 import { usePlayer } from '../player/PlayerProvider'
+import { formatTime } from './TrackRow'
+import { coverStyle } from './cover'
 
 const num = (i: number): string => String(i + 1).padStart(2, '0')
 
@@ -46,13 +49,16 @@ export function NumberedList({ title, onTitle, tracks, failed, errorText, onPlay
         <ol className="nl-rows">
           {tracks.slice(0, rows).map((t, i) => (
             <li key={`${t.videoId}-${i}`}>
-              <button className={`nl-row${player.track?.videoId === t.videoId ? ' playing' : ''}`} onClick={() => onPlay(i)}>
+              {/* A div acting as a button: it holds artist links, which a <button> cannot. */}
+              <div className={`nl-row press${player.track?.videoId === t.videoId ? ' playing' : ''}`} {...pressable(() => onPlay(i))} aria-label={`Putar ${t.title}`}>
                 <span className="nl-num">{num(i)}</span>
-                <span className="nl-cover" style={t.coverUrl ? { backgroundImage: `url("${t.coverUrl}")` } : undefined} />
+                <span className="nl-cover cover-bg" style={coverStyle(t.coverUrl)} />
                 <span className="nl-text">
-                  {t.title} <span className="nl-artist">— {t.artist}</span>
+                  <span className="nl-title">{t.title}</span>
+                  <ArtistLinks className="nl-artist" artist={t.artist} />
                 </span>
-              </button>
+                <span className="nl-time">{t.durationSec > 0 ? formatTime(t.durationSec) : ''}</span>
+              </div>
             </li>
           ))}
         </ol>

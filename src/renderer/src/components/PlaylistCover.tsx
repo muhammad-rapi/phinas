@@ -1,4 +1,5 @@
 import { Music } from 'lucide-react'
+import { coverStyle } from './cover'
 
 /** Playlist thumbnail: one cover, a 2x2 collage, or a placeholder when empty. */
 export function PlaylistCover({
@@ -17,12 +18,12 @@ export function PlaylistCover({
     )
   }
   if (covers.length < 4) {
-    return <div className="pcover" style={{ ...style, backgroundImage: `url("${covers[0]}")` }} />
+    return <div className="pcover cover-bg" style={{ ...style, ...coverStyle(covers[0]) }} />
   }
   return (
     <div className="pcover pcover-grid" style={style}>
       {covers.slice(0, 4).map((c, i) => (
-        <div key={i} style={{ backgroundImage: `url("${c}")` }} />
+        <div key={i} className="cover-bg" style={coverStyle(c)} />
       ))}
     </div>
   )

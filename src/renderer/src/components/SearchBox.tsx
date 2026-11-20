@@ -2,6 +2,7 @@ import { Clock, Search, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Track } from "../../../shared/types";
 import { entryKey, type RecentEntry } from "../search/recent";
+import { coverStyle } from './cover'
 
 interface Props {
   query: string;
@@ -93,8 +94,8 @@ export function SearchBox({
                 {r.kind === "track" ? (
                   <>
                     <span
-                      className="search-thumb"
-                      style={{ backgroundImage: `url("${r.track.coverUrl}")` }}
+                      className="search-thumb cover-bg"
+                      style={coverStyle(r.track.coverUrl)}
                       aria-hidden="true"
                     />
                     <span className="search-text">

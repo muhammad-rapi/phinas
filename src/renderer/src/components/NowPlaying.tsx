@@ -5,6 +5,7 @@ import { useListen } from '../sync/ListenTogetherProvider'
 import { liveLabel } from '../sync/status'
 import { LyricsPanel } from './LyricsPanel'
 import { ArtistLinks, pressable } from '../nav/NavProvider'
+import { coverStyle } from './cover'
 
 type Tab = 'lyrics' | 'queue'
 
@@ -56,7 +57,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
       </div>
 
       <div className="panel-now">
-        <span className="panel-thumb" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+        <span className="panel-thumb cover-bg" style={coverStyle(p.track.coverUrl)} />
         <span className="panel-text">
           <strong>{p.track.title}</strong>
           <ArtistLinks artist={p.track.artist} />
@@ -76,7 +77,7 @@ export function NowPlaying({ onExpandLyrics }: { onExpandLyrics: () => void }): 
             {upcoming.length === 0 && <p className="muted small">Antrean kosong</p>}
             {upcoming.map((t, i) => (
               <div key={`${t.videoId}-${i}`} className="panel-row press" {...pressable(() => p.jump(p.queue.index + 1 + i))}>
-                <span className="panel-thumb small" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
+                <span className="panel-thumb small cover-bg" style={coverStyle(t.coverUrl)} />
                 <span className="panel-text">
                   <strong>{t.title}</strong>
                   <ArtistLinks artist={t.artist} />

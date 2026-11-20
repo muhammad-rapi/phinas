@@ -20,6 +20,7 @@ import { usePlayer } from '../player/PlayerProvider'
 import { ListenButton } from './ListenTogether'
 import { formatTime } from './TrackRow'
 import { ArtistLinks, pressable } from '../nav/NavProvider'
+import { coverStyle } from './cover'
 
 const pct = (value: number, max: number): CSSProperties =>
   ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties
@@ -71,7 +72,7 @@ export function PlayerBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; on
         {p.track && (
           <>
             <div className="player-open press" {...pressable(onTogglePanel)} aria-pressed={panelOpen} aria-label="Tampilkan panel sedang diputar">
-              <span className="player-cover" style={{ backgroundImage: `url("${p.track.coverUrl}")` }} />
+              <span className="player-cover cover-bg" style={coverStyle(p.track.coverUrl)} />
               <span className="player-info">
                 <span className="player-title">{p.track.title}</span>
                 <ArtistLinks className="player-artist" artist={p.track.artist} />

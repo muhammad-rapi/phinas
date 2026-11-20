@@ -12,12 +12,16 @@
 .pf-sec p { color: var(--ink-soft); }
 .pf-sec p strong { color: var(--ink); }
 /* Ikuti sistem / Siang / Malam */
-.pf-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
-.pf-theme { flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px 12px 0; border-bottom: 1px solid var(--line); text-align: left; }
-.pf-theme strong { font-family: var(--sans); font-size: var(--fs-lg); font-weight: 600; }
-.pf-theme.active strong, .pf-theme:hover strong { color: var(--accent); }
-.pf-theme.active strong { }
+/* Ikuti sistem / Siang / Malam and the listen scope: three cards with an icon each. */
+.pf-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pf-theme { flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; text-align: left; transition: border-color 0.15s, background 0.15s; }
+.pf-theme:hover:not(:disabled) { border-color: var(--ink-faint); }
+.pf-theme-icon { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink-soft); }
+.pf-theme strong { font-size: var(--fs-md); font-weight: 600; }
 .pf-theme .small { color: var(--ink-soft); }
+.pf-theme.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pf-theme.active strong { color: var(--accent); }
+.pf-theme.active .pf-theme-icon { background: var(--accent); color: var(--on-accent); }
 .pf-check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
 .pf-check input { margin-top: 3px; accent-color: var(--accent); }
 .pf-row { display: flex; flex-wrap: wrap; gap: 8px; }

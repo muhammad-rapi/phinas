@@ -101,3 +101,13 @@
 .best-meta { font-size: var(--fs-base); color: var(--ink-soft); }
 .best-play { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; pointer-events: none; }
 .search-songs .tl-row { padding: 8px 0; }
+
+/* ---------- Cari: artists as round photos ---------- */
+.artist-row { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 8px; }
+.artist-card { flex-direction: column; align-items: center; gap: 4px; flex: 0 0 132px; min-width: 0; text-align: center; }
+.artist-photo { display: grid; place-items: center; width: 120px; height: 120px; margin-bottom: 8px; border-radius: 50%; color: var(--ink-faint); transition: transform 0.2s; }
+.artist-photo:has(svg) { background-image: none !important; }
+.artist-card:hover .artist-photo { transform: scale(1.04); }
+.artist-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-base); font-weight: 600; }
+.artist-card:hover .artist-name { color: var(--accent); }
+.artist-kind { font-size: var(--fs-sm); color: var(--ink-soft); }

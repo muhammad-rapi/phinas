@@ -1,4 +1,4 @@
-import type { AppConfig, ArtistDetail, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenClosedEvent, ListenConnectionEvent, ListenMessageEvent, ListenPresenceEvent, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
+import type { AppConfig, ArtistDetail, ArtistHit, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenClosedEvent, ListenConnectionEvent, ListenMessageEvent, ListenPresenceEvent, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
 import type { LegalPage } from './links'
 import type { SyncMessage } from './sync/protocol'
 
@@ -7,6 +7,8 @@ export interface PhinasApi {
   getHomeFeed(): Promise<HomeFeed>
   /** Public playlists matching the search text. */
   searchPlaylists(query: string): Promise<PublicPlaylist[]>
+  /** Artists matching the search text, with photos. */
+  searchArtists(query: string): Promise<ArtistHit[]>
   /** One public playlist with its songs (the first page, about 100). */
   getPublicPlaylist(id: string): Promise<PublicPlaylistDetail>
   /** The app update status (current version, newer version if any). */
@@ -158,6 +160,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   search: true,
   getHomeFeed: true,
   searchPlaylists: true,
+  searchArtists: true,
   getPublicPlaylist: true,
   getUpdateStatus: true,
   checkForUpdate: true,

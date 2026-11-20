@@ -12,6 +12,7 @@ import type { Nav } from '../views'
 const FEED_ERROR = 'Tidak bisa memuat bagian ini. Cek koneksi internetmu.'
 
 import { genreIcon } from '../theme/genreIcon'
+import { coverStyle } from '../components/cover'
 
 /** A mood or genre pill with its icon. */
 function GenrePill({ title, onOpen }: { title: string; onOpen: () => void }): React.JSX.Element {
@@ -43,7 +44,7 @@ function RankedRows({ tracks, onPlay }: { tracks: Track[]; onPlay: (index: numbe
             >
               {String(i + 1).padStart(2, '0')}
             </button>
-            <span className="ex-thumb" style={{ backgroundImage: `url("${t.coverUrl}")` }} />
+            <span className="ex-thumb cover-bg" style={coverStyle(t.coverUrl)} />
             <span className="ex-text">
               <span className="ex-title">{t.title}</span>
               <ArtistLinks className="ex-artist" artist={t.artist} />
@@ -203,7 +204,7 @@ export function Explore({ nav }: { nav: Nav }): React.JSX.Element {
             {artists.map((a) => (
               <li key={a.artist}>
                 <button className="ex-row" onClick={() => nav({ name: 'artist', id: a.artist })} aria-label={`Buka ${a.artist}`}>
-                  <span className="ex-thumb round" style={{ backgroundImage: `url("${a.coverUrl}")` }} />
+                  <span className="ex-thumb round cover-bg" style={coverStyle(a.coverUrl)} />
                   <span className="ex-text">
                     <span className="ex-title">{a.artist}</span>
                     <span className="ex-artist">{a.plays} kali diputar</span>

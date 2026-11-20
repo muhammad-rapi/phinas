@@ -6,6 +6,7 @@ import { TrackListHead, TrackRow } from '../components/TrackRow'
 import { useLibrary } from '../library/LibraryProvider'
 import { usePlayer } from '../player/PlayerProvider'
 import type { Nav } from '../views'
+import { coverStyle } from '../components/cover'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; playlist: PublicPlaylistDetail }
 
@@ -55,7 +56,7 @@ export function PublicPlaylistView({ id, author, album = false, nav }: Props): R
   return (
     <>
       <CollectionHeader
-        cover={<div className="pcover" style={{ backgroundImage: `url("${pl.coverUrl}")` }} />}
+        cover={<div className="pcover cover-bg" style={coverStyle(pl.coverUrl)} />}
         kind={album ? `Album · ${pl.author}` : `Playlist dari ${author ?? pl.author}`}
         title={pl.title}
         meta={`${pl.tracks.length} lagu`}

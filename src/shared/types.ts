@@ -30,6 +30,13 @@ export interface PublicPlaylistDetail extends PublicPlaylist {
 }
 
 /** An artist page from YouTube Music. */
+/** One artist from a search, with a photo. */
+export interface ArtistHit {
+  id: string
+  name: string
+  photoUrl: string
+}
+
 export interface ArtistDetail {
   id: string
   name: string

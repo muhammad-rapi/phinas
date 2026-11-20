@@ -111,6 +111,7 @@ export function createHandlers(d: Deps): PhinasApi {
     search: (q) => d.source.search(q),
     getHomeFeed: () => d.source.getHomeFeed(),
     searchPlaylists: (q) => d.source.searchPlaylists(q),
+    searchArtists: (q) => d.source.searchArtists(q),
     getPublicPlaylist: (id) => d.source.getPublicPlaylist(id),
     getUpdateStatus: async () => d.updater.status(),
     checkForUpdate: () => d.updater.check(),
