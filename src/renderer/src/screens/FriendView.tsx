@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { friendlyError } from '../../../shared/errors'
 import type { PartnerPlaylist } from '../../../shared/types'
+import { Avatar } from '../components/Avatar'
 import { CollectionHeader } from '../components/CollectionHeader'
 import { CoverGrid, CoverGridSkeleton } from '../components/CoverGrid'
 import { PlaylistCover } from '../components/PlaylistCover'
@@ -106,9 +107,7 @@ export function FriendView({ id, nav }: { id: string; nav: Nav }): React.JSX.Ele
     <>
       <CollectionHeader
         cover={
-          <div className="fr-avatar" aria-hidden="true">
-            {(friend.name.trim()[0] ?? '?').toUpperCase()}
-          </div>
+          <Avatar className="fr-avatar" name={friend.name} src={friend.avatar} />
         }
         kind={friend.isPartner ? 'Pasangan' : 'Teman'}
         title={friend.name}

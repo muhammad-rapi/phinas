@@ -53,6 +53,8 @@ export interface PhinasApi {
   myProfile(): Promise<MyProfile | null>
   /** Null leaves a field unchanged. */
   updateMyProfile(displayName: string | null, listenScope: ListenScope | null): Promise<void>
+  /** Sets the profile photo (a small JPEG data URL) or removes it with null. */
+  setMyAvatar(avatar: string | null): Promise<void>
   /** Null when not signed in. Falls back to the cache offline. */
   getConfig(): Promise<AppConfig | null>
   /** Accepted friends, partner first. Falls back to the cache offline. */
@@ -190,6 +192,7 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   syncSignUp: true,
   myProfile: true,
   updateMyProfile: true,
+  setMyAvatar: true,
   getConfig: true,
   listFriends: true,
   listFriendRequests: true,

@@ -120,6 +120,8 @@ export interface MyProfile {
   listenScope: ListenScope
   /** Codes I can still create; null for admins (no limit). */
   invitesLeft: number | null
+  /** Profile photo as a small JPEG data URL, or null. */
+  avatar?: string | null
 }
 
 export interface Friend {
@@ -131,6 +133,8 @@ export interface Friend {
   partnerRequest: 'incoming' | 'outgoing' | null
   /** Both scopes and the global switch allow Listen Together. */
   canListen: boolean
+  /** Profile photo as a small JPEG data URL, or null. */
+  avatar?: string | null
 }
 
 export interface FriendRequest {

@@ -27,3 +27,13 @@
 .pf-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .pf-form { display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
 .pf-code { user-select: text; }
+
+/* ---------- profile photo ---------- */
+
+.pf-photo { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; }
+.pf-avatar-btn { position: relative; border-radius: 50%; }
+.pf-avatar-edit { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff; opacity: 0; transition: opacity 0.15s; }
+.pf-avatar-btn:hover .pf-avatar-edit, .pf-avatar-btn:focus-visible .pf-avatar-edit { opacity: 1; }
+.pf-avatar-btn:disabled { cursor: progress; }
+.pf-photo-remove { font-size: var(--fs-sm); }
+.fr-mini { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: var(--fs-sm); font-weight: 600; }

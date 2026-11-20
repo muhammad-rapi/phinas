@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { friendlyError } from '../../../shared/errors'
 import type { Friend, InviteCode } from '../../../shared/types'
 import { AuthForm, type AuthMode } from '../components/AuthForm'
+import { Avatar } from '../components/Avatar'
 import { useSocial } from '../social/SocialProvider'
 import { friendStatusText, inviteState, inviteText } from '../social/text'
 import { useListen } from '../sync/ListenTogetherProvider'
@@ -200,6 +201,7 @@ function SignedIn({ nav }: { nav: Nav }): React.JSX.Element {
             <div className="fr-row">
               <Heart className="fr-heart" size={13} fill="currentColor" aria-label="Pasangan" />
               <span className={`online-dot${isOnline(partner) ? '' : ' off'}`} aria-hidden="true" />
+              <Avatar className="fr-mini" name={partner.name} src={partner.avatar} />
               <FriendName friend={partner} nav={nav} />
               <span className="fr-status">{friendStatusText(isOnline(partner), withYou(partner))}</span>
               <span className="fr-spacer" />
@@ -276,6 +278,7 @@ function SignedIn({ nav }: { nav: Nav }): React.JSX.Element {
             <li key={f.userId} className="fr-row">
               <span className="fr-num">{num(i)}</span>
               <span className={`online-dot${isOnline(f) ? '' : ' off'}`} aria-hidden="true" />
+              <Avatar className="fr-mini" name={f.name} src={f.avatar} />
               <FriendName friend={f} nav={nav} />
               <span className="fr-status">{friendStatusText(isOnline(f), withYou(f))}</span>
               <span className="fr-spacer" />

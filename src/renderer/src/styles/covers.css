@@ -6,3 +6,5 @@
 .cover-bg.cover-bg {
   background: var(--cover, none) center / cover no-repeat, var(--note) center / 42% no-repeat, color-mix(in srgb, var(--ink) 8%, transparent);
 }
+/* A profile photo fills its circle, whatever background the avatar class sets. */
+.avatar-photo.avatar-photo { background-size: cover; background-position: center; background-repeat: no-repeat; font-size: 0; }

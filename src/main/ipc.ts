@@ -161,6 +161,15 @@ export function createHandlers(d: Deps): PhinasApi {
       const s = await signedIn()
       if (s) await withCache(d.cache, s.uid, 'profile', () => s.r.myProfile())
     },
+    setMyAvatar: async (avatar) => {
+      // Only a JPEG data URL of a sane size goes out; the server checks the same.
+      if (avatar !== null && (typeof avatar !== 'string' || !avatar.startsWith('data:image/jpeg;base64,') || avatar.length > 60000)) {
+        throw new Error('phinas:avatar_invalid')
+      }
+      await requireRemote().setMyAvatar(avatar)
+      const s = await signedIn()
+      if (s) await withCache(d.cache, s.uid, 'profile', () => s.r.myProfile())
+    },
     getConfig: async () => {
       const s = await signedIn()
       return s ? withCache(d.cache, s.uid, 'config', () => s.r.getConfig()) : null

@@ -1,8 +1,10 @@
-import { Ban, Heart, Monitor, Moon, Sun, Users, type LucideIcon } from 'lucide-react'
+import { Ban, Camera, Heart, Monitor, Moon, Sun, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { friendlyError } from '../../../shared/errors'
 import type { ListenScope, SyncStatus } from '../../../shared/types'
+import { Avatar } from '../components/Avatar'
 import { useLibrary } from '../library/LibraryProvider'
+import { toAvatar } from '../profile/avatarImage'
 import { useNotchEnabled } from '../notch/useNotchEnabled'
 import { useSocial } from '../social/SocialProvider'
 import type { ThemeMode } from '../theme/mode'
@@ -74,7 +76,32 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
   }, [])
 
   const shownName = signedIn ? (draft ?? social.me?.displayName ?? '') : name
-  const initial = (shownName.trim()[0] ?? 'K').toUpperCase()
+  const photoInput = useRef<HTMLInputElement>(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const avatar = social.me?.avatar ?? null
+
+  const savePhoto = async (next: string | null): Promise<void> => {
+    setPhotoBusy(true)
+    setPhotoError(null)
+    try {
+      await window.phinas.setMyAvatar(next)
+      await social.refresh()
+    } catch (e) {
+      setPhotoError(friendlyError(e))
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  const pickPhoto = async (file: File | undefined): Promise<void> => {
+    if (!file) return
+    try {
+      await savePhoto(await toAvatar(file))
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : friendlyError(e))
+    }
+  }
 
   const changeName = (value: string): void => {
     if (!signedIn) {
@@ -142,10 +169,47 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
   return (
     <>
       <header className="pf-head">
-        <div className="pf-avatar">{initial}</div>
+        <div className="pf-photo">
+          {signedIn ? (
+            <button
+              className="pf-avatar-btn"
+              onClick={() => photoInput.current?.click()}
+              disabled={photoBusy || !social.me}
+              aria-label={avatar ? 'Ganti foto profil' : 'Pasang foto profil'}
+              title={avatar ? 'Ganti foto' : 'Pasang foto'}
+            >
+              <Avatar className="pf-avatar" name={shownName} src={avatar} />
+              <span className="pf-avatar-edit" aria-hidden="true">
+                <Camera size={18} />
+              </span>
+            </button>
+          ) : (
+            <Avatar className="pf-avatar" name={shownName} />
+          )}
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            hidden
+            onChange={(e) => {
+              void pickPhoto(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+          {signedIn && avatar && (
+            <button className="text-link pf-photo-remove" onClick={() => void savePhoto(null)} disabled={photoBusy}>
+              Hapus foto
+            </button>
+          )}
+        </div>
         <div className="pf-who">
           <span className="label accent">Profil</span>
           <input className="pf-name" value={shownName} maxLength={30} onChange={(e) => changeName(e.target.value)} aria-label="Nama tampilan" disabled={signedIn && !social.me} />
+          {photoError && (
+            <div className="notice" role="alert">
+              {photoError}
+            </div>
+          )}
           {nameError && (
             <div className="notice" role="alert">
               {nameError}

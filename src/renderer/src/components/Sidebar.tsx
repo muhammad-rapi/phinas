@@ -6,6 +6,7 @@ import { groupByOwner, onlineFriends } from '../social/lists'
 import { useSocial } from '../social/SocialProvider'
 import { useListen } from '../sync/ListenTogetherProvider'
 import { sameView, type Nav, type View } from '../views'
+import { Avatar } from './Avatar'
 import { PlaylistCover } from './PlaylistCover'
 import { useMenu } from './useMenu'
 import { sidebarIcon } from './visibility'
@@ -15,8 +16,8 @@ interface Props {
   nav: Nav
   /** The profile name, shown next to the avatar. */
   name: string
-  /** First letter of the profile name, shown in the avatar. */
-  initial: string
+  /** Profile photo (data URL) or null for the first letter of the name. */
+  avatar: string | null
 }
 
 /** At most this many names in the ONLINE group; the rest become "+k lainnya". */
@@ -116,7 +117,7 @@ function OnlinePerson({ friend: f, nav }: { friend: Friend; nav: Nav }): React.J
   )
 }
 
-export function Sidebar({ view, nav, name, initial }: Props): React.JSX.Element {
+export function Sidebar({ view, nav, name, avatar }: Props): React.JSX.Element {
   const lib = useLibrary()
   const social = useSocial()
 
@@ -192,7 +193,7 @@ export function Sidebar({ view, nav, name, initial }: Props): React.JSX.Element 
 
       <div className="nav-foot">
         <button className={`nav-me${view.name === 'profile' ? ' active' : ''}`} onClick={() => nav({ name: 'profile' })} aria-label="Profil">
-          <span className="nav-avatar">{initial}</span>
+          <Avatar className="nav-avatar" name={name} src={avatar} />
           <span className="nav-foot-name">{name}</span>
         </button>
       </div>

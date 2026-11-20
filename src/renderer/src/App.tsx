@@ -47,7 +47,6 @@ function Shell(): React.JSX.Element {
   const social = useSocial()
   // Signed in, the name lives on the server (friends see it); signed out it stays on this computer.
   const shownName = social.me?.displayName || profile.name
-  const shownInitial = (shownName.trim()[0] ?? 'K').toUpperCase()
   const listen = useListen()
   const [panelOpen, setPanelOpen] = useState(false)
   // A session brings the side panel up; the user can still close it afterwards.
@@ -241,7 +240,7 @@ function Shell(): React.JSX.Element {
       {/* The cover, blurred, behind everything; the paper on top is translucent so its colours show. */}
       {cover && <div key={cover} className="ambient" style={{ backgroundImage: `url("${cover}")` }} />}
       <div className="drag-strip" />
-      <Sidebar view={view} nav={nav} name={shownName} initial={shownInitial} />
+      <Sidebar view={view} nav={nav} name={shownName} avatar={social.me?.avatar ?? null} />
       <main ref={mainRef} className="main">
         {/* Back on the left, search in the middle, the mood on the right; stays on top while scrolling. */}
         <div className="topbar">

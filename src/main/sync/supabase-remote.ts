@@ -148,6 +148,10 @@ export class SupabaseRemote implements Remote {
     });
   }
 
+  async setMyAvatar(avatar: string | null): Promise<void> {
+    await this.rpc("set_my_avatar", { p_avatar: avatar });
+  }
+
   getConfig(): Promise<AppConfig> {
     return this.rpc("get_config");
   }
