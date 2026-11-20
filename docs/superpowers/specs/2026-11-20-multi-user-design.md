@@ -89,7 +89,7 @@ Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`
 - RLS on `realtime.messages` (Supabase Realtime Authorization) calls `can_join_topic(realtime.topic())`, a plain SQL function that the tests exercise directly. The policy migration is skipped with a notice when `realtime.messages` does not exist (a local stack without Realtime):
   - `pair:*`: global switch on, caller is one of the two ids, both active, friends, and both `listen_scope` values allow it (`friends` → any friend, `partner` → partner only, `off` → nobody).
   - `presence:*`: caller is the owner or an active friend of the owner.
-- Join is checked when a channel subscribes. If the switch or a scope changes during a session, the open channel may keep working, so the app re-reads `app_config` and the friend's `canListen` before each session starts and ends a session that is no longer allowed. New joins are always blocked by the server.
+- Join is checked when a channel subscribes. If the switch or a scope changes during a session, the open channel may keep working, so the app re-reads `app_config` and the friend's `canListen` before each session starts and ends a session that is no longer allowed. New joins are always blocked by the server. Realtime re-checks the policy only on join and token refresh (up to 1 hour), so the app's own check every minute is what ends a session in practice. Disabling an account also deletes its Auth sessions so the token cannot be refreshed. Online status (presence) is visible to friends regardless of `listen_scope`; the scope only controls who may start a session. The privacy policy must say so.
 
 ## Desktop changes (data layer only)
 

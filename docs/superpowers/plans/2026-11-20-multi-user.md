@@ -3300,6 +3300,7 @@ Every step here changes the live project. Do each only after the user says go, a
 - [ ] **Step 2: Mark the hand-applied schema as applied** — `supabase migration repair --status applied 20261120000000`.
 - [ ] **Step 3: Dry run** — `supabase db push --dry-run`; expect exactly migrations `...0100` to `...0600`.
 - [ ] **Step 4: Push** — `supabase db push`.
+- [ ] **Step 4b: Check the Realtime policies exist** — in the SQL editor: `select count(*) from pg_policies where schemaname = 'realtime' and policyname like 'phinas%';` must be `2`. If it is `0`, the migration skipped them (no `realtime.messages`); stop and investigate before shipping the app.
 - [ ] **Step 5: Make the user admin** — in the SQL editor: `update public.profiles set role = 'admin' where id = (select id from auth.users where email = '<user email>');` then `select display_name, role, friend_code from public.profiles;` and confirm the two existing accounts are partners: `select is_partner from public.friendships;` → `true`.
 - [ ] **Step 6: Auth settings** — Authentication → Providers → Email: turn off "Confirm email". Keep sign-ups enabled.
 - [ ] **Step 7: Ship the app** — release a new desktop version with the existing release flow (see memory `project-phinas-desktop-release-flow`) and update both existing installs. The old 0.4.0 app still opens the public `phinas:pair:` channel and assumes one other profile, so both people should update right away.
