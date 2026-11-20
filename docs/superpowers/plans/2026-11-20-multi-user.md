@@ -1613,7 +1613,9 @@ const MESSAGES: Record<string, string> = {
   config_unknown: 'Pengaturan tidak dikenal.',
   too_many_requests: 'Terlalu banyak permintaan pertemanan yang belum dijawab.',
   last_admin: 'Kamu admin terakhir. Jadikan orang lain admin dulu sebelum menghapus akun.',
-  invalid_args: 'Permintaan tidak valid.'
+  invalid_args: 'Permintaan tidak valid.',
+  config_invalid: 'Nilai pengaturan tidak valid.',
+  user_not_found: 'User tidak ditemukan.'
 }
 
 const GENERIC = 'Terjadi kesalahan. Coba lagi.'

@@ -81,7 +81,7 @@ User: `create_invite()` (quota is a lifetime limit: used codes plus still-open c
 
 Admin (all check `is_admin()`): `admin_list_users()` (joins `auth.users` for email, created and last sign-in times, invited_by, disabled, role), `admin_set_disabled(uid, bool)`, `admin_set_config(key, value)`, `admin_list_invites()`. Admins create codes with the normal `create_invite()`, which skips the quota for them.
 
-Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`, `not_signed_in`, `request_not_found`, `name_invalid`, `self_disable`, `config_unknown`, `too_many_requests`, `last_admin`, `invalid_args`, `signup_failed` (the generic Auth error). The last active admin cannot delete their account.
+Error codes: `invite_invalid`, `invite_used`, `invite_expired`, `invite_revoked`, `registration_closed`, `terms_required`, `quota_exceeded`, `friend_code_invalid`, `already_friends`, `self_friend`, `partner_taken`, `not_friends`, `listen_not_allowed`, `account_disabled`, `not_admin`, `not_signed_in`, `request_not_found`, `name_invalid`, `self_disable`, `config_unknown`, `too_many_requests`, `last_admin`, `invalid_args`, `config_invalid`, `user_not_found`, `signup_failed` (the generic Auth error). The last active admin cannot delete their account.
 
 ## Listen Together channels
 - Session channel: `pair:<uuidA>:<uuidB>` (sorted ids), `private: true`.
