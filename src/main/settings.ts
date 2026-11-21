@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import type { AudioQuality } from '../shared/types'
 
 export interface Settings {
   notch: boolean
@@ -6,9 +7,11 @@ export interface Settings {
   claimedBy: string | null
   /** The welcome screen was answered: signed in once, or chose "Pakai tanpa akun". */
   welcomeDone: boolean
+  audioQuality: AudioQuality
+  openAtLogin: boolean
 }
 
-const DEFAULTS: Settings = { notch: true, claimedBy: null, welcomeDone: false }
+const DEFAULTS: Settings = { notch: true, claimedBy: null, welcomeDone: false, audioQuality: 'auto', openAtLogin: false }
 
 /** Tiny JSON file in the user data folder. A missing or broken file means defaults. */
 export class SettingsStore {

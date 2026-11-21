@@ -25,6 +25,7 @@ import { ArtistView } from './screens/ArtistView'
 import { GenreView } from './screens/GenreView'
 import { NavProvider } from './nav/NavProvider'
 import { Profile } from './screens/Profile'
+import { Settings } from './screens/Settings'
 import { Welcome } from './screens/Welcome'
 import { useProfile } from './profile/useProfile'
 import { useRecent } from './search/useRecent'
@@ -229,6 +230,8 @@ function Shell(): React.JSX.Element {
         return <FriendsView nav={nav} />
       case 'import':
         return <ImportView nav={nav} />
+      case 'settings':
+        return <Settings />
       case 'profile':
         return <Profile nav={nav} name={profile.name} onName={profile.setName} theme={theme.mode} onTheme={theme.setMode} />
     }

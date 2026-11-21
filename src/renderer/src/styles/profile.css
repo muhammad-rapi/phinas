@@ -14,6 +14,8 @@
 /* Ikuti sistem / Siang / Malam */
 /* Ikuti sistem / Siang / Malam and the listen scope: three cards with an icon each. */
 .pf-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pf-themes.pf-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@container (max-width: 700px) { .pf-themes.pf-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pf-theme { flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; text-align: left; transition: border-color 0.15s, background 0.15s; }
 .pf-theme:hover:not(:disabled) { border-color: var(--ink-faint); }
 .pf-theme-icon { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink-soft); }

@@ -1,11 +1,11 @@
 import { Innertube } from 'youtubei.js'
-import type { ArtistDetail, ArtistHit, Genre, GenrePage, HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
+import type { ArtistDetail, ArtistHit, AudioQuality, Genre, GenrePage, HomeFeed, PublicPlaylist, PublicPlaylistDetail, Track } from '../../shared/types'
 import { fillAlbumTrack, mapGenreButton, mapGenrePlaylist, mapNewRelease, mapVideoCard, mapPanelItem, mapPlaylistItem, mapReleaseItem, mapSongItem, sectionTracks, upsizeCover, type RawPanelItem, type RawPlaylistItem, type RawSection, type RawSong, type RawTwoRowItem } from './mapper'
 
 export interface MusicSource {
   search(query: string): Promise<Track[]>
   /** `fresh` starts a new YouTube session first (used after a URL was rejected). */
-  getStreamUrl(videoId: string, fresh?: boolean): Promise<string>
+  getStreamUrl(videoId: string, fresh?: boolean, quality?: AudioQuality): Promise<string>
   getHomeFeed(): Promise<HomeFeed>
   searchPlaylists(query: string): Promise<PublicPlaylist[]>
   /** Artists matching the search text, best first (YouTube Music's artist results). */
@@ -291,13 +291,13 @@ export class YoutubeMusicSource implements MusicSource {
     }
   }
 
-  async getStreamUrl(videoId: string, fresh = false): Promise<string> {
+  async getStreamUrl(videoId: string, fresh = false, quality: AudioQuality = 'auto'): Promise<string> {
     if (fresh) this.yt = undefined
     const yt = await this.client()
     let lastError: unknown = new Error('No stream available')
     for (const client of CLIENTS) {
       try {
-        const format = await yt.getStreamingData(videoId, { type: 'audio', quality: 'best', client })
+        const format = await yt.getStreamingData(videoId, { type: 'audio', quality: quality === 'saver' ? 'bestefficiency' : 'best', client })
         const url = format.url ?? (await format.decipher(yt.session.player))
         if (url) return url
       } catch (e) {

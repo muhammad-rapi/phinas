@@ -1,4 +1,4 @@
-import { Compass, Download, Globe, Heart, History, Home, Lock, Plus, Users, type LucideIcon } from 'lucide-react'
+import { Compass, Download, Globe, Heart, History, Home, Lock, Plus, Settings as SettingsIcon, Users, type LucideIcon } from 'lucide-react'
 import { Fragment } from 'react'
 import type { Friend, Visibility } from '../../../shared/types'
 import { useLibrary } from '../library/LibraryProvider'
@@ -195,6 +195,9 @@ export function Sidebar({ view, nav, name, avatar }: Props): React.JSX.Element {
         <button className={`nav-me${view.name === 'profile' ? ' active' : ''}`} onClick={() => nav({ name: 'profile' })} aria-label="Profil">
           <Avatar className="nav-avatar" name={name} src={avatar} />
           <span className="nav-foot-name">{name}</span>
+        </button>
+        <button className={`icon-btn nav-gear${view.name === 'settings' ? ' on' : ''}`} onClick={() => nav({ name: 'settings' })} aria-label="Pengaturan" title="Pengaturan">
+          <SettingsIcon size={18} />
         </button>
       </div>
     </aside>

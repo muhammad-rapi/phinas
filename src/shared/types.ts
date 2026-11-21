@@ -208,6 +208,16 @@ export interface PlayEntry extends Track {
 }
 
 /** A liked track with the time it was liked (used to weigh taste by age). */
+/** 'auto' takes the best audio YouTube offers; 'saver' takes the smallest file that still sounds fine. */
+export type AudioQuality = 'auto' | 'saver'
+
+/** The settings the main process keeps and the Pengaturan screen changes. */
+export interface AppSettings {
+  audioQuality: AudioQuality
+  /** Start Phinas when the computer starts. */
+  openAtLogin: boolean
+}
+
 export interface LikeEntry extends Track {
   likedAt: number
 }
