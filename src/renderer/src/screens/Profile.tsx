@@ -338,7 +338,7 @@ export function Profile({ nav, name, onName, theme, onTheme }: Props): React.JSX
 }
 
 /** Version, and a manual "check for updates". */
-function UpdateSection(): React.JSX.Element {
+export function UpdateSection(): React.JSX.Element {
   const u = useUpdate()
   const [checking, setChecking] = useState(false)
   const [checked, setChecked] = useState(false)

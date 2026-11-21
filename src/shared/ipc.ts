@@ -1,4 +1,4 @@
-import type { AppConfig, ArtistDetail, ArtistHit, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenClosedEvent, ListenConnectionEvent, ListenMessageEvent, ListenPresenceEvent, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
+import type { AppConfig, AppSettings, ArtistDetail, AudioQuality, ArtistHit, FavoriteArtist, Friend, FriendRequest, GenrePage, InviteCode, UpdateStatus, ListenClosedEvent, ListenConnectionEvent, ListenMessageEvent, ListenPresenceEvent, ListenScope, ListenStatus, MyProfile, NotchState, PlayRecord, PlayerCommand, Recommendations, HomeFeed, ImportResult, Lyrics, PublicPlaylist, PublicPlaylistDetail, PartnerPlaylist, Playlist, PlaylistWithTracks, SignUpInput, SyncStatus, Track, Visibility } from './types'
 import type { LegalPage } from './links'
 import type { SyncMessage } from './sync/protocol'
 
@@ -96,6 +96,10 @@ export interface PhinasApi {
   getAutoplay(current: Track, queueIds: string[]): Promise<Track[]>
   getNotchEnabled(): Promise<boolean>
   setNotchEnabled(enabled: boolean): Promise<void>
+  getAppSettings(): Promise<AppSettings>
+  /** Applies to the next song that starts. */
+  setAudioQuality(quality: AudioQuality): Promise<void>
+  setOpenAtLogin(open: boolean): Promise<void>
   /** Every open pair channel's state by friend id, for catching up on events fired before we subscribed. */
   listenStatus(): Promise<Record<string, ListenStatus>>
 }
@@ -220,6 +224,9 @@ const CHANNEL_MAP: Record<keyof PhinasApi, true> = {
   getAutoplay: true,
   getNotchEnabled: true,
   setNotchEnabled: true,
+  getAppSettings: true,
+  setAudioQuality: true,
+  setOpenAtLogin: true,
   listenStatus: true
 }
 

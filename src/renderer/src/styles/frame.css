@@ -59,7 +59,9 @@
 .nav-pl.active { color: var(--accent); font-weight: 600; }
 .nav-group { margin: 16px 0 6px; padding-left: 10px; }
 .nav-empty { margin: 0; padding: 4px 10px; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-soft); }
-.nav-foot { flex: none; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.nav-foot { flex: none; display: flex; align-items: center; gap: 4px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.nav-foot .nav-me { flex: 1; min-width: 0; }
+.nav-gear { flex: none; padding: 8px; }
 .nav-me { justify-content: flex-start; gap: 10px; width: 100%; min-width: 0; padding: 6px 10px; border-radius: var(--radius); transition: background 0.15s; }
 .nav-avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--sans); font-size: 17px; }
 .nav-me.active .nav-avatar { box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--accent); }

@@ -4,6 +4,7 @@ export type View =
   | { name: 'explore' }
   | { name: 'search' }
   | { name: 'profile' }
+  | { name: 'settings' }
   | { name: 'import' }
   | { name: 'liked' }
   | { name: 'recent' }

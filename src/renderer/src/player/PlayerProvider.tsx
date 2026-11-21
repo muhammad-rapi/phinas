@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { attachEffects } from '../audio/fx'
 import { PlayTracker } from '../../../shared/playTracker'
 import type { SyncAction } from '../../../shared/sync/protocol'
 import type { PlayerSnapshot } from '../../../shared/sync/session'
@@ -96,7 +97,21 @@ function readAutoplay(): boolean {
 }
 
 export function PlayerProvider({ children }: { children: ReactNode }): React.JSX.Element {
-  const [audio] = useState(() => new Audio())
+  const [audio] = useState(() => {
+    const a = new Audio()
+    // The stream proxy sends CORS headers, so the equalizer (Web Audio) may read the sound.
+    a.crossOrigin = 'anonymous'
+    return a
+  })
+  const fxRef = useRef<ReturnType<typeof attachEffects>>(null)
+  useEffect(() => {
+    fxRef.current ??= attachEffects(audio)
+    // Development only: lets a test script read the loudness of what is playing.
+    if (import.meta.env.DEV) (window as unknown as { __fx?: unknown }).__fx = fxRef.current
+    const resume = (): void => fxRef.current?.resume()
+    audio.addEventListener('play', resume)
+    return () => audio.removeEventListener('play', resume)
+  }, [audio])
   const [queue, setQueue] = useState<QueueState>(empty)
   const [token, setToken] = useState(0)
   const [playing, setPlaying] = useState(false)

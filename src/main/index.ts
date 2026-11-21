@@ -96,7 +96,7 @@ app.whenReady().then(async () => {
   const settings = new SettingsStore(join(userData, 'settings.json'))
   const source = new YoutubeMusicSource(app.getLocaleCountryCode() || undefined)
 
-  const proxy = createStreamProxy((id, fresh) => source.getStreamUrl(id, fresh))
+  const proxy = createStreamProxy((id, fresh) => source.getStreamUrl(id, fresh, settings.get('audioQuality')))
   const proxyPort = await proxy.start()
 
   const url = import.meta.env.MAIN_VITE_SUPABASE_URL as string | undefined
@@ -196,6 +196,11 @@ app.whenReady().then(async () => {
     lastError,
     settings,
     setNotchEnabled: showNotch,
+    applyOpenAtLogin: (open) => {
+      // Only a packaged app can register itself: in development this would register Electron itself.
+      if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: open })
+    },
+    clearStreamCache: () => proxy.clear(),
     updater
   })
   for (const name of CHANNELS) {

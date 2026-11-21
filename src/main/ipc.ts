@@ -44,6 +44,10 @@ export interface Deps {
   settings: SettingsStore
   /** Shows or hides the notch window right away. */
   setNotchEnabled: (enabled: boolean) => void
+  /** Registers or removes Phinas as a login item. */
+  applyOpenAtLogin: (open: boolean) => void
+  /** Drops the stream addresses resolved so far (the audio quality changed). */
+  clearStreamCache: () => void
   updater: Updater
 }
 
@@ -236,6 +240,16 @@ export function createHandlers(d: Deps): PhinasApi {
     listFavoriteArtists: async (limit = 8) => d.host.library.favoriteArtists(Math.min(limit, 12)),
     getRecommendations: () => d.host.services.recommender.forHome(),
     getAutoplay: (current, queueIds) => d.host.services.recommender.autoplay(current, queueIds),
+    getAppSettings: async () => ({ audioQuality: d.settings.get('audioQuality'), openAtLogin: d.settings.get('openAtLogin') }),
+    setAudioQuality: async (quality) => {
+      if (quality !== 'auto' && quality !== 'saver') throw new Error('unknown audio quality')
+      d.settings.set('audioQuality', quality)
+      d.clearStreamCache()
+    },
+    setOpenAtLogin: async (open) => {
+      d.settings.set('openAtLogin', open === true)
+      d.applyOpenAtLogin(open === true)
+    },
     getNotchEnabled: async () => d.settings.get('notch'),
     setNotchEnabled: async (enabled) => {
       d.settings.set('notch', enabled)

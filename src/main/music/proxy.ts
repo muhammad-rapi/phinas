@@ -23,6 +23,8 @@ export function clampRange(header: string | undefined): string {
 export function createStreamProxy(resolveUrl: (videoId: string, fresh?: boolean) => Promise<string>): {
   start(): Promise<number>
   stop(): Promise<void>
+  /** Forget every resolved address (the audio quality changed, so they are the wrong ones). */
+  clear(): void
 } {
   const cache = new Map<string, { url: string; at: number }>()
 
@@ -88,6 +90,7 @@ export function createStreamProxy(resolveUrl: (videoId: string, fresh?: boolean)
       new Promise((resolve) => {
         server.closeAllConnections()
         server.close(() => resolve())
-      })
+      }),
+    clear: () => cache.clear()
   }
 }
