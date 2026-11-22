@@ -9,9 +9,9 @@ export interface Bands {
 
 export const EQ_PRESETS: Record<EqPreset, { label: string; hint: string; bands: Bands }> = {
   flat: { label: 'Datar', hint: 'Suara apa adanya', bands: { low: 0, mid: 0, high: 0 } },
-  bass: { label: 'Bass', hint: 'Dentum lebih tebal', bands: { low: 6, mid: -1, high: 1 } },
-  vocal: { label: 'Vokal', hint: 'Suara penyanyi lebih jelas', bands: { low: -2, mid: 4, high: 2 } },
-  treble: { label: 'Treble', hint: 'Suara lebih terang', bands: { low: -2, mid: 0, high: 6 } }
+  bass: { label: 'Bass', hint: 'Dentum lebih tebal', bands: { low: 9, mid: -1, high: 1 } },
+  vocal: { label: 'Vokal', hint: 'Suara penyanyi lebih jelas', bands: { low: -3, mid: 5, high: 2 } },
+  treble: { label: 'Treble', hint: 'Suara lebih terang', bands: { low: -2, mid: 0, high: 8 } }
 }
 
 export const EQ_ORDER: EqPreset[] = ['flat', 'bass', 'vocal', 'treble']
@@ -23,15 +23,15 @@ export interface Effects {
 }
 
 /**
- * How far to turn the whole signal down (a linear gain below 1) so that boosted bands cannot push
- * the sound past full scale and distort: the loudest boost is taken back off first. With the leveler
- * on, a further step takes off the make-up gain the compressor adds.
+ * The level (a linear gain) applied after the leveler. The compressor adds make-up gain of its own, so
+ * with the leveler on the signal is brought back down 3 dB, between what two measurements asked for:
+ * a loud/quiet noise test (4.5 dB too quiet at -4.5) and a loud song (2.5 dB too loud at -2).
+ * Otherwise it is left alone.
+ * Boosted equalizer bands are NOT turned down: a limiter at the end of the chain (see fx.ts) catches
+ * the peaks instead, so a boost is heard as a boost.
  */
-export function headroom(e: Effects): number {
-  const b = EQ_PRESETS[e.eq].bands
-  const boost = Math.max(0, b.low, b.mid, b.high)
-  const db = -boost - (e.leveler ? 4 : 0)
-  return Math.pow(10, db / 20)
+export function outputTrim(e: Effects): number {
+  return e.leveler ? Math.pow(10, -3 / 20) : 1
 }
 
 export const DEFAULT_EFFECTS: Effects = { eq: 'flat', leveler: false }

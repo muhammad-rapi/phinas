@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_EFFECTS, EQ_ORDER, EQ_PRESETS, headroom, parseEffects } from '../src/renderer/src/audio/presets'
+import { DEFAULT_EFFECTS, EQ_ORDER, EQ_PRESETS, outputTrim, parseEffects } from '../src/renderer/src/audio/presets'
 
 describe('equalizer presets', () => {
   it('lists every preset once, flat first', () => {
@@ -14,17 +14,20 @@ describe('equalizer presets', () => {
   })
 })
 
-describe('headroom', () => {
-  it('is 1 (no change) for flat without the leveler', () => {
-    expect(headroom(DEFAULT_EFFECTS)).toBe(1)
+describe('presets are strong enough to hear', () => {
+  it('each non-flat preset moves its band by at least 5 dB', () => {
+    expect(EQ_PRESETS.bass.bands.low).toBeGreaterThanOrEqual(5)
+    expect(EQ_PRESETS.vocal.bands.mid).toBeGreaterThanOrEqual(5)
+    expect(EQ_PRESETS.treble.bands.high).toBeGreaterThanOrEqual(5)
   })
-  it('takes the loudest boost back off, so boosted bands cannot clip', () => {
-    // Bass boosts the low band by 6 dB: the whole signal goes down by 6 dB (a factor of about 0.5).
-    expect(headroom({ eq: 'bass', leveler: false })).toBeCloseTo(0.501, 2)
+})
+
+describe('outputTrim', () => {
+  it('leaves the level alone without the leveler, whatever the equalizer does', () => {
+    for (const eq of EQ_ORDER) expect(outputTrim({ eq, leveler: false })).toBe(1)
   })
-  it('takes a further 4 dB off with the leveler on, and never raises the level', () => {
-    expect(headroom({ eq: 'flat', leveler: true })).toBeCloseTo(0.631, 2)
-    for (const eq of EQ_ORDER) for (const leveler of [false, true]) expect(headroom({ eq, leveler })).toBeLessThanOrEqual(1)
+  it('takes 3 dB off with the leveler on, to cancel the compressor make-up gain', () => {
+    expect(outputTrim({ eq: 'flat', leveler: true })).toBeCloseTo(0.708, 2)
   })
 })
 
