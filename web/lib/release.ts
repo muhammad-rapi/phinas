@@ -31,6 +31,7 @@ interface GhRelease {
 
 const MAC = /^Phinas-[\d.]+-arm64\.dmg$/
 const WIN = /^Phinas-Setup-[\d.]+\.exe$/
+const APK = /^Phinas-[\d.]+\.apk$/
 
 function toDownload(a: GhAsset | undefined): Download | null {
   if (!a) return null
@@ -59,6 +60,36 @@ export async function latestRelease(): Promise<Release | null> {
     })
     if (!res.ok) return null
     return pickRelease((await res.json()) as GhRelease)
+  } catch {
+    return null
+  }
+}
+
+export interface AndroidRelease {
+  version: string
+  apk: Download
+}
+
+/** The newest Android release (tag android-v*) that carries an APK, out of a list of GitHub releases. */
+export function pickAndroid(list: GhRelease[]): AndroidRelease | null {
+  for (const r of list) {
+    if (!r.tag_name.startsWith('android-v')) continue
+    const apk = toDownload(r.assets.find((a) => APK.test(a.name)))
+    if (apk) return { version: r.tag_name.replace(/^android-v/, ''), apk }
+  }
+  return null
+}
+
+/** The latest Android build, or null when GitHub cannot be reached. Cached for 10 minutes. */
+export async function latestAndroid(): Promise<AndroidRelease | null> {
+  try {
+    const token = process.env['GITHUB_TOKEN']
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, {
+      headers: { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      next: { revalidate: 600 }
+    })
+    if (!res.ok) return null
+    return pickAndroid((await res.json()) as GhRelease[])
   } catch {
     return null
   }
