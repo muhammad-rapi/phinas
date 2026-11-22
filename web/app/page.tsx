@@ -1,4 +1,4 @@
-import { latestRelease, type Download } from '@/lib/release'
+import { latestAndroid, latestRelease, type Download } from '@/lib/release'
 import { RELEASES_URL } from '@/lib/site'
 
 /** Rebuilt at most every 10 minutes, so a new GitHub release shows up without a deploy. */
@@ -41,14 +41,14 @@ function DownloadButton({ d, label, sub }: { d: Download | null; label: string; 
 }
 
 export default async function Home(): Promise<React.JSX.Element> {
-  const release = await latestRelease()
-  const sums = [release?.mac, release?.win].filter((d): d is Download => Boolean(d?.sha256))
+  const [release, android] = await Promise.all([latestRelease(), latestAndroid()])
+  const sums = [release?.mac, release?.win, android?.apk].filter((d): d is Download => Boolean(d?.sha256))
 
   return (
     <main>
       <section className="hero" id="unduh">
         <div className="wrap">
-          <div className="label">{release ? `Versi ${release.version}` : 'Mac dan Windows'}</div>
+          <div className="label">{release ? `Versi ${release.version}` : 'Mac, Windows, dan Android'}</div>
           <h1>
             Musik, <em>dengar bareng.</em>
           </h1>
@@ -59,6 +59,7 @@ export default async function Home(): Promise<React.JSX.Element> {
           <div className="dl-row">
             <DownloadButton d={release?.mac ?? null} label="Unduh untuk Mac" sub="Apple Silicon" />
             <DownloadButton d={release?.win ?? null} label="Unduh untuk Windows" sub="Windows 10/11, 64-bit" />
+            <DownloadButton d={android?.apk ?? null} label="Unduh untuk Android" sub={`Android 8+, v${android?.version ?? ''}`} />
           </div>
           <p className="dl-note">
             Memutar, mencari, dan lirik bisa dipakai tanpa akun. Untuk berteman dan dengar bareng, kamu perlu kode undangan dari teman yang
@@ -143,8 +144,11 @@ export default async function Home(): Promise<React.JSX.Element> {
             </dd>
             <dt>Bagaimana cara daftar?</dt>
             <dd>Minta kode undangan dari teman yang sudah memakai Phinas, lalu pilih Daftar di aplikasi. Kalian otomatis berteman.</dd>
-            <dt>Bisa di iPhone atau Android?</dt>
-            <dd>Belum. Phinas hanya untuk komputer Mac dan Windows.</dd>
+            <dt>Bisa di Android atau iPhone?</dt>
+            <dd>
+              Android bisa: unduh APK di atas, buka, lalu izinkan pemasangan dari sumber ini. Android menampilkan peringatan karena Phinas
+              belum ada di Play Store. Hanya untuk ponsel arm64 (hampir semua ponsel baru). iPhone belum didukung.
+            </dd>
           </dl>
           {sums.length > 0 && (
             <div className="sha" style={{ marginTop: 28 }}>
